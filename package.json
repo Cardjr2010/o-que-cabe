@@ -1,0 +1,10 @@
+{
+  "name": "o-que-cabe",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node server.mjs",
+    "start": "node server.mjs",
+    "vercel-build": "echo build ok"
+  }
+}

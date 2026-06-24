@@ -1,0 +1,44 @@
+[
+  {
+    "slug": "celular-bom-e-barato",
+    "title": "Celular bom e barato",
+    "keyword": "celular bom e barato",
+    "description": "Opcoes de celular por faixa de preco, parcela e custo-beneficio.",
+    "category": "celular"
+  },
+  {
+    "slug": "notebook-bom-e-barato",
+    "title": "Notebook bom e barato",
+    "keyword": "notebook bom e barato",
+    "description": "Modelos para estudo, trabalho e uso diario sem estourar o orcamento.",
+    "category": "notebook"
+  },
+  {
+    "slug": "tablet-bom-e-barato",
+    "title": "Tablet bom e barato",
+    "keyword": "tablet bom e barato",
+    "description": "Tablets para estudar, criancas e consumo de conteudo.",
+    "category": "tablet"
+  },
+  {
+    "slug": "presentes-ate-50-reais",
+    "title": "Presentes ate 50 reais",
+    "keyword": "presentes ate 50 reais",
+    "description": "Ideias de presente barato com boa chance de agradar.",
+    "category": "presentes"
+  },
+  {
+    "slug": "produtos-uteis-para-casa",
+    "title": "Produtos uteis para casa",
+    "keyword": "produtos uteis para casa",
+    "description": "Achadinhos e itens praticos para casa por faixa de orcamento.",
+    "category": "casa"
+  },
+  {
+    "slug": "calculadora-de-parcela",
+    "title": "Calculadora de parcela",
+    "keyword": "como calcular parcela de produto",
+    "description": "Calcule quanto um produto cabe no mes antes de comprar.",
+    "category": "ferramenta"
+  }
+]

@@ -1,0 +1,9 @@
+.env
+.env.local
+node_modules
+.vercel
+.DS_Store
+*.log
+data/tokens.json
+data/ml-tokens.json
+data/mercadolivre-oauth.json
