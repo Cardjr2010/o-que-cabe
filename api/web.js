@@ -363,11 +363,12 @@ function extractMercadoLivreItemId(url) {
 }
 
 function normalizeMercadoLivreItem(item, fallback = {}) {
+  const picture = Array.isArray(item?.pictures) && item.pictures.length > 0 ? item.pictures[0]?.url || "" : "";
   return {
     id: item?.id || fallback.id || "",
     title: item?.title || fallback.title || "",
     price: item?.price ?? fallback.price ?? null,
-    image: item?.thumbnail || fallback.image || "",
+    image: item?.thumbnail || picture || fallback.image || "",
     permalink: item?.permalink || fallback.permalink || "",
   };
 }
@@ -386,7 +387,7 @@ function buildMercadoLivreManualResult({ item, itemId, monthly, months }) {
       store: "Mercado Livre",
       source: "mercadolivre",
       price,
-      image: item?.image || item?.thumbnail || "",
+      image: item?.image || item?.thumbnail || (Array.isArray(item?.pictures) && item.pictures[0]?.url) || "",
       url: item?.affiliateUrl || item?.url || item?.permalink || "#",
       productUrl: item?.permalink || item?.url || "#",
       affiliateUrl: item?.affiliateUrl || null,
@@ -505,7 +506,7 @@ export default function handler(req, res) {
       ok: true,
       title: candidate.title || "",
       price: candidate.price ?? null,
-      image: candidate.image || "",
+      image: candidate.image || candidate.thumbnail || "",
       permalink: candidate.url || candidate.permalink || "",
     });
     return;

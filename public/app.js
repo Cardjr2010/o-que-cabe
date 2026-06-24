@@ -21,8 +21,9 @@ const currency = new Intl.NumberFormat("pt-BR", {
 });
 
 function productImage(product) {
-  if (product.image) {
-    return `<img src="${product.image}" alt="">`;
+  const image = product.image || product.thumbnail || "";
+  if (image) {
+    return `<img src="${image}" alt="">`;
   }
   return "<span>Imagem em breve</span>";
 }
@@ -133,7 +134,7 @@ function renderMercadoLivre(products) {
       const link = resolveProductLink(product);
       return `
         <article class="card">
-          <div class="image-box">${product.image ? `<img src="${product.image}" alt="">` : "<span>Imagem em breve</span>"}</div>
+          <div class="image-box">${productImage(product)}</div>
           <div class="card-body">
             <span class="store">${product.store}</span>
             <h2>${product.title}</h2>

@@ -8,7 +8,7 @@
     "price": 499,
     "installments": 12,
     "installmentValue": 41.58,
-    "image": "",
+    "image": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=80",
     "url": "https://www.mercadolivre.com.br",
     "riskNote": "Oferta demo Mercado Livre para busca de celular."
   },
@@ -21,7 +21,7 @@
     "price": 599,
     "installments": 12,
     "installmentValue": 49.92,
-    "image": "",
+    "image": "https://images.unsplash.com/photo-1510557880182-3d4d3c5f6f1d?auto=format&fit=crop&w=900&q=80",
     "url": "https://www.mercadolivre.com.br",
     "riskNote": "Oferta demo Mercado Livre para busca de celular."
   },
@@ -34,7 +34,7 @@
     "price": 549,
     "installments": 12,
     "installmentValue": 45.75,
-    "image": "",
+    "image": "https://images.unsplash.com/photo-1598327105666-5b89351aff97?auto=format&fit=crop&w=900&q=80",
     "url": "https://www.mercadolivre.com.br",
     "riskNote": "Oferta demo Mercado Livre para busca de celular."
   },
@@ -47,7 +47,7 @@
     "price": 579,
     "installments": 12,
     "installmentValue": 48.25,
-    "image": "",
+    "image": "https://images.unsplash.com/photo-1512499617640-c2f999098c2a?auto=format&fit=crop&w=900&q=80",
     "url": "https://www.mercadolivre.com.br",
     "riskNote": "Oferta demo Mercado Livre para busca de celular."
   },
@@ -60,7 +60,7 @@
     "price": 229,
     "installments": 12,
     "installmentValue": 19.08,
-    "image": "",
+    "image": "https://images.unsplash.com/photo-1556656793-08538906a9f8?auto=format&fit=crop&w=900&q=80",
     "url": "https://www.mercadolivre.com.br",
     "riskNote": "Oferta demo Mercado Livre para busca de celular."
   },
