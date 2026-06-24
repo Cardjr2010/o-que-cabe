@@ -505,6 +505,16 @@ h2 {
   color: #ef4444;
 }
 
+.small.warning {
+  color: #92400e;
+  font-weight: 750;
+}
+
+.small.notice-real {
+  color: #0f3e8a;
+  font-weight: 750;
+}
+
 .empty-state {
   grid-column: 1 / -1;
   min-height: 190px;

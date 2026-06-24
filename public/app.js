@@ -178,6 +178,10 @@ function renderMercadoLivre(products) {
       const linkAvailable = hasProductLink(product);
       const dataMode = product.dataMode || "demo";
       const sourceLabel = dataMode === "real" ? "DADOS REAIS DO MERCADO LIVRE" : "DEMONSTRAÇÃO MERCADO LIVRE";
+      const buttonLabel = dataMode === "real" ? "Ver anúncio no Mercado Livre" : "Ver busca no Mercado Livre";
+      const transparencyNote = dataMode === "real"
+        ? "Dados reais do Mercado Livre. Este botão abre o anúncio retornado pela API."
+        : "Modo demonstração: este card usa busca simulada. O botão abre uma busca no Mercado Livre, não um anúncio filtrado.";
       return `
         <article class="card">
           <div class="image-box">${productImage(product)}</div>
@@ -190,12 +194,13 @@ function renderMercadoLivre(products) {
             <p class="small">${product.availableQuantity != null ? `Estoque: ${product.availableQuantity}` : ""}</p>
             <p class="small">Preço total: vindo do Mercado Livre. Parcela OQC: estimativa calculada pelo site.</p>
             <p class="small">Parcela estimada pelo O Que Cabe. Confira frete, juros e parcelamento real na loja.</p>
+            <p class="small">${transparencyNote}</p>
             <div class="price">
               <div class="small">Preço total</div>
               <div class="installment">${total}</div>
               <div class="small">${installment} · ${currency.format(product.monthlyPrice || 0)}/mês</div>
             </div>
-            ${linkAvailable ? `<a href="${link}" target="_blank" rel="noopener">Ver no Mercado Livre</a>` : `<a class="disabled" href="javascript:void(0)" role="button" aria-disabled="true">Link indisponível</a>`}
+            ${linkAvailable ? `<a href="${link}" target="_blank" rel="noopener">${buttonLabel}</a>` : `<a class="disabled" href="javascript:void(0)" role="button" aria-disabled="true">Link indisponível</a>`}
           </div>
         </article>
       `;

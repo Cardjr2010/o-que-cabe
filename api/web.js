@@ -443,6 +443,29 @@ function normalizeMercadoLivreSearchItem(item, monthly, months) {
   };
 }
 
+async function searchMercadoLivreWithDiagnostics(query, limit = 20) {
+  const q = String(query || "").trim();
+  if (!q) {
+    return { rawCount: 0, returnedCount: 0, results: [], error: "" };
+  }
+  try {
+    const results = await fetchMercadoLivreSearch(q, limit);
+    return {
+      rawCount: Array.isArray(results) ? results.length : 0,
+      returnedCount: Array.isArray(results) ? results.length : 0,
+      results: Array.isArray(results) ? results : [],
+      error: "",
+    };
+  } catch (error) {
+    return {
+      rawCount: 0,
+      returnedCount: 0,
+      results: [],
+      error: error?.message || "Erro na busca do Mercado Livre",
+    };
+  }
+}
+
 function relevanceScore(query, product) {
   const q = String(query || "").trim().toLowerCase();
   const text = `${product.title || ""} ${product.category || ""}`.toLowerCase();
@@ -517,7 +540,7 @@ export default async function handler(req, res) {
         if (installment <= monthly) return "CABE";
         if (installment <= monthly * 1.2) return "APERTADO";
         return "NÃO CABE";
-      };
+    };
     try {
       const results = await fetchMercadoLivreSearch(q, 20);
       products = results
@@ -622,18 +645,41 @@ export default async function handler(req, res) {
         if (installment <= monthly * 1.2) return "APERTADO";
         return "NÃO CABE";
       };
-    const products = normalizeDemoProducts(readMercadoLivreDemoProducts(), monthly, months, q, "mercadolivre").map((item) => ({
+    const realSearch = await searchMercadoLivreWithDiagnostics(q, 20);
+    const realProducts = realSearch.results
+      .map((item) => {
+        const normalized = normalizeMercadoLivreSearchItem(item, monthly, months);
+        return {
+          ...normalized,
+          status: classifyByMode(normalized.price || 0),
+          monthlyPrice: normalized.price / months,
+          installmentValue: normalized.price / months,
+          dataMode: "real",
+        };
+      })
+      .filter((item) => item.title);
+    const demoProducts = normalizeDemoProducts(readMercadoLivreDemoProducts(), monthly, months, q, "mercadolivre").map((item) => ({
       ...item,
       status: classifyByMode(item.price || 0),
       dataMode: "demo",
     }));
+    const products = realProducts.length ? realProducts : demoProducts;
+    const dataMode = realProducts.length ? "real" : "demo";
     sendJson(res, 200, {
       configured: Boolean(process.env.MELI_CLIENT_ID && process.env.MELI_CLIENT_SECRET && process.env.MELI_REDIRECT_URI),
       authenticated: hasToken(),
-      dataMode: "demo",
-      statusHttp: 200,
+      dataMode,
+      statusHttp: realSearch.error ? 502 : 200,
       mode,
-      count: products.length,
+      rawCount: realSearch.rawCount,
+      returnedCount: products.length,
+      error: realSearch.error || "",
+      firstFive: products.slice(0, 5).map((item) => ({
+        title: item.title,
+        price: item.price,
+        permalink: item.permalink || item.productUrl || item.url || "",
+        image: item.image || item.thumbnail || "",
+      })),
       sample: products.slice(0, 3),
     });
     return;
