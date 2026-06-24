@@ -75,6 +75,24 @@ function readMercadoLivreToken() {
   return readJson(oauthPath, null);
 }
 
+async function fetchMercadoLivreSearch(query, limit = 12) {
+  const q = String(query || "").trim();
+  if (!q) return [];
+  const endpoint = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(q)}&limit=${limit}`;
+  const response = await fetch(endpoint, {
+    headers: {
+      Accept: "application/json",
+    },
+  });
+  if (!response.ok) {
+    const error = new Error(`Mercado Livre search HTTP ${response.status}`);
+    error.status = response.status;
+    throw error;
+  }
+  const data = await response.json();
+  return Array.isArray(data?.results) ? data.results : [];
+}
+
 function normalizeSource(source) {
   const value = String(source || "mercadolivre").toLowerCase();
   if (value === "amazon") return "amazon";
@@ -160,10 +178,13 @@ function normalizeDemoProducts(products, monthlyBudget, months, query, source) {
         description: product.riskNote || product.description || "",
         note: product.riskNote || "Dados de teste — preços simulados.",
         url: product.url || "#",
+        permalink: product.permalink || product.url || "#",
         installments: product.installments || months,
         installmentValue,
         status,
         score: scoreDemoProduct({ ...product, price_brl }, monthlyBudget * months),
+        relevance: relevanceScore(q, product),
+        dataMode: "demo",
         source,
       };
     })
@@ -171,6 +192,8 @@ function normalizeDemoProducts(products, monthlyBudget, months, query, source) {
       const rank = { "CABE": 0, "APERTADO": 1, "NÃO CABE": 2 };
       const byRank = rank[a.status] - rank[b.status];
       if (byRank !== 0) return byRank;
+      const byRelevance = (b.relevance || 0) - (a.relevance || 0);
+      if (byRelevance !== 0) return byRelevance;
       return b.score - a.score;
     });
 
@@ -373,6 +396,50 @@ function normalizeMercadoLivreItem(item, fallback = {}) {
   };
 }
 
+function normalizeMercadoLivreSearchItem(item, monthly, months) {
+  const normalized = normalizeMercadoLivreItem(item);
+  const price = Number(normalized.price || 0);
+  const monthlyPrice = months > 0 ? price / months : price;
+  const status = monthlyPrice <= monthly ? "CABE" : monthlyPrice <= monthly * 1.2 ? "APERTADO" : "NÃƒO CABE";
+  return {
+    id: normalized.id,
+    title: normalized.title,
+    category: String(item?.category_id || item?.category || "").toLowerCase(),
+    store: "Mercado Livre",
+    source: "mercadolivre",
+    price,
+    image: normalized.image || "",
+    thumbnail: normalized.image || "",
+    permalink: normalized.permalink || "",
+    productUrl: normalized.permalink || "",
+    affiliateUrl: null,
+    monthlyPrice,
+    installments: months,
+    installmentValue: monthlyPrice,
+    status,
+    score: 100,
+    description: item?.title || "",
+    condition: item?.condition || "",
+    availableQuantity: item?.available_quantity ?? null,
+    dataMode: "real",
+  };
+}
+
+function relevanceScore(query, product) {
+  const q = String(query || "").trim().toLowerCase();
+  const text = `${product.title || ""} ${product.category || ""}`.toLowerCase();
+  const termsByQuery = {
+    celular: ["celular", "smartphone", "galaxy", "moto", "redmi", "iphone"],
+    relógio: ["relógio", "relogio", "smartwatch", "watch", "pulseira inteligente"],
+    notebook: ["notebook", "laptop", "ideapad", "vivobook", "aspire"],
+    tablet: ["tablet", "ipad", "galaxy tab", "tab"],
+    casa: ["casa", "air fryer", "fritadeira", "aspirador", "cozinha"],
+    presente: ["presente", "kit", "caneca", "bloco", "acessório", "acessorio"],
+  };
+  const terms = termsByQuery[q] || [q];
+  return terms.reduce((score, term) => score + (text.includes(term) ? 20 : 0), 0);
+}
+
 function buildMercadoLivreManualResult({ item, itemId, monthly, months }) {
   const price = Number(item?.price ?? 0);
   const monthlyPrice = months > 0 ? price / months : price;
@@ -380,6 +447,7 @@ function buildMercadoLivreManualResult({ item, itemId, monthly, months }) {
   return {
     ok: true,
     mode: "mercadolivre",
+    dataMode: item?.real ? "real" : "demo",
     products: [{
       id: item?.id || itemId,
       title: item?.title || item?.name || "Produto Mercado Livre",
@@ -403,7 +471,7 @@ function buildMercadoLivreManualResult({ item, itemId, monthly, months }) {
   };
 }
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   const url = new URL(req.url, "http://localhost");
   const pathname = url.pathname;
 
@@ -417,12 +485,29 @@ export default function handler(req, res) {
     const monthly = Number(url.searchParams.get("monthly") || "50");
     const months = Number(url.searchParams.get("months") || "12");
     const source = normalizeSource(url.searchParams.get("source") || "mercadolivre");
-    const products = source === "amazon"
-      ? normalizeDemoProducts(readProducts(), monthly, months, q, "amazon")
-      : normalizeDemoProducts(readMercadoLivreDemoProducts(), monthly, months, q, source);
+    let products = [];
+    let dataMode = "demo";
+    if (source === "amazon") {
+      products = normalizeDemoProducts(readProducts(), monthly, months, q, "amazon");
+    } else {
+      try {
+        const results = await fetchMercadoLivreSearch(q, 20);
+        products = results
+          .map((item) => normalizeMercadoLivreSearchItem(item, monthly, months))
+          .filter((item) => item.title);
+        if (products.length) {
+          dataMode = "real";
+        } else {
+          products = normalizeDemoProducts(readMercadoLivreDemoProducts(), monthly, months, q, "mercadolivre").map((item) => ({ ...item, dataMode: "demo" }));
+        }
+      } catch {
+        products = normalizeDemoProducts(readMercadoLivreDemoProducts(), monthly, months, q, "mercadolivre").map((item) => ({ ...item, dataMode: "demo" }));
+      }
+    }
     sendJson(res, 200, {
       ok: true,
       mode: source,
+      dataMode,
       products,
       warning: products.length ? "" : "Nenhum produto encontrado dentro desse orçamento. Tente aumentar o valor mensal ou o número de parcelas.",
     });
@@ -441,6 +526,22 @@ export default function handler(req, res) {
       ok: true,
       products,
       warning: products.length ? "" : "Nenhum produto encontrado dentro desse orçamento. Tente aumentar o valor mensal ou o número de parcelas.",
+    });
+    return;
+  }
+
+  if (pathname === "/api/ml-search-test") {
+    const q = url.searchParams.get("q") || "";
+    const monthly = Number(url.searchParams.get("monthly") || "50");
+    const months = Number(url.searchParams.get("months") || "12");
+    const products = normalizeDemoProducts(readMercadoLivreDemoProducts(), monthly, months, q, "mercadolivre");
+    sendJson(res, 200, {
+      configured: Boolean(process.env.MELI_CLIENT_ID && process.env.MELI_CLIENT_SECRET && process.env.MELI_REDIRECT_URI),
+      authenticated: hasToken(),
+      dataMode: "demo",
+      statusHttp: 200,
+      count: products.length,
+      sample: products.slice(0, 3),
     });
     return;
   }
@@ -585,4 +686,9 @@ export default function handler(req, res) {
 
   sendJson(res, 404, { status: "not_found" });
 }
+
+
+
+
+
 

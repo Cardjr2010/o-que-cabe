@@ -114,7 +114,7 @@ function renderTrips(trips) {
 }
 
 function resolveProductLink(product) {
-  return product.affiliateUrl || product.productUrl || product.url || "#";
+  return product.affiliateUrl || product.productUrl || product.permalink || product.url || "#";
 }
 
 function renderMercadoLivre(products) {
@@ -137,23 +137,26 @@ function renderMercadoLivre(products) {
       const status = product.status || "CABE";
       const score = Number.isFinite(product.score) ? product.score : 0;
       const link = resolveProductLink(product);
+      const dataMode = product.dataMode || "demo";
+      const sourceLabel = dataMode === "real" ? "DADOS REAIS DO MERCADO LIVRE" : "DEMONSTRAÇÃO MERCADO LIVRE";
       return `
         <article class="card">
           <div class="image-box">${productImage(product)}</div>
           <div class="card-body">
-            <span class="store">${product.store}</span>
+            <span class="store">${sourceLabel}</span>
             <h2>${product.title}</h2>
             <p class="small"><strong>Status:</strong> ${status}</p>
             <p class="small"><strong>Score O Que Cabe:</strong> ${score}/100</p>
             <p class="small">${product.condition ? `Condição: ${product.condition}` : ""}</p>
             <p class="small">${product.availableQuantity != null ? `Estoque: ${product.availableQuantity}` : ""}</p>
-            <p class="small">Produto real do Mercado Livre. Link afiliado aplicado apenas quando cadastrado.</p>
+            <p class="small">Preço total: vindo do Mercado Livre. Parcela OQC: estimativa calculada pelo site.</p>
+            <p class="small">Parcela estimada pelo O Que Cabe. Confira frete, juros e parcelamento real na loja.</p>
             <div class="price">
               <div class="small">Preço total</div>
               <div class="installment">${total}</div>
               <div class="small">${installment} · ${currency.format(product.monthlyPrice || 0)}/mês</div>
             </div>
-            <a href="${link}" target="_blank" rel="noopener">Ver produto</a>
+            <a href="${link}" target="_blank" rel="noopener">Ver no Mercado Livre</a>
           </div>
         </article>
       `;
@@ -209,6 +212,12 @@ form.addEventListener("submit", async (event) => {
     }
     if (appView === "home") {
       sourceBadge.textContent = data.mode === "mercadolivre" ? "Mercado Livre" : data.mode === "amazon" ? "Amazon" : data.mode === "magalu" ? "Magalu" : "Demo";
+      if (notice) {
+        notice.hidden = false;
+        notice.textContent = data.dataMode === "real"
+          ? "Produtos reais encontrados no Mercado Livre. Parcelas estimadas pelo O Que Cabe."
+          : "Modo demonstração: ofertas simuladas para testar a experiência.";
+      }
     } else if (appView === "products") {
       sourceBadge.textContent = "DummyJSON";
     } else if (appView === "travel") {

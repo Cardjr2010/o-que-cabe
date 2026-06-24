@@ -57,6 +57,15 @@ Separar a origem dos dados do frontend. O layout continua igual; apenas o adapte
 - a classificação usa `CABE`, `APERTADO` e `NÃO CABE`
 - a ordenação usa primeiro a faixa e depois o maior score
 
+## Mercado Livre no MVP
+
+- quando a busca vem da API do Mercado Livre, o card mostra `DADOS REAIS DO MERCADO LIVRE`
+- quando a vitrine usa base interna, o card mostra `DEMONSTRAÇÃO MERCADO LIVRE`
+- o preço total vem do marketplace quando a resposta é real
+- a parcela exibida pelo O Que Cabe é sempre uma estimativa
+- frete, juros e parcelamento real devem ser conferidos na loja
+- `affiliateUrl` continuará entrando depois, sem refazer o frontend
+
 ## Formato interno de produtos
 
 ```js
