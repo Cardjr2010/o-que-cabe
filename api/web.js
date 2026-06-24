@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const publicDir = path.join(root, "public");
 const oauthPath = path.join(root, "data", "mercadolivre-oauth.json");
+const productsPath = path.join(root, "data", "products.json");
 
 function readJson(filePath, fallback) {
   try {
@@ -54,6 +55,73 @@ function safeJoin(base, target) {
 function hasToken() {
   const data = readJson(oauthPath, null);
   return Boolean(data && data.access_token);
+}
+
+function readProducts() {
+  return readJson(productsPath, []);
+}
+
+function scoreDemoProduct(product, budgetTotal) {
+  let score = 100;
+  if (!product.rating) score -= 10;
+  if (product.rating && product.rating < 4) score -= 15;
+  if (!product.image) score -= 10;
+  if (!product.description || product.description.trim().length < 40) score -= 5;
+  if (product.price_brl > budgetTotal) score -= 30;
+  return Math.max(0, Math.min(100, score));
+}
+
+function classifyFit(price, monthlyBudget, months) {
+  const installment = price / months;
+  if (installment <= monthlyBudget) return "CABE";
+  if (installment <= monthlyBudget * 1.2) return "APERTADO";
+  return "NÃO CABE";
+}
+
+function normalizeDemoProducts(products, monthlyBudget, months, query) {
+  const normalized = products
+    .filter((product) => {
+      if (!query) return true;
+      const text = `${product.title} ${product.category || ""}`.toLowerCase();
+      const q = String(query).toLowerCase();
+      return text.includes(q) || ["celular", "notebook", "tablet", "casa", "presente"].includes(q);
+    })
+    .map((product) => {
+      const price_brl = Number(product.price || 0);
+      const installmentValue = Number(product.installmentValue || (price_brl / (product.installments || months)));
+      const status = classifyFit(price_brl, monthlyBudget, months);
+      return {
+        id: product.id,
+        title: product.title,
+        category: product.category,
+        store: product.store || "Loja de Teste",
+        price: price_brl,
+        image: product.image || "",
+        rating: product.rating ?? null,
+        description: product.riskNote || product.description || "",
+        note: product.riskNote || "Dados de teste — preços simulados.",
+        url: product.url || "#",
+        installments: product.installments || months,
+        installmentValue,
+        status,
+        score: scoreDemoProduct({ ...product, price_brl }, monthlyBudget * months),
+        source: "demo",
+      };
+    })
+    .sort((a, b) => {
+      const rank = { "CABE": 0, "APERTADO": 1, "NÃO CABE": 2 };
+      const byRank = rank[a.status] - rank[b.status];
+      if (byRank !== 0) return byRank;
+      return b.score - a.score;
+    });
+
+  const grouped = { "CABE": [], "APERTADO": [], "NÃO CABE": [] };
+  for (const item of normalized) grouped[item.status].push(item);
+  return [
+    ...grouped["CABE"].slice(0, 8),
+    ...grouped["APERTADO"].slice(0, 4),
+    ...grouped["NÃO CABE"].slice(0, 3),
+  ];
 }
 
 function renderExplorerPage({ title, heading, description, view, badge, endpoint, inputLabel, inputPlaceholder, quickLabel, quickButtons }) {
@@ -212,6 +280,33 @@ export default function handler(req, res) {
 
   if (pathname === "/") {
     send(res, 200, renderHome(), { "Content-Type": "text/html; charset=utf-8" });
+    return;
+  }
+
+  if (pathname === "/api/search") {
+    const q = url.searchParams.get("q") || "";
+    const monthly = Number(url.searchParams.get("monthly") || "50");
+    const months = Number(url.searchParams.get("months") || "12");
+    const products = normalizeDemoProducts(readProducts(), monthly, months, q);
+    sendJson(res, 200, {
+      ok: true,
+      mode: "demo",
+      products,
+      warning: products.length ? "" : "Nenhum produto encontrado dentro desse orçamento. Tente aumentar o valor mensal ou o número de parcelas.",
+    });
+    return;
+  }
+
+  if (pathname === "/api/teste-produtos") {
+    const q = url.searchParams.get("q") || "";
+    const monthly = Number(url.searchParams.get("monthly") || "50");
+    const months = Number(url.searchParams.get("months") || "12");
+    const products = normalizeDemoProducts(readProducts(), monthly, months, q);
+    sendJson(res, 200, {
+      ok: true,
+      products,
+      warning: products.length ? "" : "Nenhum produto encontrado dentro desse orçamento. Tente aumentar o valor mensal ou o número de parcelas.",
+    });
     return;
   }
 
