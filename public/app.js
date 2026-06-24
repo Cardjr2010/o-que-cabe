@@ -178,10 +178,10 @@ function renderMercadoLivre(products) {
       const linkAvailable = hasProductLink(product);
       const dataMode = product.dataMode || "demo";
       const sourceLabel = dataMode === "real" ? "DADOS REAIS DO MERCADO LIVRE" : "DEMONSTRAÇÃO MERCADO LIVRE";
-      const buttonLabel = dataMode === "real" ? "Ver anúncio no Mercado Livre" : "Ver busca no Mercado Livre";
+      const buttonLabel = dataMode === "real" ? "Ver anúncio no Mercado Livre" : "Ver busca parecida no Mercado Livre";
       const transparencyNote = dataMode === "real"
         ? "Dados reais do Mercado Livre. Este botão abre o anúncio retornado pela API."
-        : "Modo demonstração: este card usa busca simulada. O botão abre uma busca no Mercado Livre, não um anúncio filtrado.";
+        : "Exemplo demonstrativo. Preço e disponibilidade devem ser confirmados no Mercado Livre.";
       return `
         <article class="card">
           <div class="image-box">${productImage(product)}</div>
@@ -269,7 +269,7 @@ form.addEventListener("submit", async (event) => {
         notice.hidden = false;
         notice.textContent = data.dataMode === "real"
           ? "Produtos reais encontrados no Mercado Livre. Parcelas estimadas pelo O Que Cabe."
-          : "Modo demonstração: ofertas simuladas para testar a experiência.";
+          : "Estamos em modo demonstração porque a busca real do Mercado Livre ainda não está autorizada.";
       }
     } else if (appView === "products") {
       if (sourceBadge) sourceBadge.textContent = "DummyJSON";
