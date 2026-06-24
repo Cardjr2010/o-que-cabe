@@ -369,6 +369,97 @@ h2 {
   line-height: 1.45;
 }
 
+.oqc-recommendations {
+  grid-column: 1 / -1;
+  margin-bottom: 18px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: #f8fbff;
+}
+
+.oqc-recommendations-title {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.oqc-recommendations-title span {
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.oqc-recommendations-title strong {
+  color: var(--ink);
+  font-size: 18px;
+}
+
+.oqc-recommendation-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.oqc-recommendation {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: white;
+}
+
+.oqc-recommendation-head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.oqc-rank {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #e8f3ff;
+  color: var(--navy);
+  font-weight: 950;
+}
+
+.oqc-recommendation h3 {
+  margin: 14px 0 8px;
+  font-size: 18px;
+}
+
+.oqc-recommendation p {
+  margin: 0 0 8px;
+}
+
+.oqc-recommendation a {
+  margin-top: 12px;
+}
+
+.oqc-breakdown {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fbfdff;
+}
+
+.oqc-breakdown summary {
+  cursor: pointer;
+  font-weight: 850;
+  color: var(--navy);
+}
+
+.oqc-breakdown ul {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  color: var(--muted);
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

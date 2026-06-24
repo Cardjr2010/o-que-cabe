@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Sprint 4
+- Connected `BudgetEngine`, `ScoreEngine`, and `RankingEngine` to the main Mercado Livre search flow.
+- Added recommendation output with ranked picks, grouped results, and score breakdowns.
+- Added integration tests covering the OQC search response and ranking behavior.
+
 ### Sprint 3
 - Added `RankingEngine` as the shared recommendation ordering module.
 - Ranked products by budget status first, then score, with transparent labels and reasons.

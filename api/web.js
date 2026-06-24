@@ -1,6 +1,8 @@
 ﻿import fs from "node:fs";
 import path from "node:path";
 import BudgetEngine from "../src/engines/BudgetEngine.js";
+import ScoreEngine from "../src/engines/ScoreEngine.js";
+import RankingEngine from "../src/engines/RankingEngine.js";
 
 const root = process.cwd();
 const publicDir = path.join(root, "public");
@@ -287,6 +289,60 @@ function normalizeDemoProducts(products, monthlyBudget, months, query, source) {
   ];
 }
 
+function buildOqcBudgetContext({ mode, monthly, months, totalBudget }) {
+  return BudgetEngine.buildBudgetContext({ mode, monthly, months, totalBudget });
+}
+
+function enrichWithOqc(product, context, query) {
+  const price = Number(product.price || 0);
+  const budgetStatus = BudgetEngine.classifyBudgetFit(price, context);
+  const scoreResult = ScoreEngine.evaluateProduct({
+    ...product,
+    title: product.title || "",
+    price,
+    seller: product.seller || {
+      reputation: product.store || product.source || "",
+      rating: product.storeRating ?? product.rating ?? null,
+      sales: product.soldQuantity ?? product.availableQuantity ?? 0,
+    },
+    shippingCost: product.shippingCost ?? product.shipping_cost ?? 0,
+    freeShipping: Boolean(product.freeShipping ?? product.free_shipping ?? false),
+    deliveryDays: product.deliveryDays ?? product.delivery_days ?? 0,
+    warrantyMonths: product.warrantyMonths ?? product.warranty_months ?? 0,
+    brand: product.brand || "",
+    reviewCount: product.reviewCount ?? product.reviewsCount ?? 0,
+    soldQuantity: product.soldQuantity ?? 0,
+    referencePrice: product.referencePrice ?? 0,
+  }, context);
+
+  return {
+    ...product,
+    budgetStatus,
+    status: budgetStatus,
+    score: scoreResult.score,
+    scoreBreakdown: scoreResult.breakdown,
+    scoreExplanation: scoreResult.explanation,
+    searchTerm: query,
+    productUrl: product.productUrl || product.permalink || product.url || "",
+    permalink: product.permalink || product.productUrl || product.url || "",
+  };
+}
+
+function buildOqcResponse({ products, query, mode, monthly, months, totalBudget, dataMode }) {
+  const budget = buildOqcBudgetContext({ mode, monthly, months, totalBudget });
+  const enriched = products.map((product) => enrichWithOqc(product, budget, query));
+  const ranked = RankingEngine.rankProducts(enriched);
+  return {
+    query,
+    mode,
+    budget,
+    dataMode,
+    recommendations: ranked.recommended,
+    groups: ranked.groups,
+    summary: ranked.summary,
+    products: enriched,
+  };
+}
 function renderExplorerPage({ title, heading, description, view, badge, endpoint, inputLabel, inputPlaceholder, quickLabel, quickButtons }) {
   const buttons = quickButtons
     .map((item) => `<button type="button" data-query="${escapeHtml(item.query)}" data-monthly="${item.monthly || 100}" data-months="${item.months || 12}">${escapeHtml(item.label)}</button>`)
@@ -578,6 +634,69 @@ export default async function handler(req, res) {
     return;
   }
 
+  if (pathname === "/api/search") {
+    const q = url.searchParams.get("q") || "";
+    const mode = (url.searchParams.get("mode") || "monthly").toLowerCase();
+    const monthly = Number(url.searchParams.get("monthly") || "50");
+    const months = Number(url.searchParams.get("months") || "12");
+    const totalBudget = Number(url.searchParams.get("totalBudget") || (monthly * months));
+
+    try {
+      const rawResults = await fetchMercadoLivreSearch(q, 20);
+      const realProducts = rawResults.map((item) => {
+        const normalized = normalizeMercadoLivreSearchItem(item, monthly, months);
+        return {
+          ...normalized,
+          dataMode: "real",
+          source: "mercadolivre",
+          store: "Mercado Livre",
+        };
+      }).filter((item) => item.title);
+
+      const demoProducts = normalizeDemoProducts(readMercadoLivreDemoProducts(), monthly, months, q, "mercadolivre").map((item) => ({
+        ...item,
+        dataMode: "demo",
+      }));
+
+      const selectedProducts = realProducts.length ? realProducts : demoProducts;
+      const dataMode = realProducts.length ? "real" : "demo";
+      const response = buildOqcResponse({
+        products: selectedProducts,
+        query: q,
+        mode,
+        monthly,
+        months,
+        totalBudget,
+        dataMode,
+      });
+
+      sendJson(res, 200, {
+        ok: true,
+        ...response,
+        warning: selectedProducts.length ? "" : "Nenhum produto encontrado dentro desse orçamento. Tente aumentar o valor mensal ou o orçamento total.",
+      });
+    } catch (error) {
+      const demoProducts = normalizeDemoProducts(readMercadoLivreDemoProducts(), monthly, months, q, "mercadolivre").map((item) => ({
+        ...item,
+        dataMode: "demo",
+      }));
+      const response = buildOqcResponse({
+        products: demoProducts,
+        query: q,
+        mode,
+        monthly,
+        months,
+        totalBudget,
+        dataMode: "demo",
+      });
+      sendJson(res, 200, {
+        ok: true,
+        ...response,
+        warning: `${error.message || "Falha na busca real"}. Mostrando demonstração por enquanto.`,
+      });
+    }
+    return;
+  }
   if (pathname === "/api/search") {
     const q = url.searchParams.get("q") || "";
     const mode = (url.searchParams.get("mode") || "monthly").toLowerCase();
@@ -937,6 +1056,10 @@ export default async function handler(req, res) {
 
   sendJson(res, 404, { status: "not_found" });
 }
+
+
+
+
 
 
 

@@ -116,6 +116,61 @@ function renderProducts(products) {
     .join("");
 }
 
+function renderBreakdown(breakdown = []) {
+  if (!Array.isArray(breakdown) || !breakdown.length) return "";
+  return `
+    <details class="oqc-breakdown">
+      <summary>Por que o OQC escolheu?</summary>
+      <ul>
+        ${breakdown.map((item) => `<li><strong>${item.factor}:</strong> ${item.earned}/${item.weight} - ${item.reason}</li>`).join("")}
+      </ul>
+    </details>
+  `;
+}
+
+function resolveButtonLabel(product) {
+  const dataMode = product.dataMode || "demo";
+  const hasLink = hasProductLink(product);
+  if (!hasLink) return "Link indisponível";
+  return dataMode === "real" ? "Ver anúncio no Mercado Livre" : "Ver busca parecida no Mercado Livre";
+}
+
+function renderRecommendationBlock(recommendations = []) {
+  if (!Array.isArray(recommendations) || !recommendations.length) return "";
+  const items = recommendations.slice(0, 3).map((item) => {
+    const product = item.product || {};
+    const dataMode = product.dataMode || "demo";
+    const link = resolveProductLink(product);
+    const hasLink = hasProductLink(product);
+    return `
+      <article class="oqc-recommendation">
+        <div class="oqc-recommendation-head">
+          <span class="oqc-rank">${item.rank}º</span>
+          <div>
+            <strong>${item.label}</strong>
+            <p>${item.reason}</p>
+          </div>
+        </div>
+        <h3>${product.title || "Produto"}</h3>
+        <p class="small">${product.status || product.budgetStatus || "CABE"} · Score ${Number.isFinite(product.score) ? product.score : 0}/100</p>
+        <p class="small">${formatPrice(product.price)}</p>
+        <p class="small">${product.scoreExplanation || ""}</p>
+        ${renderBreakdown(product.scoreBreakdown)}
+        ${hasLink ? `<a href="${link}" target="_blank" rel="noopener">${resolveButtonLabel(product)}</a>` : `<a class="disabled" href="javascript:void(0)" role="button" aria-disabled="true">Link indisponível</a>`}
+      </article>
+    `;
+  }).join("");
+  return `
+    <section class="oqc-recommendations">
+      <div class="oqc-recommendations-title">
+        <span>Recomendação OQC</span>
+        <strong>Melhor escolha, boa alternativa e opção econômica</strong>
+      </div>
+      <div class="oqc-recommendation-grid">${items}</div>
+    </section>
+  `;
+}
+
 function renderTrips(trips) {
   if (!trips.length) {
     results.innerHTML = `
@@ -157,16 +212,15 @@ function hasProductLink(product) {
 
 function renderMercadoLivre(products) {
   if (!products.length) {
-    results.innerHTML = `
+    return `
       <article class="empty-state">
         <strong>Nenhum produto encontrado</strong>
         <span>Tente outra categoria ou ajuste o orçamento.</span>
       </article>
     `;
-    return;
   }
 
-  results.innerHTML = products
+  return products
     .map((product) => {
       const total = formatPrice(product.price);
       const installment = Number.isFinite(product.installmentValue) && product.installmentValue > 0
@@ -178,7 +232,7 @@ function renderMercadoLivre(products) {
       const linkAvailable = hasProductLink(product);
       const dataMode = product.dataMode || "demo";
       const sourceLabel = dataMode === "real" ? "DADOS REAIS DO MERCADO LIVRE" : "DEMONSTRAÇÃO MERCADO LIVRE";
-      const buttonLabel = dataMode === "real" ? "Ver anúncio no Mercado Livre" : "Ver busca parecida no Mercado Livre";
+      const buttonLabel = resolveButtonLabel(product);
       const transparencyNote = dataMode === "real"
         ? "Dados reais do Mercado Livre. Este botão abre o anúncio retornado pela API."
         : "Exemplo demonstrativo. Preço e disponibilidade devem ser confirmados no Mercado Livre.";
@@ -195,6 +249,7 @@ function renderMercadoLivre(products) {
             <p class="small">Preço total: vindo do Mercado Livre. Parcela OQC: estimativa calculada pelo site.</p>
             <p class="small">Parcela estimada pelo O Que Cabe. Confira frete, juros e parcelamento real na loja.</p>
             <p class="small">${transparencyNote}</p>
+            ${renderBreakdown(product.scoreBreakdown)}
             <div class="price">
               <div class="small">Preço total</div>
               <div class="installment">${total}</div>
@@ -291,7 +346,9 @@ form.addEventListener("submit", async (event) => {
     if (appView === "travel") {
       renderTrips(data.trips || []);
     } else if (appView === "mercadolivre") {
-      renderMercadoLivre(data.products || []);
+      const recommendations = renderRecommendationBlock(data.recommendations || []);
+      const list = renderMercadoLivre(data.products || []);
+      results.innerHTML = `${recommendations}${list}`;
     } else {
       renderProducts(data.products || []);
     }
