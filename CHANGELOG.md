@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Sprint 3
+- Added `RankingEngine` as the shared recommendation ordering module.
+- Ranked products by budget status first, then score, with transparent labels and reasons.
+- Added automated tests for CABE/APERTADO/NÃO CABE ordering, link-based tie-breaking, and demo labeling.
+
 ### Sprint 2
 - Added `ScoreEngine` as the shared trust scoring module.
 - Aligned scoring weights with the OQC Trust Framework and exposed a transparent breakdown for every score.
