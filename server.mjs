@@ -6,6 +6,7 @@ import { URL, pathToFileURL } from "node:url";
 import dummyJsonAdapter from "./src/adapters/products.dummyjson.js";
 import mercadolivreAdapter from "./src/adapters/products.mercadolivre.js";
 import travelMockAdapter from "./src/adapters/travel.mock.js";
+import BudgetEngine from "./src/engines/BudgetEngine.js";
 
 const root = process.cwd();
 const envPath = path.join(root, ".env");
@@ -426,17 +427,9 @@ function scoreMercadoLivreProduct(product, budgetTotal, monthlyBudget) {
   return Math.max(0, Math.min(100, score));
 }
 
-function classifyMercadoLivreProduct(price, monthlyBudget, months) {
-  const monthlyPrice = price / months;
-  const limitTotal = monthlyBudget * months;
-  const limitApertado = limitTotal * 1.2;
-  if (price <= limitTotal) return "CABE";
-  if (price <= limitApertado) return "APERTADO";
-  return "NÃO CABE";
-}
-
 async function loadMercadoLivreManualProducts(monthlyBudget, months, category) {
   const items = await mercadolivreAdapter.loadManualMercadoLivreProducts();
+  const budgetContext = BudgetEngine.buildBudgetContext({ mode: "total", monthly: monthlyBudget, months, totalBudget: monthlyBudget * months });
   const normalized = items
     .filter((item) => item && !item.error)
     .filter((item) => {
@@ -445,8 +438,8 @@ async function loadMercadoLivreManualProducts(monthlyBudget, months, category) {
     })
     .map((item) => {
       const price = Number(item.price || 0);
-      const monthlyPrice = price / months;
-      const status = classifyMercadoLivreProduct(price, monthlyBudget, months);
+      const monthlyPrice = BudgetEngine.calculateMonthlyPrice(price, months);
+      const status = BudgetEngine.classifyBudgetFit(price, budgetContext);
       return {
         ...item,
         price,
@@ -457,23 +450,13 @@ async function loadMercadoLivreManualProducts(monthlyBudget, months, category) {
       };
     });
 
-  const grouped = { "CABE": [], "APERTADO": [], "NÃO CABE": [] };
-  for (const item of normalized) {
-    grouped[item.status].push(item);
-  }
-  for (const key of Object.keys(grouped)) {
-    grouped[key].sort((a, b) => b.score - a.score);
-  }
-  return [
-    ...grouped["CABE"].slice(0, 8),
-    ...grouped["APERTADO"].slice(0, 4),
-    ...grouped["NÃO CABE"].slice(0, 3),
-  ];
+  return BudgetEngine.limitBudgetResults(normalized);
 }
 
 async function loadMercadoLivreManualProductsDetailed(monthlyBudget, months, category) {
   const items = await mercadolivreAdapter.loadManualMercadoLivreProducts();
   const errors = items.filter((item) => item.error).map((item) => ({ id: item.id, title: item.title, error: item.error }));
+  const budgetContext = BudgetEngine.buildBudgetContext({ mode: "total", monthly: monthlyBudget, months, totalBudget: monthlyBudget * months });
   const normalized = items
     .filter((item) => item && !item.error)
     .filter((item) => {
@@ -482,8 +465,8 @@ async function loadMercadoLivreManualProductsDetailed(monthlyBudget, months, cat
     })
     .map((item) => {
       const price = Number(item.price || 0);
-      const monthlyPrice = price / months;
-      const status = classifyMercadoLivreProduct(price, monthlyBudget, months);
+      const monthlyPrice = BudgetEngine.calculateMonthlyPrice(price, months);
+      const status = BudgetEngine.classifyBudgetFit(price, budgetContext);
       return {
         ...item,
         price,
@@ -494,18 +477,7 @@ async function loadMercadoLivreManualProductsDetailed(monthlyBudget, months, cat
       };
     });
 
-  const grouped = { "CABE": [], "APERTADO": [], "NÃO CABE": [] };
-  for (const item of normalized) {
-    grouped[item.status].push(item);
-  }
-  for (const key of Object.keys(grouped)) {
-    grouped[key].sort((a, b) => b.score - a.score);
-  }
-  const products = [
-    ...grouped["CABE"].slice(0, 8),
-    ...grouped["APERTADO"].slice(0, 4),
-    ...grouped["NÃO CABE"].slice(0, 3),
-  ];
+  const products = BudgetEngine.limitBudgetResults(normalized);
   return { products, errors };
 }
 
@@ -526,6 +498,7 @@ async function fetchMercadoLivreByUrl(url, monthlyBudget, months) {
     const item = await mercadolivreAdapter.fetchMercadoLivreItemById(itemId);
     const price = Number(item.price || 0);
     const affiliateUrl = linkMatch?.affiliateUrl || null;
+    const budgetContext = BudgetEngine.buildBudgetContext({ mode: "total", monthly: monthlyBudget, months, totalBudget: monthlyBudget * months });
     const product = {
       id: item.id,
       title: item.title,
@@ -541,8 +514,8 @@ async function fetchMercadoLivreByUrl(url, monthlyBudget, months) {
       availableQuantity: item.available_quantity,
       condition: item.condition,
       lastChecked: new Date().toISOString(),
-      monthlyPrice: Math.round((price / months) * 100) / 100,
-      status: classifyMercadoLivreProduct(price, monthlyBudget, months),
+      monthlyPrice: Math.round(BudgetEngine.calculateMonthlyPrice(price, months) * 100) / 100,
+      status: BudgetEngine.classifyBudgetFit(price, budgetContext),
       score: scoreMercadoLivreProduct(
         {
           price,

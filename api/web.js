@@ -1,5 +1,6 @@
 ﻿import fs from "node:fs";
 import path from "node:path";
+import BudgetEngine from "../src/engines/BudgetEngine.js";
 
 const root = process.cwd();
 const publicDir = path.join(root, "public");
@@ -185,11 +186,9 @@ function scoreDemoProduct(product, budgetTotal) {
   return Math.max(0, Math.min(100, score));
 }
 
-function classifyFit(price, monthlyBudget, months) {
-  const installment = price / months;
-  if (installment <= monthlyBudget) return "CABE";
-  if (installment <= monthlyBudget * 1.2) return "APERTADO";
-  return "NÃO CABE";
+function classifyFit(price, monthlyBudget, months, mode = "monthly", totalBudget = 0) {
+  const context = BudgetEngine.buildBudgetContext({ mode, monthly: monthlyBudget, months, totalBudget });
+  return BudgetEngine.classifyBudgetFit(price, context);
 }
 
 function normalizeDemoProducts(products, monthlyBudget, months, query, source) {
@@ -200,7 +199,7 @@ function normalizeDemoProducts(products, monthlyBudget, months, query, source) {
       exclude: ["air fryer", "câmera", "camera", "notebook", "tablet", "casa"],
     },
     tv: {
-      include: ["tv", "televisao", "televis�o", "smart tv", "smarttv", "oled", "qled", "roku"],
+      include: ["tv", "televisao", "televis?o", "smart tv", "smarttv", "oled", "qled", "roku"],
       exclude: ["celular", "smartphone", "notebook", "tablet", "casa", "presente"],
     },
     relogio: {
@@ -938,6 +937,10 @@ export default async function handler(req, res) {
 
   sendJson(res, 404, { status: "not_found" });
 }
+
+
+
+
 
 
 
