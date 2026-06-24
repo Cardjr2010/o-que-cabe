@@ -115,5 +115,57 @@
     "image": "",
     "url": "https://www.mercadolivre.com.br",
     "riskNote": "Oferta demo Mercado Livre para busca de presente."
+  },
+  {
+    "id": "ml-tv-samsung-crystal",
+    "title": "Samsung Crystal TV 50\"",
+    "category": "tv",
+    "store": "Mercado Livre",
+    "source": "mercadolivre",
+    "price": 1899,
+    "installments": 12,
+    "installmentValue": 158.25,
+    "image": "",
+    "url": "https://www.mercadolivre.com.br",
+    "riskNote": "Oferta demo Mercado Livre para busca de tv."
+  },
+  {
+    "id": "ml-tv-lg-43",
+    "title": "LG Smart TV 43\"",
+    "category": "tv",
+    "store": "Mercado Livre",
+    "source": "mercadolivre",
+    "price": 1599,
+    "installments": 12,
+    "installmentValue": 133.25,
+    "image": "",
+    "url": "https://www.mercadolivre.com.br",
+    "riskNote": "Oferta demo Mercado Livre para busca de tv."
+  },
+  {
+    "id": "ml-relogio-galaxy-watch",
+    "title": "Samsung Galaxy Watch",
+    "category": "relogio",
+    "store": "Mercado Livre",
+    "source": "mercadolivre",
+    "price": 899,
+    "installments": 10,
+    "installmentValue": 89.9,
+    "image": "",
+    "url": "https://www.mercadolivre.com.br",
+    "riskNote": "Oferta demo Mercado Livre para busca de relógio."
+  },
+  {
+    "id": "ml-smartwatch-motorola",
+    "title": "Motorola Smartwatch",
+    "category": "relogio",
+    "store": "Mercado Livre",
+    "source": "mercadolivre",
+    "price": 499,
+    "installments": 10,
+    "installmentValue": 49.9,
+    "image": "",
+    "url": "https://www.mercadolivre.com.br",
+    "riskNote": "Oferta demo Mercado Livre para busca de relógio."
   }
 ]

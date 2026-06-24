@@ -125,6 +125,14 @@ function normalizeDemoProducts(products, monthlyBudget, months, query, source) {
       include: ["celular", "smartphone", "galaxy", "moto", "redmi", "iphone"],
       exclude: ["air fryer", "câmera", "camera", "notebook", "tablet", "casa"],
     },
+    tv: {
+      include: ["tv", "televisao", "televis�o", "smart tv", "smarttv", "oled", "qled", "roku"],
+      exclude: ["celular", "smartphone", "notebook", "tablet", "casa", "presente"],
+    },
+    relogio: {
+      include: ["relógio", "relogio", "smartwatch", "watch", "pulseira inteligente"],
+      exclude: ["celular", "smartphone", "notebook", "tablet", "casa", "presente"],
+    },
     notebook: {
       include: ["notebook", "laptop", "ultrabook", "ideapad", "thinkpad"],
       exclude: ["celular", "smartphone", "tablet", "casa", "presente"],
@@ -686,6 +694,7 @@ export default async function handler(req, res) {
 
   sendJson(res, 404, { status: "not_found" });
 }
+
 
 
 
