@@ -30,10 +30,10 @@
           <p>Seu orçamento. Sua escolha. Sem complicação.</p>
         </div>
 
-        <form id="searchForm" class="search-card">
+        <form id="searchForm" class="search-card" data-mode="monthly">
           <div class="mode-tabs" aria-label="Tipo de orçamento">
-            <button class="active" type="button">Orçamento Mensal</button>
-            <button type="button">Orçamento Total</button>
+            <button class="active" type="button" data-mode="monthly">Orçamento Mensal</button>
+            <button type="button" data-mode="total">Orçamento Total</button>
           </div>
           <div class="field field-product">
             <label for="productInput">O que procura?</label>
@@ -43,13 +43,13 @@
             </div>
           </div>
           <div class="field">
-            <label for="monthlyInput">Máx. mensal</label>
+            <label for="monthlyInput" id="monthlyLabel">Máx. mensal</label>
             <div class="money-input">
               <span>R$</span>
               <input id="monthlyInput" name="monthly" type="number" min="1" step="1" value="50" required />
             </div>
           </div>
-          <div class="field">
+          <div class="field" id="monthsField">
             <label for="monthsInput">Prazo</label>
             <select id="monthsInput" name="months">
               <option value="3">3x</option>
@@ -58,6 +58,13 @@
               <option value="12" selected>12x</option>
               <option value="24">24x</option>
             </select>
+          </div>
+          <div class="field" id="totalField" hidden>
+            <label for="totalBudgetInput">Orçamento total</label>
+            <div class="money-input">
+              <span>R$</span>
+              <input id="totalBudgetInput" name="totalBudget" type="number" min="1" step="1" value="500" disabled />
+            </div>
           </div>
           <button class="submit-button" type="submit">Descobrir</button>
         </form>
@@ -69,8 +76,9 @@
               <p class="panel-label">Seu teto estimado: <strong id="budgetTotal">R$ 600,00</strong> <span id="budgetLine">R$ 50,00 por mês em até 12x</span></p>
               <h2 id="summaryTitle">Faça uma busca para começar</h2>
             </div>
-            <span class="source-badge" id="sourceBadge">local</span>
+            <span class="source-badge" id="sourceBadge">Mercado Livre</span>
           </div>
+          <p class="marketline" id="marketline">Seu teto estimado: R$ 600, considerando R$ 50 por mês em até 12x.</p>
 
           <div class="notice" id="notice" hidden></div>
           <div class="grid" id="results">
@@ -104,19 +112,17 @@
             <h3>Para Casa</h3>
             <p>Achadinhos úteis</p>
           </article>
+          <article>
+            <div class="category-icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg></div>
+            <h3>TVs</h3>
+            <p>Mensal até R$ 200</p>
+          </article>
+          <article>
+            <div class="category-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></div>
+            <h3>Relógios</h3>
+            <p>Até R$ 300 total</p>
+          </article>
         </div>
-      </section>
-
-      <section class="collection">
-        <div>
-          <p class="panel-label">Apoio rápido</p>
-          <h2>Mais vendidos da Amazon</h2>
-          <p>Use essa vitrine como ponto de partida. Quando o produto entra na base, aí sim o site calcula parcela, orçamento e valor total.</p>
-        </div>
-        <a href="/amazon-mais-vendidos" class="collection-card">
-          <strong>Ver lista de mais vendidos</strong>
-          <span>Link afiliado pronto para abrir a vitrine da Amazon.</span>
-        </a>
       </section>
 
       <section class="how">
@@ -135,7 +141,7 @@
           <article>
             <div><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z"/><path d="m8 12 2 2 5-5"/></svg></div>
             <h3>3. Compra segura</h3>
-            <p>Direcionamos você apenas para lojas conhecidas, como Amazon, Magalu e Mercado Livre.</p>
+            <p>Direcionamos você apenas para lojas conhecidas, com foco no Mercado Livre durante o MVP.</p>
           </article>
         </div>
       </section>
