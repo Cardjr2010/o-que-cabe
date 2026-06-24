@@ -237,7 +237,9 @@ form.addEventListener("submit", async (event) => {
       apiStatus.style.color = data.dataMode === "real" ? "#12805c" : "#a15c00";
     }
     if (appView === "home") {
-      sourceBadge.textContent = data.dataMode === "real" ? "DADOS REAIS DO MERCADO LIVRE" : "DEMONSTRAÇÃO MERCADO LIVRE";
+      if (sourceBadge) {
+        sourceBadge.textContent = data.dataMode === "real" ? "DADOS REAIS DO MERCADO LIVRE" : "DEMONSTRAÇÃO MERCADO LIVRE";
+      }
       if (notice) {
         notice.hidden = false;
         notice.textContent = data.dataMode === "real"
@@ -245,9 +247,9 @@ form.addEventListener("submit", async (event) => {
           : "Modo demonstração: ofertas simuladas para testar a experiência.";
       }
     } else if (appView === "products") {
-      sourceBadge.textContent = "DummyJSON";
+      if (sourceBadge) sourceBadge.textContent = "DummyJSON";
     } else if (appView === "travel") {
-      sourceBadge.textContent = "Viagem mock";
+      if (sourceBadge) sourceBadge.textContent = "Viagem mock";
     }
 
     summaryTitle.textContent = `Ofertas para ${product}`;
