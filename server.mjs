@@ -7,10 +7,13 @@ import dummyJsonAdapter from "./src/adapters/products.dummyjson.js";
 import mercadolivreAdapter from "./src/adapters/products.mercadolivre.js";
 import travelMockAdapter from "./src/adapters/travel.mock.js";
 import BudgetEngine from "./src/engines/BudgetEngine.js";
+import ScoreEngine from "./src/engines/ScoreEngine.js";
+import RankingEngine from "./src/engines/RankingEngine.js";
 
 const root = process.cwd();
 const envPath = path.join(root, ".env");
 const productsPath = path.join(root, "data", "products.json");
+const mercadolivreDemoPath = path.join(root, "data", "mercadolivre-demo-products.json");
 const mlLinksPath = path.join(root, "data", "mercadolivre-links.json");
 const seoPagesPath = path.join(root, "data", "seo-pages.json");
 const mlDebugReportPath = path.join(root, "RELATORIO_MERCADOLIVRE_403.md");
@@ -182,6 +185,186 @@ function manualProducts() {
     note: product.riskNote || "Conferir preco, frete e parcelamento na loja.",
     source: "manual",
   }));
+}
+
+function readMercadoLivreDemoProducts() {
+  return readJson(mercadolivreDemoPath, []);
+}
+
+function matchesCategoryQuery(query, product) {
+  const q = String(query || "").trim().toLowerCase();
+  const text = `${product.title || ""} ${product.category || ""}`.toLowerCase();
+  const rules = {
+    celular: {
+      include: ["celular", "smartphone", "galaxy", "moto", "redmi", "iphone"],
+      exclude: ["air fryer", "câmera", "camera", "notebook", "tablet", "casa"],
+    },
+    tv: {
+      include: ["tv", "televisao", "televisão", "smart tv", "smarttv", "oled", "qled", "roku"],
+      exclude: ["celular", "smartphone", "notebook", "tablet", "casa", "presente"],
+    },
+    relogio: {
+      include: ["relógio", "relogio", "smartwatch", "watch", "pulseira inteligente"],
+      exclude: ["celular", "smartphone", "notebook", "tablet", "casa", "presente"],
+    },
+    notebook: {
+      include: ["notebook", "laptop", "ultrabook", "ideapad", "thinkpad", "vivobook", "aspire"],
+      exclude: ["celular", "smartphone", "tablet", "casa", "presente"],
+    },
+    presente: {
+      include: ["presente", "kit", "caneca", "bloco", "acessório", "acessorio"],
+      exclude: ["celular", "smartphone", "notebook", "tablet"],
+    },
+    casa: {
+      include: ["casa", "air fryer", "fritadeira", "aspirador", "cozinha"],
+      exclude: ["celular", "smartphone", "notebook", "tablet"],
+    },
+  };
+  const rule = rules[q];
+  if (!q) return true;
+  if (rule) {
+    return rule.include.some((term) => text.includes(term)) && !rule.exclude.some((term) => text.includes(term));
+  }
+  return text.includes(q);
+}
+
+function buildButtonLabel(product) {
+  if (!product || !product.url && !product.permalink && !product.productUrl && !product.affiliateUrl) {
+    return "Link indisponível";
+  }
+  return String(product.dataMode || "demo").toLowerCase() === "real"
+    ? "Abrir anúncio"
+    : "Ver busca parecida";
+}
+
+function buildOqcRecommendationText(product) {
+  const mode = String(product.dataMode || "demo").toLowerCase();
+  const status = product.status || product.budgetStatus || "CABE";
+  const statusText = status === "CABE" ? "cabe no orçamento" : status === "APERTADO" ? "cabe, mas está apertado" : "fica acima do orçamento";
+  if (mode === "real") {
+    return `É um resultado real do Mercado Livre. Este item ${statusText}.`;
+  }
+  return `É uma demonstração do OQC. Este exemplo ${statusText}.`;
+}
+
+function buildSearchBudgetContext({ mode, monthly, months, totalBudget }) {
+  return BudgetEngine.buildBudgetContext({ mode, monthly, months, totalBudget });
+}
+
+function normalizeSearchProduct(product = {}, dataMode = "demo", query = "") {
+  const title = product.title || product.name || "Produto";
+  const price = Number(product.price || product.totalPrice || 0);
+  const productUrl = product.productUrl || product.permalink || product.url || "";
+  const permalink = product.permalink || product.productUrl || product.url || "";
+  const image = product.image || product.thumbnail || "";
+  return {
+    ...product,
+    title,
+    price,
+    image,
+    productUrl,
+    permalink,
+    url: product.url || product.productUrl || product.permalink || "",
+    source: product.source || "mercadolivre",
+    store: product.store || "Mercado Livre",
+    dataMode,
+    searchTerm: query,
+  };
+}
+
+function enrichSearchProduct(product, budgetContext, query, dataMode) {
+  const normalized = normalizeSearchProduct(product, dataMode, query);
+  const price = Number(normalized.price || 0);
+  const budgetStatus = BudgetEngine.classifyBudgetFit(price, budgetContext);
+  const scoreResult = ScoreEngine.evaluateProduct({
+    ...normalized,
+    seller: normalized.seller || {
+      reputation: normalized.store || normalized.source || "",
+      rating: normalized.rating ?? null,
+      sales: normalized.soldQuantity ?? normalized.availableQuantity ?? 0,
+    },
+    shippingCost: normalized.shippingCost ?? normalized.shipping_cost ?? 0,
+    freeShipping: Boolean(normalized.freeShipping ?? normalized.free_shipping ?? false),
+    deliveryDays: normalized.deliveryDays ?? normalized.delivery_days ?? 0,
+    warrantyMonths: normalized.warrantyMonths ?? normalized.warranty_months ?? 0,
+    brand: normalized.brand || "",
+    reviewCount: normalized.reviewCount ?? normalized.reviewsCount ?? 0,
+    soldQuantity: normalized.soldQuantity ?? 0,
+    referencePrice: normalized.referencePrice ?? 0,
+  }, budgetContext);
+
+  return {
+    ...normalized,
+    budgetStatus,
+    status: budgetStatus,
+    monthlyPrice: Math.round(BudgetEngine.calculateMonthlyPrice(price, budgetContext.months) * 100) / 100,
+    score: scoreResult.score,
+    scoreBreakdown: scoreResult.breakdown,
+    scoreExplanation: scoreResult.explanation,
+  };
+}
+
+function buildOqcSearchResponse({ products, query, mode, monthly, months, totalBudget, dataMode }) {
+  const budget = buildSearchBudgetContext({ mode, monthly, months, totalBudget });
+  const enriched = BudgetEngine.limitBudgetResults(
+    products.map((product) => enrichSearchProduct(product, budget, query, dataMode))
+  );
+  const ranked = RankingEngine.rankProducts(enriched);
+  return {
+    ok: true,
+    query,
+    mode: budget.mode,
+    budget,
+    dataMode,
+    recommendations: ranked.recommended,
+    groups: ranked.groups,
+    summary: ranked.summary,
+    products: enriched,
+  };
+}
+
+function mapMercadoLivreSearchItem(item = {}) {
+  return {
+    id: item.id,
+    title: item.title || "Produto Mercado Livre",
+    category: item.category_id || "",
+    store: "Mercado Livre",
+    price: item.price,
+    image: item.thumbnail || item.pictures?.[0]?.url || "",
+    rating: item.rating ?? null,
+    description: item.title || "",
+    productUrl: item.permalink || "",
+    permalink: item.permalink || "",
+    affiliateUrl: null,
+    source: "mercadolivre",
+    availableQuantity: item.available_quantity,
+    condition: item.condition,
+    soldQuantity: item.sold_quantity ?? 0,
+    dataMode: "real",
+  };
+}
+
+async function fetchMercadoLivreSearch(query) {
+  const response = await fetch(`https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(query)}`, {
+    headers: {
+      Accept: "application/json",
+      "User-Agent": "OQueCabe/1.0",
+    },
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(body.message || body.error || body.error_description || `HTTP ${response.status}`);
+    error.status = response.status;
+    error.body = body;
+    throw error;
+  }
+  return Array.isArray(body.results) ? body.results : [];
+}
+
+function demoProductsForQuery(query) {
+  const normalized = String(query || "").trim().toLowerCase();
+  const items = readMercadoLivreDemoProducts();
+  return items.filter((item) => matchesCategoryQuery(normalized, item));
 }
 
 function seoPages() {
@@ -933,28 +1116,60 @@ export async function requestHandler(req, res) {
 
   if (requestUrl.pathname === "/api/search") {
     const query = requestUrl.searchParams.get("q") || "";
-    const maxMonthly = Number(requestUrl.searchParams.get("monthly") || "0");
-    const maxInstallments = Number(requestUrl.searchParams.get("months") || "12");
+    const mode = String(requestUrl.searchParams.get("mode") || "monthly").toLowerCase() === "total" ? "total" : "monthly";
+    const monthly = Number(requestUrl.searchParams.get("monthly") || "0");
+    const months = Number(requestUrl.searchParams.get("months") || "12");
+    const totalBudgetParam = Number(requestUrl.searchParams.get("totalBudget") || "0");
+    const totalBudget = mode === "total" ? (totalBudgetParam > 0 ? totalBudgetParam : monthly * months) : monthly * months;
 
-    if (!query || !maxMonthly) {
-      sendJson(res, 400, { ok: false, message: "Informe produto e valor mensal." });
+    if (!query) {
+      sendJson(res, 400, { ok: false, message: "Informe o produto." });
       return;
     }
 
     try {
-      const products = await searchAmazon({ query, maxMonthly, maxInstallments });
-      sendJson(res, 200, {
-        ok: true,
-        mode: "amazon",
-        products,
-        warning: products.length ? "" : "A Amazon respondeu, mas nenhum produto coube nesse filtro.",
+      const realProducts = [];
+      try {
+        const results = await fetchMercadoLivreSearch(query);
+        for (const item of results.slice(0, 24)) {
+          realProducts.push(mapMercadoLivreSearchItem(item));
+        }
+      } catch (error) {
+        realProducts.length = 0;
+      }
+
+      const sourceProducts = realProducts.length ? realProducts : demoProductsForQuery(query);
+      const dataMode = realProducts.length ? "real" : "demo";
+      const response = buildOqcSearchResponse({
+        products: sourceProducts,
+        query,
+        mode,
+        monthly,
+        months,
+        totalBudget,
+        dataMode,
       });
+
+      if (!realProducts.length && !sourceProducts.length) {
+        response.warning = "Não encontramos exemplo demonstrativo confiável para este orçamento.";
+      } else if (dataMode === "demo") {
+        response.warning = "Modo demonstração: estes exemplos mostram como o OQC classifica produtos. Preços e disponibilidade devem ser confirmados no Mercado Livre.";
+      }
+
+      sendJson(res, 200, response);
     } catch (error) {
       sendJson(res, 200, {
         ok: true,
-        mode: "demo",
-        products: searchDemo({ query, maxMonthly, maxInstallments }),
-        warning: `${error.message}. Mostrando dados de demonstração por enquanto.`,
+        query,
+        mode,
+        budget: buildSearchBudgetContext({ mode, monthly, months, totalBudget }),
+        dataMode: "demo",
+        recommendations: [],
+        groups: { "CABE": [], "APERTADO": [], "NÃO CABE": [] },
+        summary: "Modo demonstração temporário.",
+        products: [],
+        warning: "Não encontramos exemplo demonstrativo confiável para este orçamento.",
+        error: error.message,
       });
     }
     return;

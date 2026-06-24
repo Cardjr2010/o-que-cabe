@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
 import handler from "../api/web.js";
 import RankingEngine from "../src/engines/RankingEngine.js";
 
@@ -45,6 +47,57 @@ test("Busca demo retorna recommendations e scoreBreakdown", async () => {
     assert.ok(Array.isArray(body.products));
     assert.ok(body.products.every((product) => Array.isArray(product.scoreBreakdown)));
     assert.ok(body.recommendations.every((item) => typeof item.reason === "string" && item.reason.length > 0));
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test("Modo total responde 200 e preserva totalBudget", async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async () => {
+    throw new Error("offline");
+  };
+
+  try {
+    const req = { url: "/api/search?q=tv&mode=total&totalBudget=500" };
+    const res = createResponse();
+    await handler(req, res);
+    const body = JSON.parse(res.body);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(body.ok, true);
+    assert.equal(body.mode, "total");
+    assert.equal(body.budget.totalBudget, 500);
+    assert.ok(Array.isArray(body.products));
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test("Demo mantém categorias coerentes por busca", async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async () => {
+    throw new Error("offline");
+  };
+
+  try {
+    const cases = [
+      { url: "/api/search?q=celular&mode=total&totalBudget=1500", matcher: /celular|smartphone|galaxy|moto|redmi|iphone/i, reject: /tv|notebook|tablet|casa|presente|relogio|relógio|air fryer/i },
+      { url: "/api/search?q=tv&mode=total&totalBudget=500", matcher: /tv|televis/i, reject: /celular|smartphone|notebook|tablet|presente|relogio|relógio/i },
+      { url: "/api/search?q=notebook&mode=monthly&monthly=250&months=10", matcher: /notebook|laptop|vivobook|ideapad|aspire/i, reject: /tv|celular|smartphone|tablet/i },
+    ];
+
+    for (const testCase of cases) {
+      const res = createResponse();
+      await handler({ url: testCase.url }, res);
+      const body = JSON.parse(res.body);
+
+      assert.equal(res.statusCode, 200);
+      assert.equal(body.dataMode, "demo");
+      assert.ok(body.products.length > 0);
+      assert.ok(body.products.every((product) => testCase.matcher.test(`${product.title} ${product.category || ""}`)));
+      assert.ok(body.products.every((product) => !testCase.reject.test(`${product.title} ${product.category || ""}`)));
+    }
   } finally {
     global.fetch = originalFetch;
   }
@@ -157,4 +210,11 @@ test("Demo não usa anúncio real no link", async () => {
   } finally {
     global.fetch = originalFetch;
   }
+});
+
+test("Texto do botão demo e real permanece claro", () => {
+  const appJs = fs.readFileSync(path.join(process.cwd(), "public", "app.js"), "utf8");
+  assert.match(appJs, /Abrir anúncio/);
+  assert.match(appJs, /Ver busca parecida/);
+  assert.match(appJs, /Link indisponível/);
 });

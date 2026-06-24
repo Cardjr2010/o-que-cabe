@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Sprint 6
+- Fixed the local search flow to accept `mode=total` with `totalBudget` only and keep the API on HTTP 200 for trust-building flows.
+- Tightened Mercado Livre demo fallback relevance so categories stay coherent and the demo messages stay honest.
+- Simplified product and recommendation button labels to make real versus demo destinations clearer in the MVP.
+- Added automated checks for total mode stability, category coherence, and the current CTA labels.
+
 ### Sprint 4
 - Connected `BudgetEngine`, `ScoreEngine`, and `RankingEngine` to the main Mercado Livre search flow.
 - Added recommendation output with ranked picks, grouped results, and score breakdowns.

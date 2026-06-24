@@ -132,7 +132,7 @@ function resolveButtonLabel(product) {
   const dataMode = product.dataMode || "demo";
   const hasLink = hasProductLink(product);
   if (!hasLink) return "Link indisponível";
-  return dataMode === "real" ? "Ver anúncio no Mercado Livre" : "Ver busca parecida no Mercado Livre";
+  return dataMode === "real" ? "Abrir anúncio" : "Ver busca parecida";
 }
 
 function renderRecommendationBlock(recommendations = []) {
@@ -154,7 +154,7 @@ function renderRecommendationBlock(recommendations = []) {
         <h3>${product.title || "Produto"}</h3>
         <p class="small">${product.status || product.budgetStatus || "CABE"} · Score ${Number.isFinite(product.score) ? product.score : 0}/100</p>
         <p class="small">${formatPrice(product.price)}</p>
-        <p class="small">${product.scoreExplanation || ""}</p>
+        <p class="small">${product.dataMode === "real" ? "Dados reais do Mercado Livre." : "Modo demonstração."} ${product.status || product.budgetStatus || "CABE"} no orçamento.</p>
         ${renderBreakdown(product.scoreBreakdown)}
         ${hasLink ? `<a href="${link}" target="_blank" rel="noopener">${resolveButtonLabel(product)}</a>` : `<a class="disabled" href="javascript:void(0)" role="button" aria-disabled="true">Link indisponível</a>`}
       </article>
@@ -164,7 +164,7 @@ function renderRecommendationBlock(recommendations = []) {
     <section class="oqc-recommendations">
       <div class="oqc-recommendations-title">
         <span>Recomendação OQC</span>
-        <strong>Melhor escolha, boa alternativa e opção econômica</strong>
+        <strong>Top 3 escolhas para comparar rápido</strong>
       </div>
       <div class="oqc-recommendation-grid">${items}</div>
     </section>
@@ -235,7 +235,7 @@ function renderMercadoLivre(products) {
       const buttonLabel = resolveButtonLabel(product);
       const transparencyNote = dataMode === "real"
         ? "Dados reais do Mercado Livre. Este botão abre o anúncio retornado pela API."
-        : "Exemplo demonstrativo. Preço e disponibilidade devem ser confirmados no Mercado Livre.";
+        : "Modo demonstração: estes exemplos mostram como o OQC classifica produtos. Preços e disponibilidade devem ser confirmados no Mercado Livre.";
       return `
         <article class="card">
           <div class="image-box">${productImage(product)}</div>
