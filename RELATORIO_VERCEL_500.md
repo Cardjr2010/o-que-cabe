@@ -2,27 +2,47 @@
 
 ## Causa raiz
 
-A função serverless da Vercel estava importando o servidor completo do projeto. Esse servidor traz muita lógica de inicialização, leitura de arquivos e caminhos locais. Para o runtime da Vercel, isso aumentou o risco de empacotamento e de exportação inválida no módulo.
+A Vercel estava tratando `server.mjs` como entrypoint da função, em vez de usar `api/web.js`.
 
 ## Arquivo responsável
 
-- `api/web.js`
+- `vercel.json`
 
 ## Correção aplicada
 
-- substituí a função serverless por um handler direto e mínimo
-- o handler agora exporta `default function handler(req, res)`
-- a rota `/` retorna JSON simples:
-  - `{"status":"ok","project":"O Que Cabe"}`
-- `favicon.ico` e arquivos estáticos públicos continuam sendo atendidos quando existirem
+- a configuração passou a apontar explicitamente para `api/web.js`
+- `api/web.js` é agora o único ponto de entrada serverless
+- `server.mjs` continua existindo apenas para uso local, mas não deve mais ser o alvo da função da Vercel
+
+## Configuração final
+
+```json
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/web.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "api/web.js"
+    }
+  ]
+}
+```
 
 ## Testes realizados
 
 - `node --check api/web.js`
-- importação do módulo em Node
-- chamada local para `/` retornando `200`
+- importação do módulo `api/web.js`
+- chamada local a `/` retornando:
+  - status `200`
+  - `{"status":"ok","project":"O Que Cabe"}`
 
 ## Observação
 
-Essa correção isola o erro de invocação da Vercel. Se a aplicação principal ainda precisar ser servida como site completo, isso deve ser feito em um segundo passo, depois que a função base estiver estável no deploy.
+O erro de exportação inválida estava relacionado à resolução de entrypoint da Vercel. O ajuste força a plataforma a usar apenas `api/web.js`.
 
