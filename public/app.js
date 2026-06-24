@@ -2,6 +2,7 @@ const form = document.querySelector("#searchForm");
 const productInput = document.querySelector("#productInput");
 const monthlyInput = document.querySelector("#monthlyInput");
 const monthsInput = document.querySelector("#monthsInput");
+const sourceInput = document.querySelector("#sourceInput");
 const results = document.querySelector("#results");
 const notice = document.querySelector("#notice");
 const apiStatus = document.querySelector("#apiStatus");
@@ -57,7 +58,7 @@ function renderProducts(products) {
         <article class="card">
           <div class="image-box">${productImage(product)}</div>
           <div class="card-body">
-            <span class="store">${product.store}${product.source === "amazon" ? " · API" : ""}</span>
+            <span class="store">${product.source === "mercadolivre" ? "MERCADO LIVRE" : product.source === "amazon" ? "AMAZON" : product.source === "magalu" ? "MAGALU" : (product.store || "LOJA DE TESTE")}</span>
             <h2>${product.title}</h2>
             ${product.status ? `<p class="small"><strong>Status:</strong> ${product.status}</p>` : ""}
             ${Number.isFinite(product.score) ? `<p class="small"><strong>Score O Que Cabe:</strong> ${product.score}/100</p>` : ""}
@@ -67,7 +68,7 @@ function renderProducts(products) {
               <div class="installment">${installment}</div>
               <div class="small">Total: ${total}</div>
             </div>
-            <a href="${product.url}" target="_blank" rel="noopener">Ver oferta</a>
+            <a href="${product.url}" target="_blank" rel="noopener">${product.source === "mercadolivre" ? "Ver no Mercado Livre" : product.source === "amazon" ? "Ver na Amazon" : product.source === "magalu" ? "Ver na Magalu" : "Ver oferta"}</a>
           </div>
         </article>
       `;
@@ -91,7 +92,7 @@ function renderTrips(trips) {
       <article class="card">
         <div class="image-box">${trip.image ? `<img src="${trip.image}" alt="">` : "<span>Imagem em breve</span>"}</div>
         <div class="card-body">
-          <span class="store">${trip.provider}</span>
+            <span class="store">${trip.provider}</span>
           <h2>${trip.destination}</h2>
           <p class="small">${trip.duration}</p>
           <div class="price">
@@ -178,6 +179,8 @@ form.addEventListener("submit", async (event) => {
   try {
     let endpoint = apiEndpoint;
     const params = new URLSearchParams();
+    const source = sourceInput ? sourceInput.value : "mercadolivre";
+    params.set("source", source);
     if (appView === "mercadolivre") {
       if (isMercadoLivreUrl(product)) {
         endpoint = "/api/mercadolivre-item";
@@ -199,7 +202,7 @@ form.addEventListener("submit", async (event) => {
       apiStatus.style.color = data.mode === "amazon" ? "#12805c" : "#a15c00";
     }
     if (appView === "home") {
-      sourceBadge.textContent = data.mode === "amazon" ? "Amazon API" : "Demo";
+      sourceBadge.textContent = data.mode === "mercadolivre" ? "Mercado Livre" : data.mode === "amazon" ? "Amazon" : data.mode === "magalu" ? "Magalu" : "Demo";
     } else if (appView === "products") {
       sourceBadge.textContent = "DummyJSON";
     } else if (appView === "travel") {
@@ -257,3 +260,11 @@ if (appView === "mercadolivre") {
   monthlyInput.addEventListener("input", triggerLiveSearch);
   monthsInput.addEventListener("change", triggerLiveSearch);
 }
+
+if (sourceInput) {
+  sourceInput.addEventListener("change", () => {
+    form.requestSubmit();
+  });
+}
+
+

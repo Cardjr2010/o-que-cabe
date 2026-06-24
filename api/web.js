@@ -5,6 +5,7 @@ const root = process.cwd();
 const publicDir = path.join(root, "public");
 const oauthPath = path.join(root, "data", "mercadolivre-oauth.json");
 const productsPath = path.join(root, "data", "products.json");
+const mercadolivreDemoPath = path.join(root, "data", "mercadolivre-demo-products.json");
 
 function readJson(filePath, fallback) {
   try {
@@ -61,6 +62,18 @@ function readProducts() {
   return readJson(productsPath, []);
 }
 
+function readMercadoLivreDemoProducts() {
+  return readJson(mercadolivreDemoPath, []);
+}
+
+function normalizeSource(source) {
+  const value = String(source || "mercadolivre").toLowerCase();
+  if (value === "amazon") return "amazon";
+  if (value === "magalu") return "magalu";
+  if (value === "demo") return "demo";
+  return "mercadolivre";
+}
+
 function scoreDemoProduct(product, budgetTotal) {
   let score = 100;
   if (!product.rating) score -= 10;
@@ -78,12 +91,49 @@ function classifyFit(price, monthlyBudget, months) {
   return "NÃO CABE";
 }
 
-function normalizeDemoProducts(products, monthlyBudget, months, query) {
+function normalizeDemoProducts(products, monthlyBudget, months, query, source) {
+  const q = String(query || "").trim().toLowerCase();
+  const categoryRules = {
+    celular: {
+      include: ["celular", "smartphone", "galaxy", "moto", "redmi", "iphone"],
+      exclude: ["air fryer", "câmera", "camera", "notebook", "tablet", "casa"],
+    },
+    notebook: {
+      include: ["notebook", "laptop", "ultrabook", "ideapad", "thinkpad"],
+      exclude: ["celular", "smartphone", "tablet", "casa", "presente"],
+    },
+    tablet: {
+      include: ["tablet", "tab", "ipad", "galaxy tab"],
+      exclude: ["celular", "smartphone", "notebook", "casa", "presente"],
+    },
+    casa: {
+      include: ["casa", "air fryer", "fritadeira", "aspirador", "cozinha"],
+      exclude: ["celular", "smartphone", "notebook", "tablet"],
+    },
+    presente: {
+      include: ["presente", "kit", "caneca", "bloco", "acessório", "acessorio"],
+      exclude: ["celular", "smartphone", "notebook", "tablet"],
+    },
+  };
+  const rule = categoryRules[q] || null;
   const normalized = products
     .filter((product) => {
       if (!query) return true;
       const text = `${product.title} ${product.category || ""}`.toLowerCase();
-      const q = String(query).toLowerCase();
+      if (rule) {
+        const hasInclude = rule.include.some((term) => text.includes(term));
+        const hasExclude = rule.exclude.some((term) => text.includes(term));
+        return hasInclude && !hasExclude;
+      }
+      if (source === "mercadolivre") {
+        return text.includes(q) || ["celular", "notebook", "tablet", "casa", "presente"].includes(q);
+      }
+      if (source === "amazon") {
+        return text.includes(q) || ["celular", "notebook", "tablet", "casa", "presente"].includes(q);
+      }
+      if (source === "magalu") {
+        return text.includes(q) || ["celular", "notebook", "tablet", "casa", "presente"].includes(q);
+      }
       return text.includes(q) || ["celular", "notebook", "tablet", "casa", "presente"].includes(q);
     })
     .map((product) => {
@@ -94,7 +144,7 @@ function normalizeDemoProducts(products, monthlyBudget, months, query) {
         id: product.id,
         title: product.title,
         category: product.category,
-        store: product.store || "Loja de Teste",
+        store: source === "mercadolivre" ? "Mercado Livre" : source === "amazon" ? "Amazon" : source === "magalu" ? "Magalu" : "Loja de Teste",
         price: price_brl,
         image: product.image || "",
         rating: product.rating ?? null,
@@ -105,7 +155,7 @@ function normalizeDemoProducts(products, monthlyBudget, months, query) {
         installmentValue,
         status,
         score: scoreDemoProduct({ ...product, price_brl }, monthlyBudget * months),
-        source: "demo",
+        source,
       };
     })
     .sort((a, b) => {
@@ -208,7 +258,13 @@ function renderExplorerPage({ title, heading, description, view, badge, endpoint
 }
 
 function renderHome() {
-  return fs.readFileSync(path.join(publicDir, "index.html"), "utf8");
+  return fs.readFileSync(path.join(publicDir, "index.html"), "utf8").replace(
+    '<div class="mode-tabs" aria-label="Tipo de orçamento">',
+    '<div class="mode-tabs" aria-label="Tipo de orçamento"><select id="sourceInput" name="source" class="source-select"><option value="mercadolivre" selected>Mercado Livre</option><option value="demo">Demo Mercado Livre</option><option value="amazon">Amazon</option><option value="magalu">Magalu</option></select>',
+  ).replace(
+    '<p>Use essa vitrine como ponto de partida. Quando o produto entra na base, aí sim o site calcula parcela, orçamento e valor total.</p>',
+    '<p>Atalho de afiliado Amazon. Não interfere na busca principal.</p>',
+  );
 }
 
 function renderProductPage() {
@@ -287,10 +343,13 @@ export default function handler(req, res) {
     const q = url.searchParams.get("q") || "";
     const monthly = Number(url.searchParams.get("monthly") || "50");
     const months = Number(url.searchParams.get("months") || "12");
-    const products = normalizeDemoProducts(readProducts(), monthly, months, q);
+    const source = normalizeSource(url.searchParams.get("source") || "mercadolivre");
+    const products = source === "amazon"
+      ? normalizeDemoProducts(readProducts(), monthly, months, q, "amazon")
+      : normalizeDemoProducts(readMercadoLivreDemoProducts(), monthly, months, q, source);
     sendJson(res, 200, {
       ok: true,
-      mode: "demo",
+      mode: source,
       products,
       warning: products.length ? "" : "Nenhum produto encontrado dentro desse orçamento. Tente aumentar o valor mensal ou o número de parcelas.",
     });
@@ -301,7 +360,10 @@ export default function handler(req, res) {
     const q = url.searchParams.get("q") || "";
     const monthly = Number(url.searchParams.get("monthly") || "50");
     const months = Number(url.searchParams.get("months") || "12");
-    const products = normalizeDemoProducts(readProducts(), monthly, months, q);
+    const source = normalizeSource(url.searchParams.get("source") || "mercadolivre");
+    const products = source === "amazon"
+      ? normalizeDemoProducts(readProducts(), monthly, months, q, "amazon")
+      : normalizeDemoProducts(readMercadoLivreDemoProducts(), monthly, months, q, source);
     sendJson(res, 200, {
       ok: true,
       products,
@@ -323,7 +385,10 @@ export default function handler(req, res) {
   }
 
   if (pathname === "/teste-produtos") {
-    send(res, 200, renderProductPage(), { "Content-Type": "text/html; charset=utf-8" });
+    send(res, 200, renderProductPage().replace(
+      '<div class="mode-tabs" aria-label="Tipo de orçamento">',
+      '<div class="mode-tabs" aria-label="Tipo de orçamento"><select id="sourceInput" name="source" class="source-select"><option value="mercadolivre" selected>Mercado Livre</option><option value="demo">Demo Mercado Livre</option><option value="amazon">Amazon</option><option value="magalu">Magalu</option></select>',
+    ), { "Content-Type": "text/html; charset=utf-8" });
     return;
   }
 
@@ -361,3 +426,4 @@ export default function handler(req, res) {
 
   sendJson(res, 404, { status: "not_found" });
 }
+
