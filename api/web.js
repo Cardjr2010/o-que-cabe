@@ -6,6 +6,7 @@ const publicDir = path.join(root, "public");
 const oauthPath = path.join(root, "data", "mercadolivre-oauth.json");
 const productsPath = path.join(root, "data", "products.json");
 const mercadolivreDemoPath = path.join(root, "data", "mercadolivre-demo-products.json");
+const mlLinksPath = path.join(root, "data", "mercadolivre-links.json");
 
 function readJson(filePath, fallback) {
   try {
@@ -64,6 +65,14 @@ function readProducts() {
 
 function readMercadoLivreDemoProducts() {
   return readJson(mercadolivreDemoPath, []);
+}
+
+function readMercadoLivreLinks() {
+  return readJson(mlLinksPath, []);
+}
+
+function readMercadoLivreToken() {
+  return readJson(oauthPath, null);
 }
 
 function normalizeSource(source) {
@@ -330,6 +339,66 @@ function renderMercadoLivrePage() {
   );
 }
 
+function mercadolivreRedirectUri() {
+  return process.env.MELI_REDIRECT_URI || "https://o-que-cabe.vercel.app/auth/mercadolivre/callback";
+}
+
+function mercadolivreAuthUrl() {
+  const clientId = process.env.MELI_CLIENT_ID || "";
+  const params = new URLSearchParams({
+    response_type: "code",
+    client_id: clientId,
+    redirect_uri: mercadolivreRedirectUri(),
+  });
+  return `https://auth.mercadolibre.com.br/authorization?${params.toString()}`;
+}
+
+function extractMercadoLivreItemId(url) {
+  const value = String(url || "");
+  const match = value.match(/(?:MLB[-]?)(\d{6,})/i);
+  return match ? `MLB${match[1]}` : null;
+}
+
+function normalizeMercadoLivreItem(item, fallback = {}) {
+  return {
+    id: item?.id || fallback.id || "",
+    title: item?.title || fallback.title || "",
+    price: item?.price ?? fallback.price ?? null,
+    image: item?.thumbnail || fallback.image || "",
+    permalink: item?.permalink || fallback.permalink || "",
+  };
+}
+
+function buildMercadoLivreManualResult({ item, itemId, monthly, months }) {
+  const price = Number(item?.price ?? 0);
+  const monthlyPrice = months > 0 ? price / months : price;
+  const status = monthlyPrice <= monthly ? "CABE" : monthlyPrice <= monthly * 1.2 ? "APERTADO" : "NÃO CABE";
+  return {
+    ok: true,
+    mode: "mercadolivre",
+    products: [{
+      id: item?.id || itemId,
+      title: item?.title || item?.name || "Produto Mercado Livre",
+      category: item?.category || "",
+      store: "Mercado Livre",
+      source: "mercadolivre",
+      price,
+      image: item?.image || item?.thumbnail || "",
+      url: item?.affiliateUrl || item?.url || item?.permalink || "#",
+      productUrl: item?.permalink || item?.url || "#",
+      affiliateUrl: item?.affiliateUrl || null,
+      monthlyPrice,
+      installments: months,
+      installmentValue: monthlyPrice,
+      status,
+      score: 100,
+      description: item?.description || "",
+      condition: item?.condition || "new",
+      availableQuantity: item?.availableQuantity ?? item?.available_quantity ?? null,
+    }],
+  };
+}
+
 export default function handler(req, res) {
   const url = new URL(req.url, "http://localhost");
   const pathname = url.pathname;
@@ -377,9 +446,95 @@ export default function handler(req, res) {
       configured: Boolean(process.env.MELI_CLIENT_ID && process.env.MELI_CLIENT_SECRET && process.env.MELI_REDIRECT_URI),
       authenticated: hasToken(),
       token_expired: false,
-      redirectUri: process.env.MELI_REDIRECT_URI || "",
+      redirectUri: mercadolivreRedirectUri(),
       hasClientId: Boolean(process.env.MELI_CLIENT_ID),
       hasClientSecret: Boolean(process.env.MELI_CLIENT_SECRET),
+    });
+    return;
+  }
+
+  if (pathname === "/auth/mercadolivre") {
+    if (!process.env.MELI_CLIENT_ID || !process.env.MELI_REDIRECT_URI) {
+      sendJson(res, 400, { ok: false, message: "Mercado Livre não configurado." });
+      return;
+    }
+    res.statusCode = 302;
+    res.setHeader("Location", mercadolivreAuthUrl());
+    res.end();
+    return;
+  }
+
+  if (pathname === "/auth/mercadolivre/callback") {
+    const code = url.searchParams.get("code") || "";
+    if (!code) {
+      sendJson(res, 400, { ok: false, message: "Código OAuth ausente." });
+      return;
+    }
+    sendJson(res, 200, {
+      ok: true,
+      received: true,
+      redirectUri: mercadolivreRedirectUri(),
+      message: "Callback Mercado Livre recebido.",
+    });
+    return;
+  }
+
+  if (pathname === "/webhook") {
+    sendJson(res, 200, { status: "ok", webhook: true });
+    return;
+  }
+
+  if (pathname === "/api/ml-test-item") {
+    const itemId = url.searchParams.get("itemId") || "";
+    if (!itemId) {
+      sendJson(res, 400, { ok: false, message: "Informe itemId." });
+      return;
+    }
+    const links = readMercadoLivreLinks();
+    const match = links.find((item) => extractMercadoLivreItemId(item.url) === itemId || itemId === item.id);
+    const fallback = readMercadoLivreDemoProducts().find((item) => item.id && String(item.id).toLowerCase().includes(String(itemId).toLowerCase()));
+    const candidate = fallback || match || null;
+    if (!candidate) {
+      sendJson(res, 200, { ok: false, title: "", price: null, image: "", permalink: "", message: "Item não localizado na base de teste." });
+      return;
+    }
+    sendJson(res, 200, {
+      ok: true,
+      title: candidate.title || "",
+      price: candidate.price ?? null,
+      image: candidate.image || "",
+      permalink: candidate.url || candidate.permalink || "",
+    });
+    return;
+  }
+
+  if (pathname === "/api/mercadolivre-item" || pathname === "/api/mercadolivre-manual") {
+    const monthly = Number(url.searchParams.get("monthly") || "100");
+    const months = Number(url.searchParams.get("months") || "12");
+    const source = normalizeSource(url.searchParams.get("source") || "mercadolivre");
+    const q = (url.searchParams.get("q") || url.searchParams.get("category") || "").trim();
+    const urlParam = url.searchParams.get("url") || "";
+    const itemId = extractMercadoLivreItemId(urlParam);
+
+    if (urlParam || itemId) {
+      const links = readMercadoLivreLinks();
+      const matchedLink = links.find((entry) => extractMercadoLivreItemId(entry.url) === itemId || entry.id === itemId);
+      const demo = readMercadoLivreDemoProducts().find((entry) => String(entry.id).toLowerCase().includes(String(itemId || "").toLowerCase()));
+      const candidate = matchedLink || demo || null;
+      if (!candidate) {
+        sendJson(res, 200, { ok: true, mode: "mercadolivre", products: [], warning: "Nenhum item encontrado para a URL informada." });
+        return;
+      }
+      sendJson(res, 200, buildMercadoLivreManualResult({ item: candidate, itemId: itemId || candidate.id, monthly, months }));
+      return;
+    }
+
+    const products = normalizeDemoProducts(readMercadoLivreDemoProducts(), monthly, months, q, source);
+    sendJson(res, 200, {
+      ok: true,
+      mode: "mercadolivre",
+      products,
+      warning: products.length ? "" : "Nenhum produto encontrado dentro desse orçamento. Tente aumentar o valor mensal ou o número de parcelas.",
     });
     return;
   }
