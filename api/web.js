@@ -194,12 +194,15 @@ function renderExplorerPage({ title, heading, description, view, badge, endpoint
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
       <title>${escapeHtml(title)}</title>
+      <meta name="theme-color" content="#091a35" />
       <link rel="stylesheet" href="/styles.css" />
+      <link rel="icon" href="/favicon.png" type="image/png" />
       <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+      <link rel="apple-touch-icon" href="/logo-oqc.png" />
     </head>
     <body data-view="${escapeHtml(view)}" data-endpoint="${escapeHtml(endpoint)}">
       <header class="topbar">
-        <a class="brand" href="/"><img class="brand-mark" src="/logo-oqc.svg" alt="OQC" /><strong>O Que Cabe</strong></a>
+        <a class="brand" href="/"><img class="brand-mark" src="/logo-oqc.png" alt="OQC" /><strong>O Que Cabe</strong></a>
         <div class="trust-pill">Curadoria de Confiança</div>
       </header>
       <main>
