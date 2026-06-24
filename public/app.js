@@ -25,7 +25,12 @@ function productImage(product) {
   if (image) {
     return `<img src="${image}" alt="">`;
   }
-  return "<span>Imagem em breve</span>";
+  return `
+    <div class="image-fallback">
+      <img src="/logo-oqc.png" alt="" class="image-fallback-logo">
+      <span>Imagem indisponível</span>
+    </div>
+  `;
 }
 
 function formatPrice(value) {
@@ -91,7 +96,7 @@ function renderTrips(trips) {
   results.innerHTML = trips
     .map((trip) => `
       <article class="card">
-        <div class="image-box">${trip.image ? `<img src="${trip.image}" alt="">` : "<span>Imagem em breve</span>"}</div>
+        <div class="image-box">${trip.image ? `<img src="${trip.image}" alt="">` : "<div class='image-fallback'><img src='/logo-oqc.png' alt='' class='image-fallback-logo'><span>Imagem indisponível</span></div>"}</div>
         <div class="card-body">
             <span class="store">${trip.provider}</span>
           <h2>${trip.destination}</h2>

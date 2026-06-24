@@ -378,20 +378,48 @@ h2 {
 }
 
 .image-box {
-  height: 164px;
+  width: 100%;
+  height: 240px;
   display: grid;
   place-items: center;
-  background: #f1f5f9;
+  padding: 18px;
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+  border-bottom: 1px solid var(--line);
   color: #98a6ba;
   font-weight: 900;
+  overflow: hidden;
 }
 
 .image-box img {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  padding: 16px;
-  background: white;
+  display: block;
+}
+
+.image-fallback {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  padding: 18px;
+  text-align: center;
+  color: #8b97aa;
+}
+
+.image-fallback-logo {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  border-radius: 18px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.image-fallback span {
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0;
 }
 
 .card-body {
