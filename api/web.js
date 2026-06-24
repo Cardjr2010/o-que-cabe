@@ -29,6 +29,14 @@ function sendJson(res, status, data) {
   });
 }
 
+function headersToObject(headers) {
+  const output = {};
+  for (const [key, value] of headers.entries()) {
+    output[key] = value;
+  }
+  return output;
+}
+
 function contentType(filePath) {
   const ext = path.extname(filePath).toLowerCase();
   return {
@@ -98,6 +106,7 @@ async function fetchMercadoLivreSearch(query, limit = 12) {
   const response = await fetch(endpoint, {
     headers: {
       Accept: "application/json",
+      "User-Agent": "OQueCabe-MVP/1.0",
     },
   });
   if (!response.ok) {
@@ -107,6 +116,55 @@ async function fetchMercadoLivreSearch(query, limit = 12) {
   }
   const data = await response.json();
   return Array.isArray(data?.results) ? data.results : [];
+}
+
+async function fetchMercadoLivreSearchDiagnostics(query, limit = 12, token = "") {
+  const q = String(query || "").trim();
+  if (!q) {
+    return {
+      endpoint: "",
+      statusHttp: 400,
+      error: "Query vazia.",
+      rawCount: 0,
+      returnedCount: 0,
+      firstFive: [],
+      headers: {},
+      usedToken: Boolean(token),
+    };
+  }
+  const endpoint = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(q)}&limit=${limit}`;
+  const headers = {
+    Accept: "application/json, text/plain, */*",
+    "User-Agent": "OQueCabe-MVP/1.0",
+  };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const response = await fetch(endpoint, { headers, redirect: "follow" });
+  const contentType = response.headers.get("content-type") || "";
+  const rawBody = await response.text().catch(() => "");
+  let body = rawBody;
+  if (contentType.includes("application/json")) {
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      body = rawBody;
+    }
+  }
+  const results = Array.isArray(body?.results) ? body.results : [];
+  return {
+    endpoint,
+    statusHttp: response.status,
+    headers: headersToObject(response.headers),
+    rawCount: results.length,
+    returnedCount: results.length,
+    firstFive: results.slice(0, 5).map((item) => ({
+      title: item?.title || "",
+      price: item?.price ?? null,
+      permalink: item?.permalink || "",
+      image: item?.thumbnail || (Array.isArray(item?.pictures) && item.pictures[0]?.url) || "",
+    })),
+    error: response.ok ? "" : (body?.message || body?.error || body?.status || rawBody || `HTTP ${response.status}`),
+    usedToken: Boolean(token),
+  };
 }
 
 function normalizeSource(source) {
@@ -682,6 +740,48 @@ export default async function handler(req, res) {
       })),
       sample: products.slice(0, 3),
     });
+    return;
+  }
+
+  if (pathname === "/api/ml-public-search-test") {
+    const q = url.searchParams.get("q") || "";
+    const token = readMercadoLivreToken()?.access_token || "";
+    try {
+      const diagnostic = await fetchMercadoLivreSearchDiagnostics(q, 20, token);
+      sendJson(res, diagnostic.statusHttp || 200, {
+        ok: !diagnostic.error,
+        configured: Boolean(process.env.MELI_CLIENT_ID && process.env.MELI_CLIENT_SECRET && process.env.MELI_REDIRECT_URI),
+        authenticated: Boolean(token),
+        endpoint: diagnostic.endpoint,
+        statusHttp: diagnostic.statusHttp,
+        rawCount: diagnostic.rawCount,
+        returnedCount: diagnostic.returnedCount,
+        firstFive: diagnostic.firstFive,
+        error: diagnostic.error,
+        headers: diagnostic.headers,
+        calledFrom: "backend",
+        cors: "not-applicable-backend-to-backend",
+        userAgent: "OQueCabe-MVP/1.0",
+        tokenState: token ? "present" : "absent",
+      });
+    } catch (error) {
+      sendJson(res, 502, {
+        ok: false,
+        configured: Boolean(process.env.MELI_CLIENT_ID && process.env.MELI_CLIENT_SECRET && process.env.MELI_REDIRECT_URI),
+        authenticated: Boolean(token),
+        endpoint: `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(q)}&limit=20`,
+        statusHttp: 502,
+        rawCount: 0,
+        returnedCount: 0,
+        firstFive: [],
+        error: error?.message || "Erro ao consultar Mercado Livre.",
+        headers: {},
+        calledFrom: "backend",
+        cors: "not-applicable-backend-to-backend",
+        userAgent: "OQueCabe-MVP/1.0",
+        tokenState: token ? "present" : "absent",
+      });
+    }
     return;
   }
 
