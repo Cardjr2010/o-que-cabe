@@ -71,6 +71,22 @@ function readMercadoLivreLinks() {
   return readJson(mlLinksPath, []);
 }
 
+function buildMercadoLivreSearchUrl(product) {
+  const query = String(product || "").trim().toLowerCase();
+  if (!query) return "";
+  const slug = query
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return `https://lista.mercadolivre.com.br/${slug}`;
+}
+
+function isGenericMercadoLivreUrl(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return !normalized || normalized === "https://www.mercadolivre.com.br" || normalized === "https://mercadolivre.com.br" || normalized === "https://www.mercadolivre.com.br/" || normalized === "https://mercadolivre.com.br/";
+}
+
 function readMercadoLivreToken() {
   return readJson(oauthPath, null);
 }
@@ -185,8 +201,8 @@ function normalizeDemoProducts(products, monthlyBudget, months, query, source) {
         rating: product.rating ?? null,
         description: product.riskNote || product.description || "",
         note: product.riskNote || "Dados de teste — preços simulados.",
-        url: product.url || "#",
-        permalink: product.permalink || product.url || "#",
+        url: isGenericMercadoLivreUrl(product.url) ? buildMercadoLivreSearchUrl(product.title || product.category || q) : (product.url || product.permalink || buildMercadoLivreSearchUrl(product.title || product.category || q)),
+        permalink: isGenericMercadoLivreUrl(product.permalink) ? buildMercadoLivreSearchUrl(product.title || product.category || q) : (product.permalink || product.url || buildMercadoLivreSearchUrl(product.title || product.category || q)),
         installments: product.installments || months,
         installmentValue,
         status,
@@ -458,8 +474,8 @@ function buildMercadoLivreManualResult({ item, itemId, monthly, months }) {
       source: "mercadolivre",
       price,
       image: item?.image || item?.thumbnail || (Array.isArray(item?.pictures) && item.pictures[0]?.url) || "",
-      url: item?.affiliateUrl || item?.url || item?.permalink || "#",
-      productUrl: item?.permalink || item?.url || "#",
+      url: item?.affiliateUrl || (isGenericMercadoLivreUrl(item?.url) ? buildMercadoLivreSearchUrl(item?.title || itemId) : item?.url) || item?.permalink || buildMercadoLivreSearchUrl(item?.title || itemId),
+      productUrl: (isGenericMercadoLivreUrl(item?.permalink) ? buildMercadoLivreSearchUrl(item?.title || itemId) : item?.permalink) || item?.url || buildMercadoLivreSearchUrl(item?.title || itemId),
       affiliateUrl: item?.affiliateUrl || null,
       monthlyPrice,
       installments: months,

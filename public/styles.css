@@ -5,10 +5,11 @@
   --soft: #f8fafc;
   --paper: #ffffff;
   --line: #e8edf4;
-  --green: #10b981;
-  --green-2: #14b8a6;
-  --navy: #0f172a;
-  --navy-2: #0e3f45;
+  --green: #149cff;
+  --green-2: #38bdf8;
+  --navy: #061b3a;
+  --navy-2: #0a2f66;
+  --success: #10b981;
   --shadow: 0 22px 70px rgba(15, 23, 42, 0.08);
 }
 
@@ -245,8 +246,8 @@ select {
 
 input:focus,
 select:focus {
-  border-color: rgba(16, 185, 129, 0.55);
-  box-shadow: 0 0 0 5px rgba(16, 185, 129, 0.11);
+  border-color: rgba(20, 156, 255, 0.55);
+  box-shadow: 0 0 0 5px rgba(20, 156, 255, 0.11);
 }
 
 .money-input span {
@@ -480,6 +481,30 @@ h2 {
   text-decoration: none;
 }
 
+.card a.disabled {
+  background: #d8e2ee;
+  color: #60708a;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+.status strong {
+  color: var(--success);
+}
+
+.status-cabe strong {
+  color: var(--success);
+}
+
+.status-apertado strong {
+  color: #f59e0b;
+}
+
+.status-não-cabe strong,
+.status-nao-cabe strong {
+  color: #ef4444;
+}
+
 .empty-state {
   grid-column: 1 / -1;
   min-height: 190px;
@@ -576,8 +601,8 @@ h2 {
   display: grid;
   place-items: center;
   border-radius: 28px;
-  background: #eafff5;
-  color: #059669;
+  background: #e9f4ff;
+  color: var(--green);
   font-size: 38px;
 }
 
@@ -600,7 +625,7 @@ h2 {
   padding: 78px 72px 84px;
   border-radius: 62px;
   background:
-    radial-gradient(circle at 95% 5%, rgba(16, 185, 129, 0.18), transparent 33%),
+    radial-gradient(circle at 95% 5%, rgba(20, 156, 255, 0.18), transparent 33%),
     linear-gradient(115deg, var(--navy), #101b2f 58%, var(--navy-2));
   color: white;
 }

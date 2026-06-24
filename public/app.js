@@ -30,10 +30,16 @@ function setMode(nextMode) {
     if (monthsField) monthsField.hidden = true;
     if (totalField) totalField.hidden = false;
     if (monthlyLabel) monthlyLabel.textContent = "Orçamento total";
+    if (monthlyInput) monthlyInput.disabled = true;
+    if (monthsInput) monthsInput.disabled = true;
+    if (totalBudgetInput) totalBudgetInput.disabled = false;
   } else {
     if (monthsField) monthsField.hidden = false;
     if (totalField) totalField.hidden = true;
     if (monthlyLabel) monthlyLabel.textContent = "Máx. mensal";
+    if (monthlyInput) monthlyInput.disabled = false;
+    if (monthsInput) monthsInput.disabled = false;
+    if (totalBudgetInput) totalBudgetInput.disabled = true;
   }
 }
 
@@ -45,7 +51,13 @@ const currency = new Intl.NumberFormat("pt-BR", {
 function productImage(product) {
   const image = product.image || product.thumbnail || "";
   if (image) {
-    return `<img src="${image}" alt="">`;
+    return `
+      <img src="${image}" alt="" onerror="this.style.display='none'; const fallback=this.parentElement.querySelector('.image-fallback'); if (fallback) fallback.style.display='grid';">
+      <div class="image-fallback" style="display:none">
+        <img src="/logo-oqc.png" alt="" class="image-fallback-logo">
+        <span>Imagem indisponível</span>
+      </div>
+    `;
   }
   return `
     <div class="image-fallback">
@@ -139,6 +151,10 @@ function resolveProductLink(product) {
   return product.affiliateUrl || product.productUrl || product.permalink || product.url || "#";
 }
 
+function hasProductLink(product) {
+  return Boolean(product.affiliateUrl || product.productUrl || product.permalink || product.url);
+}
+
 function renderMercadoLivre(products) {
   if (!products.length) {
     results.innerHTML = `
@@ -159,6 +175,7 @@ function renderMercadoLivre(products) {
       const status = product.status || "CABE";
       const score = Number.isFinite(product.score) ? product.score : 0;
       const link = resolveProductLink(product);
+      const linkAvailable = hasProductLink(product);
       const dataMode = product.dataMode || "demo";
       const sourceLabel = dataMode === "real" ? "DADOS REAIS DO MERCADO LIVRE" : "DEMONSTRAÇÃO MERCADO LIVRE";
       return `
@@ -167,7 +184,7 @@ function renderMercadoLivre(products) {
           <div class="card-body">
             <span class="store">${sourceLabel}</span>
             <h2>${product.title}</h2>
-            <p class="small"><strong>Status:</strong> ${status}</p>
+            <p class="small status status-${String(status).toLowerCase().replace(/\s+/g, "-")}"><strong>Status:</strong> ${status}</p>
             <p class="small"><strong>Score O Que Cabe:</strong> ${score}/100</p>
             <p class="small">${product.condition ? `Condição: ${product.condition}` : ""}</p>
             <p class="small">${product.availableQuantity != null ? `Estoque: ${product.availableQuantity}` : ""}</p>
@@ -178,7 +195,7 @@ function renderMercadoLivre(products) {
               <div class="installment">${total}</div>
               <div class="small">${installment} · ${currency.format(product.monthlyPrice || 0)}/mês</div>
             </div>
-            <a href="${link}" target="_blank" rel="noopener">Ver no Mercado Livre</a>
+            ${linkAvailable ? `<a href="${link}" target="_blank" rel="noopener">Ver no Mercado Livre</a>` : `<a class="disabled" href="javascript:void(0)" role="button" aria-disabled="true">Link indisponível</a>`}
           </div>
         </article>
       `;
@@ -196,7 +213,8 @@ form.addEventListener("submit", async (event) => {
   const product = document.querySelector("#productInput").value.trim();
   const monthly = Number(document.querySelector("#monthlyInput").value || 0);
   const months = Number(document.querySelector("#monthsInput").value || 12);
-  const totalBudget = Number(document.querySelector("#totalBudgetInput")?.value || monthly * months);
+  const totalBudgetInputValue = Number(document.querySelector("#totalBudgetInput")?.value || 0);
+  const totalBudget = searchMode === "total" ? totalBudgetInputValue : monthly * months;
   const ceiling = searchMode === "total" ? totalBudget : monthly * months;
 
   button.disabled = true;
@@ -205,19 +223,21 @@ form.addEventListener("submit", async (event) => {
   notice.hidden = true;
   resultsArea.classList.add("has-results");
   budgetTotal.textContent = currency.format(ceiling);
-  if (searchMode === "total") {
-    budgetLine.textContent = `Orçamento total: ${currency.format(totalBudget)}`;
-    if (marketline) marketline.textContent = `Seu orçamento total: ${currency.format(totalBudget)}.`;
-    if (monthlyLabel) monthlyLabel.textContent = "Orçamento total";
-    if (monthsField) monthsField.hidden = true;
-    if (totalField) totalField.hidden = false;
-  } else {
-    budgetLine.textContent = `${currency.format(monthly)} por mês em até ${months}x`;
-    if (marketline) marketline.textContent = `Seu teto estimado: ${currency.format(ceiling)}, considerando ${currency.format(monthly)} por mês em até ${months}x.`;
-    if (monthlyLabel) monthlyLabel.textContent = "Máx. mensal";
-    if (monthsField) monthsField.hidden = false;
-    if (totalField) totalField.hidden = true;
-  }
+    if (searchMode === "total") {
+      budgetLine.textContent = `Orçamento total: ${currency.format(totalBudget)}`;
+      if (marketline) marketline.textContent = `Seu orçamento total: ${currency.format(totalBudget)}.`;
+      if (monthlyLabel) monthlyLabel.textContent = "Orçamento total";
+      if (monthsField) monthsField.hidden = true;
+      if (totalField) totalField.hidden = false;
+      if (totalBudgetInput) totalBudgetInput.disabled = false;
+    } else {
+      budgetLine.textContent = `${currency.format(monthly)} por mês em até ${months}x`;
+      if (marketline) marketline.textContent = `Seu teto estimado: ${currency.format(ceiling)}, considerando ${currency.format(monthly)} por mês em até ${months}x.`;
+      if (monthlyLabel) monthlyLabel.textContent = "Máx. mensal";
+      if (monthsField) monthsField.hidden = false;
+      if (totalField) totalField.hidden = true;
+      if (totalBudgetInput) totalBudgetInput.disabled = true;
+    }
   summaryTitle.textContent = `Buscando ${product}...`;
 
   try {
@@ -294,16 +314,18 @@ document.querySelectorAll(".quick-row button").forEach((button) => {
     productInput.value = button.dataset.query || button.dataset.product || "";
     if (button.dataset.mode === "total") {
       searchMode = "total";
-      totalBudgetInput.value = button.dataset.totalBudget || button.dataset.monthly || "500";
+      totalBudgetInput.value = button.dataset.totalBudget || button.dataset.monthly || totalBudgetInput.value || "500";
       monthlyInput.value = button.dataset.monthly || "100";
       monthsInput.value = button.dataset.months || "12";
       modeButtons.forEach((item) => item.classList.toggle("active", item.dataset.mode === "total"));
+      if (totalBudgetInput) totalBudgetInput.disabled = false;
     } else {
       searchMode = button.dataset.mode || "monthly";
       monthlyInput.value = button.dataset.monthly || "";
       monthsInput.value = button.dataset.months || "12";
       if (totalBudgetInput) totalBudgetInput.value = button.dataset.totalBudget || totalBudgetInput.value || "500";
       modeButtons.forEach((item) => item.classList.toggle("active", item.dataset.mode === searchMode));
+      if (totalBudgetInput) totalBudgetInput.disabled = true;
     }
     form.requestSubmit();
   });
