@@ -5,7 +5,7 @@ import path from "node:path";
 import { URL, pathToFileURL } from "node:url";
 import dummyJsonAdapter from "./src/adapters/products.dummyjson.js";
 import mercadolivreAdapter from "./src/adapters/products.mercadolivre.js";
-import MercadoLivreConnector from "./src/connectors/MercadoLivreConnector.js";
+import MercadoLivreProvider from "./src/providers/MercadoLivreProvider.js";
 import travelMockAdapter from "./src/adapters/travel.mock.js";
 import BudgetEngine from "./src/engines/BudgetEngine.js";
 import ScoreEngine from "./src/engines/ScoreEngine.js";
@@ -1129,7 +1129,7 @@ export async function requestHandler(req, res) {
     }
 
     try {
-      const connectorResult = await MercadoLivreConnector.searchProducts(query, {
+      const connectorResult = await MercadoLivreProvider.searchProducts(query, {
         limit: 20,
         mode,
         monthly,
@@ -1180,7 +1180,7 @@ export async function requestHandler(req, res) {
     const months = Number(requestUrl.searchParams.get("months") || "12");
     const totalBudgetParam = Number(requestUrl.searchParams.get("totalBudget") || "0");
     const totalBudget = mode === "total" ? (totalBudgetParam > 0 ? totalBudgetParam : monthly * months) : monthly * months;
-    const result = await MercadoLivreConnector.searchProducts(q, {
+    const result = await MercadoLivreProvider.searchProducts(q, {
       limit: 20,
       mode,
       monthly,
@@ -1188,8 +1188,8 @@ export async function requestHandler(req, res) {
       totalBudget,
     });
     sendJson(res, result.statusHttp || 200, {
-      configured: MercadoLivreConnector.getDiagnostics().configured,
-      tokenState: result.tokenState || MercadoLivreConnector.getDiagnostics().tokenState,
+      configured: MercadoLivreProvider.getDiagnostics().configured,
+      tokenState: result.tokenState || MercadoLivreProvider.getDiagnostics().tokenState,
       strategyUsed: result.strategyUsed || "",
       statusHttp: result.statusHttp || 200,
       returnedCount: result.returnedCount || 0,

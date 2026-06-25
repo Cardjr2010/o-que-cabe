@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Sprint 8
+- Added a marketplace provider abstraction so the OQC can grow beyond Mercado Livre without changing the engine stack.
+- Introduced `MarketplaceProvider` plus a Mercado Livre implementation that preserves the OQC product shape.
+- Routed the API through the provider layer while keeping BudgetEngine, ScoreEngine, and RankingEngine unchanged.
+
 ### Sprint 7
 - Introduced `MercadoLivreConnector` as the single integration layer for Mercado Livre data access.
 - Added token-aware strategies with controlled fallback to honest demo data when real access is unavailable.

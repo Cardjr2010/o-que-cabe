@@ -3,7 +3,7 @@ import path from "node:path";
 import BudgetEngine from "../src/engines/BudgetEngine.js";
 import ScoreEngine from "../src/engines/ScoreEngine.js";
 import RankingEngine from "../src/engines/RankingEngine.js";
-import MercadoLivreConnector from "../src/connectors/MercadoLivreConnector.js";
+import MercadoLivreProvider from "../src/providers/MercadoLivreProvider.js";
 
 const root = process.cwd();
 const publicDir = path.join(root, "public");
@@ -642,15 +642,15 @@ export default async function handler(req, res) {
     const months = Number(url.searchParams.get("months") || "12");
     const totalBudget = Number(url.searchParams.get("totalBudget") || (monthly * months));
     try {
-      const connectorResult = await MercadoLivreConnector.searchProducts(q, {
+      const providerResult = await MercadoLivreProvider.searchProducts(q, {
         limit: 20,
         mode,
         monthly,
         months,
         totalBudget,
       });
-      const selectedProducts = Array.isArray(connectorResult.products) ? connectorResult.products : [];
-      const dataMode = connectorResult.dataMode || (connectorResult.strategyUsed === "demo" ? "demo" : "real-authenticated");
+      const selectedProducts = Array.isArray(providerResult.products) ? providerResult.products : [];
+      const dataMode = providerResult.dataMode || (providerResult.strategyUsed === "demo" ? "demo" : "real-authenticated");
       const response = buildOqcResponse({
         products: selectedProducts,
         query: q,
@@ -664,11 +664,11 @@ export default async function handler(req, res) {
       sendJson(res, 200, {
         ok: true,
         ...response,
-        strategyUsed: connectorResult.strategyUsed,
-        tokenState: connectorResult.tokenState,
-        statusHttp: connectorResult.statusHttp,
-        returnedCount: connectorResult.returnedCount,
-        firstFive: connectorResult.firstFive,
+        strategyUsed: providerResult.strategyUsed,
+        tokenState: providerResult.tokenState,
+        statusHttp: providerResult.statusHttp,
+        returnedCount: providerResult.returnedCount,
+        firstFive: providerResult.firstFive,
         warning: selectedProducts.length ? "" : "Não encontramos exemplo demonstrativo confiável para este orçamento.",
       });
     } catch (error) {
@@ -699,10 +699,10 @@ export default async function handler(req, res) {
     const monthly = Number(url.searchParams.get("monthly") || "50");
     const months = Number(url.searchParams.get("months") || "12");
     const totalBudget = Number(url.searchParams.get("totalBudget") || (monthly * months));
-    const result = await MercadoLivreConnector.searchProducts(q, { limit: 20, mode, monthly, months, totalBudget });
+    const result = await MercadoLivreProvider.searchProducts(q, { limit: 20, mode, monthly, months, totalBudget });
     sendJson(res, result.statusHttp || 200, {
-      configured: MercadoLivreConnector.getDiagnostics().configured,
-      tokenState: result.tokenState || MercadoLivreConnector.getDiagnostics().tokenState,
+      configured: MercadoLivreProvider.getDiagnostics ? MercadoLivreProvider.getDiagnostics().configured : true,
+      tokenState: result.tokenState || (MercadoLivreProvider.getDiagnostics ? MercadoLivreProvider.getDiagnostics().tokenState : "available"),
       strategyUsed: result.strategyUsed || "",
       statusHttp: result.statusHttp || 200,
       returnedCount: result.returnedCount || 0,
