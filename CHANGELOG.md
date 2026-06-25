@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Sprint 13
+- Added a WooCommerce-style importer layer to keep real products inside the OQC catalog before search and ranking run.
+- Introduced `ProductImporter` and `WooCommerceStyleImporter` to normalize imported products into the OQC seed contract.
+- Kept the local product seed as the first source for supported categories so the MVP remains useful without live marketplace dependence.
+
 ### Sprint 12
 - Added the first real OQC product seed with 30 curated products across celulares, TVs, and notebooks.
 - Routed the Mercado Livre provider to prefer the local seed base before falling back to live connector or demo behavior.

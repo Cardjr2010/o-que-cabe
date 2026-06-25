@@ -251,6 +251,7 @@ function normalizeDemoProducts(products, monthlyBudget, months, query, source) {
       const price_brl = Number(product.price || 0);
       const installmentValue = Number(product.installmentValue || (price_brl / (product.installments || months)));
       const status = classifyFit(price_brl, monthlyBudget, months);
+      const isDemoSource = source === "demo";
       return {
         id: product.id,
         title: product.title,
@@ -261,8 +262,8 @@ function normalizeDemoProducts(products, monthlyBudget, months, query, source) {
         rating: product.rating ?? null,
         description: product.riskNote || product.description || "",
         note: product.riskNote || "Dados de teste — preços simulados.",
-        url: isGenericMercadoLivreUrl(product.url) ? buildMercadoLivreSearchUrl(product.title || product.category || q) : (product.url || product.permalink || buildMercadoLivreSearchUrl(product.title || product.category || q)),
-        permalink: isGenericMercadoLivreUrl(product.permalink) ? buildMercadoLivreSearchUrl(product.title || product.category || q) : (product.permalink || product.url || buildMercadoLivreSearchUrl(product.title || product.category || q)),
+        url: "",
+        permalink: "",
         installments: product.installments || months,
         installmentValue,
         status,
@@ -332,7 +333,7 @@ function enrichWithOqc(product, context, query) {
 function buildOqcResponse({ products, query, mode, monthly, months, totalBudget, dataMode }) {
   const budget = buildOqcBudgetContext({ mode, monthly, months, totalBudget });
   const enriched = products.map((product) => enrichWithOqc(product, budget, query));
-  const ranked = RankingEngine.rankProducts(enriched);
+  const ranked = RankingEngine.rankProducts(enriched, query);
   return {
     query,
     mode,
@@ -341,7 +342,7 @@ function buildOqcResponse({ products, query, mode, monthly, months, totalBudget,
     recommendations: ranked.recommended,
     groups: ranked.groups,
     summary: ranked.summary,
-    products: enriched,
+    products: ranked.products || enriched,
   };
 }
 function renderExplorerPage({ title, heading, description, view, badge, endpoint, inputLabel, inputPlaceholder, quickLabel, quickButtons }) {

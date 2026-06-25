@@ -1,0 +1,116 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { normalizeImportedProduct } from "../src/importers/ProductImporter.js";
+import WooCommerceStyleImporter from "../src/importers/WooCommerceStyleImporter.js";
+import handler from "../api/web.js";
+
+function createResponse() {
+  return {
+    statusCode: 200,
+    headers: {},
+    body: "",
+    writeHead(status, headers = {}) {
+      this.statusCode = status;
+      this.headers = { ...this.headers, ...headers };
+    },
+    end(body = "") {
+      this.body = body;
+    },
+    setHeader(name, value) {
+      this.headers[name] = value;
+    },
+  };
+}
+
+test("produto importado normaliza corretamente", () => {
+  const normalized = normalizeImportedProduct({
+    id: "wc-1",
+    externalId: "123",
+    title: "Samsung Galaxy A15",
+    category: "celular",
+    brand: "Samsung",
+    model: "A15",
+    price: "899",
+    image: "https://example.com/a15.png",
+    productUrl: "https://lista.mercadolivre.com.br/samsung-galaxy-a15-256gb",
+    marketplace: "Mercado Livre",
+    sourceType: "feed",
+  });
+
+  assert.ok(normalized);
+  assert.equal(normalized.dataMode, "seed");
+  assert.equal(normalized.price, 899);
+  assert.equal(normalized.category, "celular");
+  assert.equal(normalized.marketplace, "Mercado Livre");
+  assert.equal(normalized.sourceType, "feed");
+  assert.equal(normalized.productUrl, "https://lista.mercadolivre.com.br/samsung-galaxy-a15-256gb");
+  assert.equal(normalized.affiliateUrl, "");
+});
+
+test("produto sem link real é rejeitado", () => {
+  const normalized = normalizeImportedProduct({
+    id: "wc-2",
+    title: "Produto sem link",
+    category: "celular",
+    price: 100,
+    marketplace: "Mercado Livre",
+  });
+
+  assert.equal(normalized, null);
+});
+
+test("affiliateUrl tem prioridade sobre productUrl", () => {
+  const normalized = normalizeImportedProduct({
+    id: "wc-3",
+    title: "Produto com afiliado",
+    category: "notebook",
+    price: 1999,
+    affiliateUrl: "https://affiliate.example/item",
+    productUrl: "https://lista.mercadolivre.com.br/produto-com-afiliado",
+    marketplace: "Mercado Livre",
+  });
+
+  assert.ok(normalized);
+  assert.equal(normalized.productUrl, "https://affiliate.example/item");
+  assert.equal(normalized.permalink, "https://affiliate.example/item");
+});
+
+test("/api/search usa seed antes de demo", async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async () => {
+    throw new Error("offline");
+  };
+
+  try {
+    const res = createResponse();
+    await handler({ url: "/api/search?q=celular&mode=total&totalBudget=1500" }, res);
+    const body = JSON.parse(res.body);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(body.dataMode, "seed");
+    assert.ok(Array.isArray(body.products));
+    assert.ok(body.products.length > 0);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test("demo continua sem link externo", async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async () => {
+    throw new Error("offline");
+  };
+
+  try {
+    const res = createResponse();
+    await handler({ url: "/api/search?q=casa&mode=total&totalBudget=100" }, res);
+    const body = JSON.parse(res.body);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(body.dataMode, "demo");
+    assert.ok(body.products.every((product) => product.dataMode === "demo"));
+    assert.ok(body.products.every((product) => !product.productUrl || !product.productUrl.includes("mercadolivre.com.br/")));
+  } finally {
+    global.fetch = originalFetch;
+  }
+});

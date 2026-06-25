@@ -2,9 +2,11 @@ import fs from "node:fs";
 import path from "node:path";
 import MarketplaceProvider from "./MarketplaceProvider.js";
 import MercadoLivreConnector from "../connectors/MercadoLivreConnector.js";
+import WooCommerceStyleImporter from "../importers/WooCommerceStyleImporter.js";
 
 const root = process.cwd();
 const seedPath = path.join(root, "data", "products.seed.json");
+const productImporter = new WooCommerceStyleImporter({ seedPath });
 
 function readJson(filePath, fallback) {
   try {
@@ -77,7 +79,7 @@ function mapSeedProduct(raw = {}) {
 
 class MercadoLivreProvider extends MarketplaceProvider {
   async searchProducts(query, options = {}) {
-    const seed = readJson(seedPath, []).filter((item) => item && item.title && matchSeedProduct(item, query));
+    const seed = productImporter.loadSeedProducts().filter((item) => item && item.title && matchSeedProduct(item, query));
     if (seed.length) {
       const products = seed
         .map((item) => mapSeedProduct(item))
