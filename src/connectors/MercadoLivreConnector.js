@@ -155,6 +155,88 @@ function mapDemoProducts(query, products = []) {
   });
 }
 
+function decodeHtmlEntities(value = "") {
+  return String(value)
+    .replaceAll("&amp;", "&")
+    .replaceAll("&#39;", "'")
+    .replaceAll("&quot;", '"')
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">")
+    .replaceAll("&#x27;", "'");
+}
+
+function cleanText(value = "") {
+  return decodeHtmlEntities(String(value || "").replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim());
+}
+
+function absolutizeBingUrl(value = "") {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^https?:\/\//i.test(raw)) return raw;
+  return `https://www.bing.com${raw.startsWith("/") ? raw : `/${raw}`}`;
+}
+
+function parseBingShoppingHtml(html = "", query = "") {
+  const q = String(query || "").trim().toLowerCase();
+  const anchors = [...String(html || "").matchAll(/<a[^>]*href="([^"]*bing\.com\/aclick[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi)];
+  const products = anchors
+    .map((block, index) => {
+      const href = block[1] || "";
+      const text = cleanText(block[2] || "");
+      const decoded = (() => {
+        try {
+          const url = new URL(href, "https://www.bing.com");
+          const destination = url.searchParams.get("u");
+          if (destination) {
+            try {
+              return decodeURIComponent(Buffer.from(destination.replace(/^a1/, ""), "base64").toString("utf8"));
+            } catch {
+              return decodeURIComponent(destination);
+            }
+          }
+          return "";
+        } catch {
+          return "";
+        }
+      })();
+      const priceMatch = text.match(/R\$\s*([0-9.,]+)/i);
+      const price = Number((priceMatch?.[1] || "").replace(/\./g, "").replace(",", ".") || 0);
+      const titlePart = text.split(/R\$\s*[0-9.,]+/i)[0] || text;
+      const title = cleanText(titlePart).replace(/\s+(Amazon BR|Mercado Livre|Envio gratuito|Frete grátis).*$/i, "").trim();
+      const image = "";
+      const seller = cleanText((text.match(/\b(Amazon BR|Mercado Livre|Americanas|Magazine Luiza|AliExpress|Shopee)\b/i) || [])[1] || "");
+      const offerLink = decoded && /^https?:\/\//i.test(decoded) ? decoded : href;
+      const rawDescription = text;
+      const category = q || "";
+      if (!title || !offerLink || !price) return null;
+      return {
+        id: `bing-${index + 1}-${q || "shop"}`,
+        title,
+        price: Number.isFinite(price) ? price : 0,
+        image,
+        productUrl: offerLink,
+        permalink: offerLink,
+        seller: seller || null,
+        reputation: null,
+        rating: null,
+        soldQuantity: null,
+        shipping: null,
+        installments: null,
+        marketplace: "bing-shopping",
+        dataMode: "real-public",
+        source: "bing-shopping",
+        store: "Bing Shopping",
+        condition: null,
+        availableQuantity: null,
+        description: rawDescription,
+        category,
+        raw: { title, price: Number.isFinite(price) ? price : 0, image, seller, offerLink, href },
+      };
+    })
+    .filter(Boolean);
+  return products;
+}
+
 async function fetchJson(endpoint, init = {}) {
   const response = await fetch(endpoint, {
     redirect: "follow",
@@ -274,6 +356,49 @@ async function searchCatalog(query, options = {}) {
   };
 }
 
+async function searchPublicShopping(query, options = {}) {
+  const q = String(query || "").trim();
+  if (!q) {
+    return { products: [], dataMode: "demo", strategyUsed: "bing-shopping", statusHttp: 400, error: "QUERY_EMPTY", tokenState: tokenState(), rawCount: 0, returnedCount: 0, firstFive: [] };
+  }
+  const endpoint = `https://www.bing.com/shop?q=${encodeURIComponent(q)}&cc=br&setlang=pt-BR`;
+  const { response, rawText } = await fetchJson(endpoint, {
+    headers: {
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    },
+  });
+  const products = parseBingShoppingHtml(rawText, q);
+  if (!response.ok || !products.length) {
+    return {
+      products: [],
+      dataMode: "demo",
+      strategyUsed: "bing-shopping",
+      statusHttp: response.status,
+      error: products.length ? "" : `BING_EMPTY_${response.status}`,
+      tokenState: tokenState(),
+      rawCount: 0,
+      returnedCount: 0,
+      firstFive: [],
+    };
+  }
+  return {
+    products: products.slice(0, Number(options.limit || 20)),
+    dataMode: "real-public",
+    strategyUsed: "bing-shopping",
+    statusHttp: response.status,
+    error: "",
+    tokenState: tokenState(),
+    rawCount: products.length,
+    returnedCount: products.length,
+    firstFive: products.slice(0, 5).map((item) => ({
+      title: item.title,
+      price: item.price,
+      permalink: item.permalink,
+      image: item.image,
+    })),
+  };
+}
+
 async function getProduct(itemId) {
   const token = getStoredToken();
   if (!token) {
@@ -325,6 +450,7 @@ async function getProductByQuery(query, options = {}) {
   const strategies = [
     () => searchAuthenticated(queryValue, options),
     () => searchCatalog(queryValue, options),
+    () => searchPublicShopping(queryValue, options),
   ];
   let lastError = "";
   let lastStatus = 200;

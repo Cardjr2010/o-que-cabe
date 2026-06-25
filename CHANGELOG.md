@@ -13,6 +13,21 @@
 - Kept real button labels explicit: `Abrir anúncio` and `Link indisponível`.
 - Added regression tests covering demo non-navigation, fallback text, and the absence of `undefined` in the card rendering path.
 
+### Sprint 11
+- Added a public shopping fallback that can return real product cards when Mercado Livre search is blocked.
+- Wired the connector to prefer authenticated Mercado Livre, then catalog, then a public shopping result path before demo.
+- Added test coverage for the public shopping path so a query like `shampoo` can resolve to real-public results instead of falling back to demo.
+
+### Sprint 10
+- Reworked the home pechinchas into practical budget shortcuts for R$ 50, R$ 100, R$ 250, and R$ 500.
+- Expanded the Mercado Livre demo base with more realistic low-budget examples so the MVP has useful results in demo mode.
+- Replaced the cold `Link indisponível` fallback on demo cards with the clearer `Demo — sem anúncio real` label.
+
+### Sprint 9
+- Added a new "Pechinchas em foco" entry point on the home with budget shortcuts for R$ 50, R$ 100, R$ 250, and R$ 500.
+- Wired the pechincha cards to reuse the existing monthly and total search flows without changing the MVP rules or reintroducing marketplace redirects.
+- Kept the home focused on the OQC experience while preserving the honest demo behavior and the current engine stack.
+
 ### Sprint 8
 - Added a marketplace provider abstraction so the OQC can grow beyond Mercado Livre without changing the engine stack.
 - Introduced `MarketplaceProvider` plus a Mercado Livre implementation that preserves the OQC product shape.

@@ -27,6 +27,15 @@ function withEnv(overrides, fn) {
 }
 
 test("token ausente retorna erro controlado sem expor segredo", async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async () => ({
+    ok: false,
+    status: 403,
+    headers: new Map([["content-type", "application/json"]]),
+    text: async () => JSON.stringify({ message: "blocked" }),
+    json: async () => ({ message: "blocked" }),
+  });
+
   const result = await withEnv({
     MELI_ACCESS_TOKEN: "",
     MELI_REFRESH_TOKEN: "",
@@ -39,6 +48,8 @@ test("token ausente retorna erro controlado sem expor segredo", async () => {
   assert.equal(result.dataMode, "demo");
   assert.equal(result.tokenState, "TOKEN_MISSING");
   assert.ok(!JSON.stringify(result).includes("MELI_ACCESS_TOKEN"));
+
+  global.fetch = originalFetch;
 });
 
 test("erro 403 fica controlado e cai para demo honesto", async () => {
@@ -178,4 +189,48 @@ test("diagnostico não expõe token", async () => {
   assert.ok(!JSON.stringify(diag).includes("token-falso"));
   assert.equal(typeof diag.configured, "boolean");
   assert.equal(typeof diag.tokenState, "string");
+});
+
+test("busca pública do shopping retorna resultado real-public", async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async (endpoint) => {
+    const url = String(endpoint);
+    if (url.includes("bing.com/shop")) {
+      return {
+        ok: true,
+        status: 200,
+        headers: new Map([["content-type", "text/html; charset=utf-8"]]),
+        text: async () => `
+          <a href="https://www.bing.com/aclick?u=a1aHR0cHM6Ly9leGFtcGxlLmNvbS9zaGFtcG9v" class="shopping-card">
+            Shampoo Teste 500ml R$ 29,90 Amazon BR
+          </a>
+        `,
+      };
+    }
+    return {
+      ok: false,
+      status: 403,
+      headers: new Map([["content-type", "application/json"]]),
+      text: async () => JSON.stringify({ message: "blocked" }),
+      json: async () => ({ message: "blocked" }),
+    };
+  };
+
+  try {
+    const result = await withEnv({
+      MELI_ACCESS_TOKEN: "",
+      MELI_REFRESH_TOKEN: "",
+      MELI_CLIENT_ID: "",
+      MELI_CLIENT_SECRET: "",
+      MELI_REDIRECT_URI: "",
+    }, async () => MercadoLivreConnector.searchProducts("shampoo", { limit: 5 }));
+
+    assert.equal(result.dataMode, "real-public");
+    assert.equal(result.strategyUsed, "bing-shopping");
+    assert.ok(result.products.length > 0);
+    assert.match(result.products[0].title, /shampoo/i);
+    assert.match(result.products[0].permalink, /example\.com\/shampoo/i);
+  } finally {
+    global.fetch = originalFetch;
+  }
 });
