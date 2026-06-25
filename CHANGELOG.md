@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Sprint 15
+- Added a manual CSV template for populating the OQC with real product candidates across celulares, TVs, and notebooks.
+- Documented how to fill prices, product links, and affiliate links before running the importer.
+- Kept the template safe by leaving `price`, `productUrl`, and `image` blank where the product still needs verification.
+
 ### Sprint 14
 - Added a CSV product importer so catalog entries can be loaded into the OQC seed from a simple flat file.
 - Introduced a small CLI import script that validates, deduplicates, and merges CSV products into `data/products.seed.json`.
