@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Sprint 12
+- Added the first real OQC product seed with 30 curated products across celulares, TVs, and notebooks.
+- Routed the Mercado Livre provider to prefer the local seed base before falling back to live connector or demo behavior.
+- Kept product links specific to category-level Mercado Livre destinations instead of generic marketplace home pages.
+
 ### Hotfix
 - Removed Amazon and marketplace-origin visual elements from the public home so the MVP stays focused on Mercado Livre only.
 - Kept the home limited to OQC, monthly and total budget modes, categories, results, and the honest demo message.

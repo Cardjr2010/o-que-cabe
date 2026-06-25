@@ -23,15 +23,11 @@ function createResponse() {
   };
 }
 
-test("Busca demo retorna recommendations e scoreBreakdown", async () => {
+test("Busca seed retorna recommendations e scoreBreakdown", async () => {
   const originalFetch = global.fetch;
-  global.fetch = async () => ({
-    ok: true,
-    status: 200,
-    json: async () => ({ results: [] }),
-    text: async () => JSON.stringify({ results: [] }),
-    headers: new Map(),
-  });
+  global.fetch = async () => {
+    throw new Error("offline");
+  };
 
   try {
     const req = { url: "/api/search?q=celular&mode=total&totalBudget=1500" };
@@ -41,7 +37,7 @@ test("Busca demo retorna recommendations e scoreBreakdown", async () => {
 
     assert.equal(res.statusCode, 200);
     assert.equal(body.ok, true);
-    assert.equal(body.dataMode, "demo");
+    assert.equal(body.dataMode, "seed");
     assert.ok(Array.isArray(body.recommendations));
     assert.ok(body.recommendations.length > 0);
     assert.ok(Array.isArray(body.products));
@@ -93,7 +89,7 @@ test("Demo mantém categorias coerentes por busca", async () => {
       const body = JSON.parse(res.body);
 
       assert.equal(res.statusCode, 200);
-      assert.equal(body.dataMode, "demo");
+      assert.equal(body.dataMode, "seed");
       assert.ok(body.products.length > 0);
       assert.ok(body.products.every((product) => testCase.matcher.test(`${product.title} ${product.category || ""}`)));
       assert.ok(body.products.every((product) => !testCase.reject.test(`${product.title} ${product.category || ""}`)));
@@ -198,7 +194,7 @@ test("Demo não usa anúncio real no link", async () => {
   });
 
   try {
-    const req = { url: "/api/search?q=relogio&mode=total&totalBudget=300" };
+    const req = { url: "/api/search?q=casa&mode=total&totalBudget=300" };
     const res = createResponse();
     await handler(req, res);
     const body = JSON.parse(res.body);
