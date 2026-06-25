@@ -3,6 +3,7 @@ import path from "node:path";
 import BudgetEngine from "../src/engines/BudgetEngine.js";
 import ScoreEngine from "../src/engines/ScoreEngine.js";
 import RankingEngine from "../src/engines/RankingEngine.js";
+import MercadoLivreConnector from "../src/connectors/MercadoLivreConnector.js";
 
 const root = process.cwd();
 const publicDir = path.join(root, "public");
@@ -640,26 +641,16 @@ export default async function handler(req, res) {
     const monthly = Number(url.searchParams.get("monthly") || "50");
     const months = Number(url.searchParams.get("months") || "12");
     const totalBudget = Number(url.searchParams.get("totalBudget") || (monthly * months));
-
     try {
-      const rawResults = await fetchMercadoLivreSearch(q, 20);
-      const realProducts = rawResults.map((item) => {
-        const normalized = normalizeMercadoLivreSearchItem(item, monthly, months);
-        return {
-          ...normalized,
-          dataMode: "real",
-          source: "mercadolivre",
-          store: "Mercado Livre",
-        };
-      }).filter((item) => item.title);
-
-      const demoProducts = normalizeDemoProducts(readMercadoLivreDemoProducts(), monthly, months, q, "mercadolivre").map((item) => ({
-        ...item,
-        dataMode: "demo",
-      }));
-
-      const selectedProducts = realProducts.length ? realProducts : demoProducts;
-      const dataMode = realProducts.length ? "real" : "demo";
+      const connectorResult = await MercadoLivreConnector.searchProducts(q, {
+        limit: 20,
+        mode,
+        monthly,
+        months,
+        totalBudget,
+      });
+      const selectedProducts = Array.isArray(connectorResult.products) ? connectorResult.products : [];
+      const dataMode = connectorResult.dataMode || (connectorResult.strategyUsed === "demo" ? "demo" : "real-authenticated");
       const response = buildOqcResponse({
         products: selectedProducts,
         query: q,
@@ -673,7 +664,12 @@ export default async function handler(req, res) {
       sendJson(res, 200, {
         ok: true,
         ...response,
-        warning: selectedProducts.length ? "" : "Nenhum produto encontrado dentro desse orçamento. Tente aumentar o valor mensal ou o orçamento total.",
+        strategyUsed: connectorResult.strategyUsed,
+        tokenState: connectorResult.tokenState,
+        statusHttp: connectorResult.statusHttp,
+        returnedCount: connectorResult.returnedCount,
+        firstFive: connectorResult.firstFive,
+        warning: selectedProducts.length ? "" : "Não encontramos exemplo demonstrativo confiável para este orçamento.",
       });
     } catch (error) {
       const demoProducts = normalizeDemoProducts(readMercadoLivreDemoProducts(), monthly, months, q, "mercadolivre").map((item) => ({
@@ -692,75 +688,26 @@ export default async function handler(req, res) {
       sendJson(res, 200, {
         ok: true,
         ...response,
-        warning: `${error.message || "Falha na busca real"}. Mostrando demonstração por enquanto.`,
+        warning: `${error.message || "Falha na integração Mercado Livre"}. Mostrando demonstração por enquanto.`,
       });
     }
     return;
   }
-  if (pathname === "/api/search") {
+  if (pathname === "/api/ml-connector-test") {
     const q = url.searchParams.get("q") || "";
     const mode = (url.searchParams.get("mode") || "monthly").toLowerCase();
     const monthly = Number(url.searchParams.get("monthly") || "50");
     const months = Number(url.searchParams.get("months") || "12");
     const totalBudget = Number(url.searchParams.get("totalBudget") || (monthly * months));
-    let products = [];
-    let dataMode = "demo";
-    const classifyByMode = mode === "total"
-      ? (price) => {
-        if (price <= totalBudget) return "CABE";
-        if (price <= totalBudget * 1.2) return "APERTADO";
-        return "NÃO CABE";
-      }
-      : (price) => {
-        const installment = price / months;
-        if (installment <= monthly) return "CABE";
-        if (installment <= monthly * 1.2) return "APERTADO";
-        return "NÃO CABE";
-    };
-    try {
-      const results = await fetchMercadoLivreSearch(q, 20);
-      products = results
-        .map((item) => {
-          const normalized = normalizeMercadoLivreSearchItem(item, monthly, months);
-          const status = classifyByMode(normalized.price || 0);
-          return {
-            ...normalized,
-            status,
-            monthlyPrice: normalized.price / months,
-            installmentValue: normalized.price / months,
-            dataMode: "real",
-          };
-        })
-        .filter((item) => item.title);
-      if (products.length) {
-        dataMode = "real";
-      } else {
-        products = normalizeDemoProducts(readMercadoLivreDemoProducts(), monthly, months, q, "mercadolivre").map((item) => ({
-          ...item,
-          status: classifyByMode(item.price || 0),
-          dataMode: "demo",
-        }));
-      }
-    } catch {
-      products = normalizeDemoProducts(readMercadoLivreDemoProducts(), monthly, months, q, "mercadolivre").map((item) => ({
-        ...item,
-        status: classifyByMode(item.price || 0),
-        dataMode: "demo",
-      }));
-    }
-    products = products.sort((a, b) => {
-      const rank = { "CABE": 0, "APERTADO": 1, "NÃO CABE": 2 };
-      const byRank = rank[a.status] - rank[b.status];
-      if (byRank !== 0) return byRank;
-      return (b.score || 0) - (a.score || 0);
-    });
-    sendJson(res, 200, {
-      ok: true,
-      mode,
-      dataMode,
-      totalBudget,
-      products,
-      warning: products.length ? "" : "Nenhum produto encontrado dentro desse orçamento. Tente aumentar o valor mensal ou o orçamento total.",
+    const result = await MercadoLivreConnector.searchProducts(q, { limit: 20, mode, monthly, months, totalBudget });
+    sendJson(res, result.statusHttp || 200, {
+      configured: MercadoLivreConnector.getDiagnostics().configured,
+      tokenState: result.tokenState || MercadoLivreConnector.getDiagnostics().tokenState,
+      strategyUsed: result.strategyUsed || "",
+      statusHttp: result.statusHttp || 200,
+      returnedCount: result.returnedCount || 0,
+      firstFive: result.firstFive || [],
+      error: result.error || "",
     });
     return;
   }

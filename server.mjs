@@ -5,6 +5,7 @@ import path from "node:path";
 import { URL, pathToFileURL } from "node:url";
 import dummyJsonAdapter from "./src/adapters/products.dummyjson.js";
 import mercadolivreAdapter from "./src/adapters/products.mercadolivre.js";
+import MercadoLivreConnector from "./src/connectors/MercadoLivreConnector.js";
 import travelMockAdapter from "./src/adapters/travel.mock.js";
 import BudgetEngine from "./src/engines/BudgetEngine.js";
 import ScoreEngine from "./src/engines/ScoreEngine.js";
@@ -1128,18 +1129,15 @@ export async function requestHandler(req, res) {
     }
 
     try {
-      const realProducts = [];
-      try {
-        const results = await fetchMercadoLivreSearch(query);
-        for (const item of results.slice(0, 24)) {
-          realProducts.push(mapMercadoLivreSearchItem(item));
-        }
-      } catch (error) {
-        realProducts.length = 0;
-      }
-
-      const sourceProducts = realProducts.length ? realProducts : demoProductsForQuery(query);
-      const dataMode = realProducts.length ? "real" : "demo";
+      const connectorResult = await MercadoLivreConnector.searchProducts(query, {
+        limit: 20,
+        mode,
+        monthly,
+        months,
+        totalBudget,
+      });
+      const sourceProducts = Array.isArray(connectorResult.products) ? connectorResult.products : [];
+      const dataMode = connectorResult.dataMode || (connectorResult.strategyUsed === "demo" ? "demo" : "real-authenticated");
       const response = buildOqcSearchResponse({
         products: sourceProducts,
         query,
@@ -1150,7 +1148,7 @@ export async function requestHandler(req, res) {
         dataMode,
       });
 
-      if (!realProducts.length && !sourceProducts.length) {
+      if (!sourceProducts.length) {
         response.warning = "Não encontramos exemplo demonstrativo confiável para este orçamento.";
       } else if (dataMode === "demo") {
         response.warning = "Modo demonstração: estes exemplos mostram como o OQC classifica produtos. Preços e disponibilidade devem ser confirmados no Mercado Livre.";
@@ -1172,6 +1170,32 @@ export async function requestHandler(req, res) {
         error: error.message,
       });
     }
+    return;
+  }
+
+  if (requestUrl.pathname === "/api/ml-connector-test") {
+    const q = requestUrl.searchParams.get("q") || "";
+    const mode = String(requestUrl.searchParams.get("mode") || "monthly").toLowerCase() === "total" ? "total" : "monthly";
+    const monthly = Number(requestUrl.searchParams.get("monthly") || "0");
+    const months = Number(requestUrl.searchParams.get("months") || "12");
+    const totalBudgetParam = Number(requestUrl.searchParams.get("totalBudget") || "0");
+    const totalBudget = mode === "total" ? (totalBudgetParam > 0 ? totalBudgetParam : monthly * months) : monthly * months;
+    const result = await MercadoLivreConnector.searchProducts(q, {
+      limit: 20,
+      mode,
+      monthly,
+      months,
+      totalBudget,
+    });
+    sendJson(res, result.statusHttp || 200, {
+      configured: MercadoLivreConnector.getDiagnostics().configured,
+      tokenState: result.tokenState || MercadoLivreConnector.getDiagnostics().tokenState,
+      strategyUsed: result.strategyUsed || "",
+      statusHttp: result.statusHttp || 200,
+      returnedCount: result.returnedCount || 0,
+      firstFive: result.firstFive || [],
+      error: result.error || "",
+    });
     return;
   }
 

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Sprint 7
+- Introduced `MercadoLivreConnector` as the single integration layer for Mercado Livre data access.
+- Added token-aware strategies with controlled fallback to honest demo data when real access is unavailable.
+- Added connector diagnostics and tests for token absence, 403 handling, item lookup, normalization, and safe fallback behavior.
+
 ### Sprint 6
 - Fixed the local search flow to accept `mode=total` with `totalBudget` only and keep the API on HTTP 200 for trust-building flows.
 - Tightened Mercado Livre demo fallback relevance so categories stay coherent and the demo messages stay honest.
