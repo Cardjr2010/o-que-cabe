@@ -1,6 +1,5 @@
-import fs from "node:fs";
 import path from "node:path";
-import { normalizeImportedProduct, loadSeedProducts } from "./ProductImporter.js";
+import { normalizeImportedProduct } from "./ProductImporter.js";
 
 function splitCsvLine(line = "") {
   const cells = [];
@@ -132,34 +131,6 @@ export class CsvProductImporter {
     return { imported, rejected, rows };
   }
 
-  mergeIntoSeed(products = []) {
-    const current = loadSeedProducts(this.seedPath);
-    const merged = [...current];
-
-    for (const product of products) {
-      const index = merged.findIndex((item) =>
-        item.id === product.id ||
-        item.externalId === product.externalId ||
-        item.productUrl === product.productUrl ||
-        (product.affiliateUrl && item.affiliateUrl === product.affiliateUrl),
-      );
-
-      if (index >= 0) {
-        merged[index] = {
-          ...merged[index],
-          ...product,
-          id: merged[index].id,
-          lastCheckedAt: product.lastCheckedAt || new Date().toISOString(),
-          priceHistory: Array.isArray(merged[index].priceHistory) ? merged[index].priceHistory : [],
-        };
-      } else {
-        merged.push(product);
-      }
-    }
-
-    return merged;
-  }
-
   summarize(result) {
     return {
       total: result.rows?.length || 0,
@@ -167,10 +138,6 @@ export class CsvProductImporter {
       rejected: result.rejected?.length || 0,
       reasons: (result.rejected || []).map((item) => item.reason),
     };
-  }
-
-  writeSeed(products = []) {
-    fs.writeFileSync(this.seedPath, `${JSON.stringify(products, null, 2)}\n`, "utf8");
   }
 }
 

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Sprint 17
+- Connected the CSV importer to the official `CatalogManager` so CSV imports now flow through the managed product database.
+- Removed the parallel seed-writing path from the importer script and made the catalog handle merge and deduplication.
+- Added catalog-aware tests and a report documenting the new CSV-to-catalog flow.
+
 ### Sprint 16
 - Added a managed catalog layer so OQC products are handled through `CatalogManager` instead of being edited as raw JSON.
 - Introduced catalog repository, validation, update, and export modules to support import, merge, disable, delete, and search flows.

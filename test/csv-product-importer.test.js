@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import CsvProductImporter, { rowToProduct } from "../src/importers/CsvProductImporter.js";
+import CatalogManager from "../src/catalog/CatalogManager.js";
 import handler from "../api/web.js";
 
 function createResponse() {
@@ -76,8 +77,11 @@ test("price string vira número", () => {
 });
 
 test("duplicado não duplica", () => {
-  const importer = new CsvProductImporter();
-  const products = [
+  const tempDir = fs.mkdtempSync(path.join(process.cwd(), ".tmp-"));
+  const seedPath = path.join(tempDir, "products.seed.json");
+  fs.writeFileSync(seedPath, "[]\n", "utf8");
+  const catalog = new CatalogManager({ seedPath });
+  const result = catalog.import([
     {
       id: "dup-1",
       externalId: "ext-1",
@@ -98,10 +102,8 @@ test("duplicado não duplica", () => {
       marketplace: "Mercado Livre",
       dataMode: "seed",
     },
-  ];
-
-  const merged = importer.mergeIntoSeed(products);
-  const duplicates = merged.filter((item) => item.id === "dup-1");
+  ]);
+  const duplicates = result.products.filter((item) => item.id === "dup-1");
   assert.equal(duplicates.length, 1);
   assert.equal(duplicates[0].price, 120);
 });
@@ -110,10 +112,14 @@ test("seed é atualizada corretamente", () => {
   const importer = new CsvProductImporter();
   const csvText = fs.readFileSync(path.join(process.cwd(), "data", "products.sample.csv"), "utf8");
   const result = importer.importFromCsv(csvText);
-  const merged = importer.mergeIntoSeed(result.imported);
+  const tempDir = fs.mkdtempSync(path.join(process.cwd(), ".tmp-"));
+  const seedPath = path.join(tempDir, "products.seed.json");
+  fs.writeFileSync(seedPath, "[]\n", "utf8");
+  const catalog = new CatalogManager({ seedPath });
+  const merged = catalog.import(result.imported);
 
-  assert.ok(merged.length >= result.imported.length);
-  assert.ok(merged.some((item) => item.title === "Samsung Galaxy A15"));
+  assert.ok(merged.total >= result.imported.length);
+  assert.ok(merged.products.some((item) => item.title === "Samsung Galaxy A15"));
 });
 
 test("produto inválido retorna motivo", () => {
@@ -149,3 +155,16 @@ test("/api/search encontra produto importado na seed", async () => {
   }
 });
 
+test("CatalogManager recebe produtos importados pelo CSV", () => {
+  const tempDir = fs.mkdtempSync(path.join(process.cwd(), ".tmp-"));
+  const seedPath = path.join(tempDir, "products.seed.json");
+  fs.writeFileSync(seedPath, "[]\n", "utf8");
+  const catalog = new CatalogManager({ seedPath });
+  const importer = new CsvProductImporter();
+  const csvText = fs.readFileSync(path.join(process.cwd(), "data", "products.sample.csv"), "utf8");
+  const result = importer.importFromCsv(csvText);
+  const merged = catalog.import(result.imported);
+
+  assert.ok(merged.products.length > 0);
+  assert.ok(catalog.search({ category: "celular" }).length > 0);
+});
