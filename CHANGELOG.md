@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Sprint 16
+- Added a managed catalog layer so OQC products are handled through `CatalogManager` instead of being edited as raw JSON.
+- Introduced catalog repository, validation, update, and export modules to support import, merge, disable, delete, and search flows.
+- Added a simple internal `/catalog` page and `/api/catalog` endpoint for catalog visibility and export.
+
 ### Sprint 15
 - Added a manual CSV template for populating the OQC with real product candidates across celulares, TVs, and notebooks.
 - Documented how to fill prices, product links, and affiliate links before running the importer.

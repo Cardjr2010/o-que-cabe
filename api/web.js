@@ -4,6 +4,7 @@ import BudgetEngine from "../src/engines/BudgetEngine.js";
 import ScoreEngine from "../src/engines/ScoreEngine.js";
 import RankingEngine from "../src/engines/RankingEngine.js";
 import MercadoLivreProvider from "../src/providers/MercadoLivreProvider.js";
+import CatalogManager from "../src/catalog/CatalogManager.js";
 
 const root = process.cwd();
 const publicDir = path.join(root, "public");
@@ -11,6 +12,7 @@ const oauthPath = path.join(root, "data", "mercadolivre-oauth.json");
 const productsPath = path.join(root, "data", "products.json");
 const mercadolivreDemoPath = path.join(root, "data", "mercadolivre-demo-products.json");
 const mlLinksPath = path.join(root, "data", "mercadolivre-links.json");
+const catalogManager = new CatalogManager({ seedPath: path.join(root, "data", "products.seed.json") });
 
 function readJson(filePath, fallback) {
   try {
@@ -558,6 +560,78 @@ function normalizeMercadoLivreSearchItem(item, monthly, months) {
   };
 }
 
+function renderCatalogPage(query = {}) {
+  const items = catalogManager.search({
+    q: query.q || "",
+    category: query.category || "",
+    brand: query.brand || "",
+    marketplace: query.marketplace || "",
+    status: query.status || "",
+    minPrice: query.minPrice || 0,
+    maxPrice: query.maxPrice || Infinity,
+  });
+  const rows = items.map((item) => `
+    <tr>
+      <td>${escapeHtml(item.title || "")}</td>
+      <td>${escapeHtml(item.category || "")}</td>
+      <td>${escapeHtml(item.marketplace || "")}</td>
+      <td>${escapeHtml(String(item.price ?? ""))}</td>
+      <td>${escapeHtml(item.updatedAt || item.lastCheckedAt || "")}</td>
+      <td>${escapeHtml(item.status || "ACTIVE")}</td>
+    </tr>
+  `).join("");
+
+  return `<!doctype html>
+  <html lang="pt-BR">
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>Catálogo OQC</title>
+      <link rel="stylesheet" href="/styles.css" />
+    </head>
+    <body>
+      <header class="topbar">
+        <a class="brand" href="/"><img class="brand-mark" src="/logo-oqc.png" alt="OQC" /><strong>Catálogo OQC</strong></a>
+      </header>
+      <main style="padding:24px;max-width:1200px;margin:0 auto;">
+        <h1 style="margin:0 0 12px;">Catálogo interno</h1>
+        <p style="margin:0 0 16px;">Produtos gerenciados pelo OQC. Importar, exportar, editar, desativar e excluir podem ser ligados depois sem mudar o motor.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+          <a class="submit-button" href="/api/catalog?action=export&format=json">Export JSON</a>
+          <a class="submit-button" href="/api/catalog?action=export&format=csv">Export CSV</a>
+          <button class="submit-button" type="button" disabled>Import</button>
+          <button class="submit-button" type="button" disabled>Edit</button>
+          <button class="submit-button" type="button" disabled>Disable</button>
+          <button class="submit-button" type="button" disabled>Delete</button>
+        </div>
+        <form method="get" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:20px;">
+          <input name="q" placeholder="Search" value="${escapeHtml(query.q || "")}" />
+          <input name="category" placeholder="Category" value="${escapeHtml(query.category || "")}" />
+          <input name="marketplace" placeholder="Marketplace" value="${escapeHtml(query.marketplace || "")}" />
+          <input name="brand" placeholder="Brand" value="${escapeHtml(query.brand || "")}" />
+          <input name="status" placeholder="Status" value="${escapeHtml(query.status || "")}" />
+          <button class="submit-button" type="submit">Search</button>
+        </form>
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr>
+              <th style="text-align:left;border-bottom:1px solid #ddd;padding:8px;">Product</th>
+              <th style="text-align:left;border-bottom:1px solid #ddd;padding:8px;">Category</th>
+              <th style="text-align:left;border-bottom:1px solid #ddd;padding:8px;">Marketplace</th>
+              <th style="text-align:left;border-bottom:1px solid #ddd;padding:8px;">Price</th>
+              <th style="text-align:left;border-bottom:1px solid #ddd;padding:8px;">Last Update</th>
+              <th style="text-align:left;border-bottom:1px solid #ddd;padding:8px;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows || '<tr><td colspan="6" style="padding:12px;">Nenhum produto encontrado.</td></tr>'}
+          </tbody>
+        </table>
+      </main>
+    </body>
+  </html>`;
+}
+
 async function searchMercadoLivreWithDiagnostics(query, limit = 20) {
   const q = String(query || "").trim();
   if (!q) {
@@ -977,6 +1051,30 @@ export default async function handler(req, res) {
 
   if (pathname === "/mercadolivre-manual") {
     send(res, 200, renderMercadoLivrePage(), { "Content-Type": "text/html; charset=utf-8" });
+    return;
+  }
+
+  if (pathname === "/catalog") {
+    const query = Object.fromEntries(url.searchParams.entries());
+    send(res, 200, renderCatalogPage(query), { "Content-Type": "text/html; charset=utf-8" });
+    return;
+  }
+
+  if (pathname === "/api/catalog") {
+    const action = (url.searchParams.get("action") || "list").toLowerCase();
+    const format = (url.searchParams.get("format") || "json").toLowerCase();
+    if (action === "export") {
+      const body = catalogManager.export(format);
+      send(res, 200, body, {
+        "Content-Type": format === "csv" ? "text/csv; charset=utf-8" : "application/json; charset=utf-8",
+      });
+      return;
+    }
+    sendJson(res, 200, {
+      ok: true,
+      ...catalogManager.diagnostics(),
+      products: catalogManager.search(Object.fromEntries(url.searchParams.entries())),
+    });
     return;
   }
 
