@@ -206,6 +206,8 @@ test("Demo não usa anúncio real no link", async () => {
 
     assert.equal(body.dataMode, "demo");
     assert.ok(first.permalink.includes("lista.mercadolivre.com.br"));
+    assert.ok(!/mercadolivre\.com\.br\/?$/.test(first.permalink));
+    assert.ok(first.permalink.includes("relogio") || first.permalink.includes("smartwatch"));
     assert.ok(first.dataMode === "demo");
   } finally {
     global.fetch = originalFetch;
@@ -217,4 +219,11 @@ test("Texto do botão demo e real permanece claro", () => {
   assert.match(appJs, /Abrir anúncio/);
   assert.match(appJs, /Ver busca parecida/);
   assert.match(appJs, /Link indisponível/);
+  assert.match(appJs, /Exemplo demonstrativo\. Preço e disponibilidade devem ser confirmados no Mercado Livre\./);
+});
+
+test("Nenhum card deve deixar undefined escapar na UI", () => {
+  const appJs = fs.readFileSync(path.join(process.cwd(), "public", "app.js"), "utf8");
+  assert.match(appJs, /safeText\(/);
+  assert.ok(!appJs.includes(">${undefined}<"));
 });

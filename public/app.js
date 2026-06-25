@@ -48,6 +48,26 @@ const currency = new Intl.NumberFormat("pt-BR", {
   currency: "BRL",
 });
 
+function safeText(value, fallback = "") {
+  if (value == null || value === "") return fallback;
+  return String(value);
+}
+
+function slugify(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function buildDemoSearchUrl(product) {
+  const term = slugify(product?.title || product?.category || product?.searchTerm || "produto");
+  return term ? `https://lista.mercadolivre.com.br/${term}` : "https://lista.mercadolivre.com.br/produto";
+}
+
 function productImage(product) {
   const image = product.image || product.thumbnail || "";
   if (image) {
@@ -93,6 +113,10 @@ function renderProducts(products) {
         ? currency.format(product.installmentValue)
         : "parcela na loja";
       const total = formatPrice(product.price);
+      const note = safeText(product.note, "Exemplo demonstrativo. Preço e disponibilidade devem ser confirmados no Mercado Livre.");
+      const buttonLabel = resolveButtonLabel(product);
+      const link = resolveProductLink(product);
+      const hasLink = hasProductLink(product);
 
       return `
         <article class="card">
@@ -102,13 +126,13 @@ function renderProducts(products) {
             <h2>${product.title}</h2>
             ${product.status ? `<p class="small"><strong>Status:</strong> ${product.status}</p>` : ""}
             ${Number.isFinite(product.score) ? `<p class="small"><strong>Score O Que Cabe:</strong> ${product.score}/100</p>` : ""}
-            <p class="small">${product.note}</p>
+            <p class="small">${note}</p>
             <div class="price">
               <div class="small">${product.installments || "?"}x de</div>
               <div class="installment">${installment}</div>
               <div class="small">Total: ${total}</div>
             </div>
-            <a href="${product.url}" target="_blank" rel="noopener">${product.source === "mercadolivre" ? "Ver no Mercado Livre" : product.source === "amazon" ? "Ver na Amazon" : product.source === "magalu" ? "Ver na Magalu" : "Ver oferta"}</a>
+            ${hasLink ? `<a href="${link}" target="_blank" rel="noopener">${buttonLabel}</a>` : `<a class="disabled" href="javascript:void(0)" role="button" aria-disabled="true">Link indisponível</a>`}
           </div>
         </article>
       `;
@@ -122,7 +146,7 @@ function renderBreakdown(breakdown = []) {
     <details class="oqc-breakdown">
       <summary>Por que o OQC escolheu?</summary>
       <ul>
-        ${breakdown.map((item) => `<li><strong>${item.factor}:</strong> ${item.earned}/${item.weight} - ${item.reason}</li>`).join("")}
+        ${breakdown.map((item) => `<li><strong>${safeText(item.factor, "Fator")}:</strong> ${safeText(item.earned, 0)}/${safeText(item.weight, 0)} - ${safeText(item.reason, "Exemplo demonstrativo. Preço e disponibilidade devem ser confirmados no Mercado Livre.")}</li>`).join("")}
       </ul>
     </details>
   `;
@@ -148,7 +172,7 @@ function renderRecommendationBlock(recommendations = []) {
           <span class="oqc-rank">${item.rank}º</span>
           <div>
             <strong>${item.label}</strong>
-            <p>${item.reason}</p>
+            <p>${safeText(item.reason, "Exemplo demonstrativo. Preço e disponibilidade devem ser confirmados no Mercado Livre.")}</p>
           </div>
         </div>
         <h3>${product.title || "Produto"}</h3>
@@ -203,11 +227,17 @@ function renderTrips(trips) {
 }
 
 function resolveProductLink(product) {
-  return product.affiliateUrl || product.productUrl || product.permalink || product.url || "#";
+  if (product.affiliateUrl || product.productUrl || product.permalink || product.url) {
+    return product.affiliateUrl || product.productUrl || product.permalink || product.url;
+  }
+  if ((product.dataMode || "demo") === "demo") {
+    return buildDemoSearchUrl(product);
+  }
+  return "";
 }
 
 function hasProductLink(product) {
-  return Boolean(product.affiliateUrl || product.productUrl || product.permalink || product.url);
+  return Boolean(resolveProductLink(product));
 }
 
 function renderMercadoLivre(products) {
@@ -244,8 +274,8 @@ function renderMercadoLivre(products) {
             <h2>${product.title}</h2>
             <p class="small status status-${String(status).toLowerCase().replace(/\s+/g, "-")}"><strong>Status:</strong> ${status}</p>
             <p class="small"><strong>Score O Que Cabe:</strong> ${score}/100</p>
-            <p class="small">${product.condition ? `Condição: ${product.condition}` : ""}</p>
-            <p class="small">${product.availableQuantity != null ? `Estoque: ${product.availableQuantity}` : ""}</p>
+            <p class="small">${product.condition ? `Condição: ${product.condition}` : "Exemplo demonstrativo. Preço e disponibilidade devem ser confirmados no Mercado Livre."}</p>
+            <p class="small">${product.availableQuantity != null ? `Estoque: ${product.availableQuantity}` : "Exemplo demonstrativo. Preço e disponibilidade devem ser confirmados no Mercado Livre."}</p>
             <p class="small">Preço total: vindo do Mercado Livre. Parcela OQC: estimativa calculada pelo site.</p>
             <p class="small">Parcela estimada pelo O Que Cabe. Confira frete, juros e parcelamento real na loja.</p>
             <p class="small">${transparencyNote}</p>
