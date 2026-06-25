@@ -230,12 +230,14 @@ function matchesCategoryQuery(query, product) {
 }
 
 function buildButtonLabel(product) {
+  const mode = String(product?.dataMode || "demo").toLowerCase();
+  if (mode === "demo") {
+    return "Demo ó sem an˙ncio real";
+  }
   if (!product || !product.url && !product.permalink && !product.productUrl && !product.affiliateUrl) {
     return "Link indispon√≠vel";
   }
-  return String(product.dataMode || "demo").toLowerCase() === "real"
-    ? "Abrir an√∫ncio"
-    : "Ver busca parecida";
+  return "Abrir an√∫ncio";
 }
 
 function buildOqcRecommendationText(product) {

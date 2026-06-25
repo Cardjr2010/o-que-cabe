@@ -4,9 +4,9 @@
 
 ### Hotfix
 - Removed `undefined` leakage from card and recommendation text so the UI stays readable even when optional fields are missing.
-- Made demo card buttons resolve to specific Mercado Livre search links instead of generic home pages.
-- Kept demo and real button labels explicit: `Ver busca parecida`, `Abrir anúncio`, and `Link indisponível`.
-- Added regression tests covering demo links, fallback text, and the absence of `undefined` in the card rendering path.
+- Disabled demo card navigation so the MVP never sends users to a Mercado Livre search or home page while still in demo mode.
+- Kept real button labels explicit: `Abrir anúncio` and `Link indisponível`.
+- Added regression tests covering demo non-navigation, fallback text, and the absence of `undefined` in the card rendering path.
 
 ### Sprint 8
 - Added a marketplace provider abstraction so the OQC can grow beyond Mercado Livre without changing the engine stack.

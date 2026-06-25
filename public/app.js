@@ -53,21 +53,6 @@ function safeText(value, fallback = "") {
   return String(value);
 }
 
-function slugify(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
-function buildDemoSearchUrl(product) {
-  const term = slugify(product?.title || product?.category || product?.searchTerm || "produto");
-  return term ? `https://lista.mercadolivre.com.br/${term}` : "https://lista.mercadolivre.com.br/produto";
-}
-
 function productImage(product) {
   const image = product.image || product.thumbnail || "";
   if (image) {
@@ -154,9 +139,10 @@ function renderBreakdown(breakdown = []) {
 
 function resolveButtonLabel(product) {
   const dataMode = product.dataMode || "demo";
+  if (dataMode === "demo") return "Demo — sem anúncio real";
   const hasLink = hasProductLink(product);
   if (!hasLink) return "Link indisponível";
-  return dataMode === "real" ? "Abrir anúncio" : "Ver busca parecida";
+  return "Abrir anúncio";
 }
 
 function renderRecommendationBlock(recommendations = []) {
@@ -180,7 +166,11 @@ function renderRecommendationBlock(recommendations = []) {
         <p class="small">${formatPrice(product.price)}</p>
         <p class="small">${product.dataMode === "real" ? "Dados reais do Mercado Livre." : "Modo demonstração."} ${product.status || product.budgetStatus || "CABE"} no orçamento.</p>
         ${renderBreakdown(product.scoreBreakdown)}
-        ${hasLink ? `<a href="${link}" target="_blank" rel="noopener">${resolveButtonLabel(product)}</a>` : `<a class="disabled" href="javascript:void(0)" role="button" aria-disabled="true">Link indisponível</a>`}
+        ${dataMode === "demo"
+          ? `<a class="disabled" href="javascript:void(0)" role="button" aria-disabled="true">Demo — sem anúncio real</a>`
+          : hasLink
+            ? `<a href="${link}" target="_blank" rel="noopener">Abrir anúncio</a>`
+            : `<a class="disabled" href="javascript:void(0)" role="button" aria-disabled="true">Link indisponível</a>`}
       </article>
     `;
   }).join("");
@@ -227,11 +217,11 @@ function renderTrips(trips) {
 }
 
 function resolveProductLink(product) {
+  if ((product.dataMode || "demo") === "demo") {
+    return "";
+  }
   if (product.affiliateUrl || product.productUrl || product.permalink || product.url) {
     return product.affiliateUrl || product.productUrl || product.permalink || product.url;
-  }
-  if ((product.dataMode || "demo") === "demo") {
-    return buildDemoSearchUrl(product);
   }
   return "";
 }
@@ -265,7 +255,7 @@ function renderMercadoLivre(products) {
       const buttonLabel = resolveButtonLabel(product);
       const transparencyNote = dataMode === "real"
         ? "Dados reais do Mercado Livre. Este botão abre o anúncio retornado pela API."
-        : "Modo demonstração: estes exemplos mostram como o OQC classifica produtos. Preços e disponibilidade devem ser confirmados no Mercado Livre.";
+        : "Modo demonstração: estes exemplos mostram como o OQC classificaria produtos. Ainda não são anúncios reais.";
       return `
         <article class="card">
           <div class="image-box">${productImage(product)}</div>
@@ -285,7 +275,11 @@ function renderMercadoLivre(products) {
               <div class="installment">${total}</div>
               <div class="small">${installment} · ${currency.format(product.monthlyPrice || 0)}/mês</div>
             </div>
-            ${linkAvailable ? `<a href="${link}" target="_blank" rel="noopener">${buttonLabel}</a>` : `<a class="disabled" href="javascript:void(0)" role="button" aria-disabled="true">Link indisponível</a>`}
+            ${dataMode === "demo"
+              ? `<a class="disabled" href="javascript:void(0)" role="button" aria-disabled="true">Demo — sem anúncio real</a>`
+              : linkAvailable
+                ? `<a href="${link}" target="_blank" rel="noopener">Abrir anúncio</a>`
+                : `<a class="disabled" href="javascript:void(0)" role="button" aria-disabled="true">Link indisponível</a>`}
           </div>
         </article>
       `;
