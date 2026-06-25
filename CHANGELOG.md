@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Sprint 14
+- Added a CSV product importer so catalog entries can be loaded into the OQC seed from a simple flat file.
+- Introduced a small CLI import script that validates, deduplicates, and merges CSV products into `data/products.seed.json`.
+- Kept affiliate URL priority and honest rejection of invalid products so the MVP remains trustworthy.
+
 ### Sprint 13
 - Added a WooCommerce-style importer layer to keep real products inside the OQC catalog before search and ranking run.
 - Introduced `ProductImporter` and `WooCommerceStyleImporter` to normalize imported products into the OQC seed contract.

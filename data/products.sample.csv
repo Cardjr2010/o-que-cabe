@@ -1,0 +1,4 @@
+id,externalId,title,category,brand,model,price,currency,image,productUrl,affiliateUrl,marketplace,sourceType,condition,lastCheckedAt
+csv-celular-a15,ml-a15,Samsung Galaxy A15,celular,Samsung,A15,899,BRL,https://placehold.co/600x400/png?text=Galaxy+A15,https://lista.mercadolivre.com.br/samsung-galaxy-a15-256gb,,Mercado Livre,csv,new,2026-06-25T00:00:00-03:00
+csv-tv-crystal-50,ml-tv-50,Samsung Crystal UHD 50,tv,Samsung,Crystal UHD 50,2299,BRL,https://placehold.co/600x400/png?text=Crystal+UHD+50,https://lista.mercadolivre.com.br/samsung-crystal-uhd-50,,Mercado Livre,csv,new,2026-06-25T00:00:00-03:00
+csv-notebook-vivobook,ml-vivobook,ASUS Vivobook 15,notebook,ASUS,Vivobook 15,2999,BRL,https://placehold.co/600x400/png?text=Vivobook+15,https://lista.mercadolivre.com.br/asus-vivobook-15,,Mercado Livre,csv,new,2026-06-25T00:00:00-03:00
