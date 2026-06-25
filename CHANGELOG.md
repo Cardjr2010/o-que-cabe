@@ -3,6 +3,11 @@
 ## Unreleased
 
 ### Hotfix
+- Removed Amazon and marketplace-origin visual elements from the public home so the MVP stays focused on Mercado Livre only.
+- Kept the home limited to OQC, monthly and total budget modes, categories, results, and the honest demo message.
+- Preserved future marketplace adapters in code while hiding them from the public interface.
+
+### Hotfix
 - Removed `undefined` leakage from card and recommendation text so the UI stays readable even when optional fields are missing.
 - Disabled demo card navigation so the MVP never sends users to a Mercado Livre search or home page while still in demo mode.
 - Kept real button labels explicit: `Abrir anúncio` and `Link indisponível`.
