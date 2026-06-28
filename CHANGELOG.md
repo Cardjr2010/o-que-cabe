@@ -2,37 +2,6 @@
 
 ## Unreleased
 
-### Sprint 23
-- Added a new affiliate deals block on the home page so the site can show daily coupons and affiliate offers with images, validity, and direct destination links.
-- Wired a new `/api/affiliate-offers` endpoint to serve curated offers from a local seed file without interfering with the budget search flow.
-- Added a dedicated `Apple > iPhone` shortcut and kept `Tablet` and `Computador` prepared for future expansion.
-
-### Sprint 22
-- Tuned the new `Apple > iPhone` shortcut to target a specific `iPhone 17 Pro Max` search instead of the broader Apple phone family.
-- Set the Apple shortcut to use a higher budget so the flow can surface the current premium device path without collapsing into a generic iPhone result.
-- Kept `Tablet` and `Computador` as disabled future entries in the submenu.
-
-### Sprint 21
-- Added a new `Apple` category entry in the public home so iPhone can be expanded from a single top-level brand button.
-- Prepared the submenu structure for `iPhone`, `Tablet`, and `Computador` without changing the existing search flow.
-- Kept the public UI focused on the current catalog and budget modes while making the brand navigation easier to extend.
-
-### Sprint 20
-- Added a new `FeedImporter` for incremental CSV and JSON ingestion using streams and delta detection.
-- Wired feed updates into the official catalog path so repeated rows are skipped unless relevant fields change.
-- Added a cron-friendly feed sync script plus a server endpoint for scheduled ingestion from local files or remote URLs.
-- Added a CJ shopping feed preset and remote-feed warning when a URL only exposes headers instead of product rows.
-- Added tests for CSV streaming, JSON updates, and installment parsing to keep catalog ingestion stable.
-
-### Sprint 19
-- Added price-history-aware catalog merging so imported products preserve prior prices and record changes when a product is updated.
-- Promoted the CatalogManager as the place where imported products receive status, timestamps, and stable merge behavior.
-- Added a regression test to verify the catalog records price changes instead of overwriting history.
-
-### Sprint 18
-- Expanded the official seed catalog to cover the six home categories with 20 products each, so the quick-start buttons and category cards now have a fuller catalog behind them.
-- Kept the catalog-driven search flow intact while improving visual coverage for celulares, TVs, notebooks, relógios, casa, and presente.
-
 ### Sprint 17
 - Connected the CSV importer to the official `CatalogManager` so CSV imports now flow through the managed product database.
 - Removed the parallel seed-writing path from the importer script and made the catalog handle merge and deduplication.
@@ -83,21 +52,6 @@
 - Reworked the home pechinchas into practical budget shortcuts for R$ 50, R$ 100, R$ 250, and R$ 500.
 - Expanded the Mercado Livre demo base with more realistic low-budget examples so the MVP has useful results in demo mode.
 - Replaced the cold `Link indisponível` fallback on demo cards with the clearer `Demo — sem anúncio real` label.
-
-### Sprint 12
-- Simplified the home search form so each budget mode shows only the fields that matter.
-- Added a short mode hint to make Monthly vs Total easier to read at a glance.
-- Reduced repeated result copy so recommendation cards and product cards read more cleanly on mobile.
-
-### Sprint 11
-- Tightened the home search card so monthly and total budget modes no longer feel visually mixed.
-- Made the budget form switch its own layout state per mode, hiding the inactive budget input and showing clearer mode-specific labels.
-- Kept the rest of the MVP behavior intact and verified the app still passes the full test suite.
-
-### Sprint 10
-- Expanded `BudgetEngine` with financial metrics for installment-aware analysis, including monthly impact, total term cost, embedded interest, and a traffic-light warning level.
-- Preserved the existing CABE / APERTADO / NÃO CABE classification so the current ranking flow and UI remain stable.
-- Added coverage for the new finance metrics while keeping the existing budget classification tests intact.
 
 ### Sprint 9
 - Added a new "Pechinchas em foco" entry point on the home with budget shortcuts for R$ 50, R$ 100, R$ 250, and R$ 500.

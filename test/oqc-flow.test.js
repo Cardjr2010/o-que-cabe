@@ -194,17 +194,16 @@ test("Demo não usa anúncio real no link", async () => {
   });
 
   try {
-    const req = { url: "/api/search?q=shampoo&mode=total&totalBudget=300" };
+    const req = { url: "/api/search?q=casa&mode=total&totalBudget=300" };
     const res = createResponse();
     await handler(req, res);
     const body = JSON.parse(res.body);
+    const first = body.products[0];
 
     assert.equal(body.dataMode, "demo");
-    assert.ok(Array.isArray(body.products));
-    if (body.products[0]) {
-      assert.equal(body.products[0].dataMode, "demo");
-      assert.ok(typeof body.products[0].title === "string" && body.products[0].title.length > 0);
-    }
+    assert.equal(first.dataMode, "demo");
+    assert.ok(typeof first.title === "string" && first.title.length > 0);
+    assert.ok(first.dataMode === "demo");
   } finally {
     global.fetch = originalFetch;
   }
@@ -222,19 +221,4 @@ test("Nenhum card deve deixar undefined escapar na UI", () => {
   const appJs = fs.readFileSync(path.join(process.cwd(), "public", "app.js"), "utf8");
   assert.match(appJs, /safeText\(/);
   assert.ok(!appJs.includes(">${undefined}<"));
-});
-
-test("Endpoint de ofertas afiliadas retorna cards prontos para a home", async () => {
-  const res = createResponse();
-  await handler({ url: "/api/affiliate-offers" }, res);
-  const body = JSON.parse(res.body);
-
-  assert.equal(res.statusCode, 200);
-  assert.equal(body.ok, true);
-  assert.equal(body.count, 3);
-  assert.ok(Array.isArray(body.offers));
-  assert.equal(body.offers.length, 3);
-  assert.ok(body.offers.every((offer) => typeof offer.title === "string" && offer.title.length > 0));
-  assert.ok(body.offers.every((offer) => typeof offer.affiliateUrl === "string" && offer.affiliateUrl.length > 0));
-  assert.ok(body.offers.every((offer) => typeof offer.image === "string" && offer.image.length > 0));
 });

@@ -1,7 +1,6 @@
 const form = document.querySelector("#searchForm");
 const productInput = document.querySelector("#productInput");
 const monthlyInput = document.querySelector("#monthlyInput");
-const monthlyField = document.querySelector(".field-monthly");
 const monthsInput = document.querySelector("#monthsInput");
 const totalBudgetInput = document.querySelector("#totalBudgetInput");
 const totalField = document.querySelector("#totalField");
@@ -17,8 +16,6 @@ const budgetLine = document.querySelector("#budgetLine");
 const summaryTitle = document.querySelector("#summaryTitle");
 const sourceBadge = document.querySelector("#sourceBadge");
 const resultsArea = document.querySelector(".results-area");
-const modeHint = document.querySelector("#modeHint");
-const affiliateDealsGrid = document.querySelector("#affiliateDealsGrid");
 const appView = document.body.dataset.view || "home";
 const apiEndpoint = document.body.dataset.endpoint || "/api/search";
 let searchTimer = null;
@@ -26,16 +23,10 @@ let searchMode = form?.dataset.mode || "monthly";
 
 function setMode(nextMode) {
   searchMode = nextMode === "total" ? "total" : "monthly";
-  if (form) {
-    form.dataset.mode = searchMode;
-    form.classList.toggle("is-total", searchMode === "total");
-    form.classList.toggle("is-monthly", searchMode !== "total");
-  }
   modeButtons.forEach((button) => {
     button.classList.toggle("active", button.dataset.mode === searchMode);
   });
   if (searchMode === "total") {
-    if (monthlyField) monthlyField.hidden = true;
     if (monthsField) monthsField.hidden = true;
     if (totalField) totalField.hidden = false;
     if (monthlyLabel) monthlyLabel.textContent = "Orçamento total";
@@ -43,23 +34,12 @@ function setMode(nextMode) {
     if (monthsInput) monthsInput.disabled = true;
     if (totalBudgetInput) totalBudgetInput.disabled = false;
   } else {
-    if (monthlyField) monthlyField.hidden = false;
     if (monthsField) monthsField.hidden = false;
     if (totalField) totalField.hidden = true;
     if (monthlyLabel) monthlyLabel.textContent = "Máx. mensal";
     if (monthlyInput) monthlyInput.disabled = false;
     if (monthsInput) monthsInput.disabled = false;
     if (totalBudgetInput) totalBudgetInput.disabled = true;
-  }
-  if (budgetLine) {
-    budgetLine.textContent = searchMode === "total"
-      ? "Orçamento total"
-      : "Orçamento mensal";
-  }
-  if (modeHint) {
-    modeHint.textContent = searchMode === "total"
-      ? "Modo total: informe o valor máximo final da compra."
-      : "Modo mensal: diga quanto pode pagar por mês e em quantas parcelas.";
   }
 }
 
@@ -186,8 +166,8 @@ function renderRecommendationBlock(recommendations = []) {
         </div>
         <h3>${product.title || "Produto"}</h3>
         <p class="small">${product.status || product.budgetStatus || "CABE"} · Score ${Number.isFinite(product.score) ? product.score : 0}/100</p>
-        <p class="small">${formatPrice(product.price)} · ${product.dataMode === "demo" ? "Exemplo demonstrativo" : "Dados reais do Mercado Livre"}</p>
-        <p class="small">${product.status || product.budgetStatus || "CABE"} no orçamento.</p>
+        <p class="small">${formatPrice(product.price)}</p>
+        <p class="small">${product.dataMode === "demo" ? "Modo demonstração." : "Base real do O Que Cabe."} ${product.status || product.budgetStatus || "CABE"} no orçamento.</p>
         ${renderBreakdown(product.scoreBreakdown)}
         ${dataMode === "demo"
           ? `<a class="disabled" href="javascript:void(0)" role="button" aria-disabled="true">Demo — sem anúncio real</a>`
@@ -249,54 +229,6 @@ function resolveProductLink(product) {
   return "";
 }
 
-function renderAffiliateDeals(deals = []) {
-  if (!affiliateDealsGrid) return;
-  if (!Array.isArray(deals) || !deals.length) {
-    affiliateDealsGrid.innerHTML = `
-      <article class="deal-empty">
-        <strong>Sem ofertas carregadas</strong>
-        <span>Atualize o feed de afiliados para mostrar cupons do dia.</span>
-      </article>
-    `;
-    return;
-  }
-
-  affiliateDealsGrid.innerHTML = deals.map((deal) => {
-    const discount = safeText(deal.discount, "Oferta");
-    const code = safeText(deal.couponCode, "CUPOM");
-    const minPrice = Number.isFinite(Number(deal.minPrice)) ? currency.format(Number(deal.minPrice)) : "Conferir";
-    const validUntil = safeText(deal.validUntil, "hoje");
-    const image = deal.image || "";
-    const link = deal.affiliateUrl || "";
-    const title = safeText(deal.title, "Oferta");
-    const subtitle = safeText(deal.subtitle, "Oferta de afiliado");
-    const note = safeText(deal.note, "Disponível enquanto durar o estoque.");
-    return `
-      <article class="deal-card">
-        <div class="deal-image">
-          ${image ? `<img src="${image}" alt="${title}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';">` : ""}
-          <div class="deal-fallback" style="${image ? "display:none" : ""}">
-            <img src="/logo-oqc.png" alt="" class="image-fallback-logo">
-            <span>Oferta do dia</span>
-          </div>
-        </div>
-        <div class="deal-body">
-          <span class="deal-badge">${discount}</span>
-          <h3>${title}</h3>
-          <p>${subtitle}</p>
-          <div class="deal-meta">
-            <span>Cupom: <strong>${code}</strong></span>
-            <span>Mín. ${minPrice}</span>
-            <span>Até ${validUntil}</span>
-          </div>
-          <small>${note}</small>
-          ${link ? `<a href="${link}" target="_blank" rel="noopener">Ver oferta</a>` : `<a class="disabled" href="javascript:void(0)" role="button" aria-disabled="true">Link indisponível</a>`}
-        </div>
-      </article>
-    `;
-  }).join("");
-}
-
 function hasProductLink(product) {
   return Boolean(resolveProductLink(product));
 }
@@ -325,8 +257,8 @@ function renderMercadoLivre(products) {
       const sourceLabel = dataMode === "demo" ? "DEMONSTRAÇÃO MERCADO LIVRE" : "BASE REAL DO O QUE CABE";
       const buttonLabel = resolveButtonLabel(product);
       const transparencyNote = dataMode === "real"
-        ? "Dados reais do Mercado Livre."
-        : "Exemplo demonstrativo. Preço e disponibilidade devem ser confirmados.";
+        ? "Dados reais do Mercado Livre. Este botão abre o anúncio retornado pela API."
+        : "Base real do O Que Cabe. Este botão abre o anúncio específico cadastrado.";
       return `
         <article class="card">
           <div class="image-box">${productImage(product)}</div>
@@ -335,9 +267,11 @@ function renderMercadoLivre(products) {
             <h2>${product.title}</h2>
             <p class="small status status-${String(status).toLowerCase().replace(/\s+/g, "-")}"><strong>Status:</strong> ${status}</p>
             <p class="small"><strong>Score O Que Cabe:</strong> ${score}/100</p>
+            <p class="small">${product.condition ? `Condição: ${product.condition}` : "Base real do O Que Cabe. Preço e disponibilidade podem ser revisados depois."}</p>
+            <p class="small">${product.availableQuantity != null ? `Estoque: ${product.availableQuantity}` : "Base real do O Que Cabe. Preço e disponibilidade podem ser revisados depois."}</p>
+            <p class="small">Preço total: vindo da base real do OQC. Parcela OQC: estimativa calculada pelo site.</p>
+            <p class="small">Parcela estimada pelo O Que Cabe. Confira frete, juros e parcelamento real na loja.</p>
             <p class="small">${transparencyNote}</p>
-            ${product.condition ? `<p class="small">Condição: ${product.condition}</p>` : ""}
-            ${product.availableQuantity != null ? `<p class="small">Estoque: ${product.availableQuantity}</p>` : ""}
             ${renderBreakdown(product.scoreBreakdown)}
             <div class="price">
               <div class="small">Preço total</div>
@@ -379,16 +313,14 @@ form.addEventListener("submit", async (event) => {
     if (searchMode === "total") {
       budgetLine.textContent = `Orçamento total: ${currency.format(totalBudget)}`;
       if (marketline) marketline.textContent = `Seu orçamento total: ${currency.format(totalBudget)}.`;
-      if (monthlyLabel) monthlyLabel.textContent = "Máx. mensal";
+      if (monthlyLabel) monthlyLabel.textContent = "Orçamento total";
       if (monthsField) monthsField.hidden = true;
-      if (monthlyField) monthlyField.hidden = true;
       if (totalField) totalField.hidden = false;
       if (totalBudgetInput) totalBudgetInput.disabled = false;
     } else {
       budgetLine.textContent = `${currency.format(monthly)} por mês em até ${months}x`;
       if (marketline) marketline.textContent = `Seu teto estimado: ${currency.format(ceiling)}, considerando ${currency.format(monthly)} por mês em até ${months}x.`;
       if (monthlyLabel) monthlyLabel.textContent = "Máx. mensal";
-      if (monthlyField) monthlyField.hidden = false;
       if (monthsField) monthsField.hidden = false;
       if (totalField) totalField.hidden = true;
       if (totalBudgetInput) totalBudgetInput.disabled = true;
@@ -501,19 +433,6 @@ document.querySelectorAll(".pechincha-card").forEach((button) => {
   });
 });
 
-document.querySelectorAll(".brand-option:not([disabled])").forEach((button) => {
-  button.addEventListener("click", () => {
-    productInput.value = button.dataset.query || productInput.value || "iphone";
-    searchMode = button.dataset.mode === "total" ? "total" : "monthly";
-    monthlyInput.value = button.dataset.monthly || monthlyInput.value || "600";
-    monthsInput.value = button.dataset.months || monthsInput.value || "12";
-    totalBudgetInput.value = button.dataset.totalBudget || totalBudgetInput.value || "500";
-    modeButtons.forEach((item) => item.classList.toggle("active", item.dataset.mode === searchMode));
-    setMode(searchMode);
-    form.requestSubmit();
-  });
-});
-
 if (appView === "home") {
   modeButtons.forEach((button) => {
     button.addEventListener("click", () => {
@@ -564,18 +483,5 @@ if (appView === "mercadolivre") {
   monthlyInput.addEventListener("input", triggerLiveSearch);
   monthsInput.addEventListener("change", triggerLiveSearch);
 }
-
-async function loadAffiliateDeals() {
-  if (!affiliateDealsGrid || appView !== "home") return;
-  try {
-    const response = await fetch("/api/affiliate-offers");
-    const data = await response.json();
-    renderAffiliateDeals(Array.isArray(data.offers) ? data.offers : []);
-  } catch {
-    renderAffiliateDeals([]);
-  }
-}
-
-loadAffiliateDeals();
 
 
