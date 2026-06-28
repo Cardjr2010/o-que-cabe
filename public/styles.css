@@ -487,6 +487,8 @@ h2 {
   color: #98a6ba;
   font-weight: 900;
   overflow: hidden;
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
 }
 
 .image-box img {
@@ -505,6 +507,9 @@ h2 {
   padding: 18px;
   text-align: center;
   color: #8b97aa;
+  background:
+    radial-gradient(circle at top, rgba(20, 156, 255, 0.14), transparent 52%),
+    linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
 }
 
 .image-fallback-logo {
@@ -618,6 +623,63 @@ h2 {
   background: #fbfcff;
   text-align: center;
   color: var(--muted);
+}
+
+.pechinchas {
+  width: min(1640px, calc(100% - 44px));
+  margin: 18px auto 0;
+}
+
+.pechinchas h2 {
+  margin: 0 0 14px;
+  font-size: clamp(24px, 2.1vw, 34px);
+}
+
+.pechincha-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.pechincha-card {
+  appearance: none;
+  border: 1px solid #d7e4f5;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
+  padding: 12px 16px;
+  min-height: 54px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.pechincha-card strong {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  height: 30px;
+  border-radius: 999px;
+  background: #e8f3ff;
+  color: var(--navy);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.pechincha-card span {
+  font-size: 14px;
+  font-weight: 700;
+  color: #516179;
+}
+
+.pechincha-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+  border-color: #b9d7ff;
 }
 
 .empty-state strong {
