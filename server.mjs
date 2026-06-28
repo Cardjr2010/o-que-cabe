@@ -16,6 +16,7 @@ const envPath = path.join(root, ".env");
 const productsPath = path.join(root, "data", "products.json");
 const mercadolivreDemoPath = path.join(root, "data", "mercadolivre-demo-products.json");
 const mlLinksPath = path.join(root, "data", "mercadolivre-links.json");
+const affiliateOffersPath = path.join(root, "data", "affiliate-offers.seed.json");
 const seoPagesPath = path.join(root, "data", "seo-pages.json");
 const mlDebugReportPath = path.join(root, "RELATORIO_MERCADOLIVRE_403.md");
 const mlOAuthPath = path.join(root, "data", "mercadolivre-oauth.json");
@@ -48,6 +49,10 @@ function readJson(filePath, fallback) {
 
 function readMercadoLivreLinks() {
   return readJson(mlLinksPath, []);
+}
+
+function readAffiliateOffers() {
+  return readJson(affiliateOffersPath, []);
 }
 
 function readMercadoLivreOAuth() {
@@ -232,7 +237,7 @@ function matchesCategoryQuery(query, product) {
 function buildButtonLabel(product) {
   const mode = String(product?.dataMode || "demo").toLowerCase();
   if (mode === "demo") {
-    return "Demo — sem anúncio real";
+    return "Demo ï¿½ sem anï¿½ncio real";
   }
   if (!product || !product.url && !product.permalink && !product.productUrl && !product.affiliateUrl) {
     return "Link indisponÃ­vel";
@@ -1116,6 +1121,17 @@ function renderCollectionPage() {
 
 export async function requestHandler(req, res) {
   const requestUrl = new URL(req.url, `http://localhost:${port}`);
+
+  if (requestUrl.pathname === "/api/affiliate-offers") {
+    const offers = readAffiliateOffers().filter((item) => item && item.affiliateUrl);
+    sendJson(res, 200, {
+      ok: true,
+      updatedAt: new Date().toISOString(),
+      count: offers.length,
+      offers,
+    });
+    return;
+  }
 
   if (requestUrl.pathname === "/api/search") {
     const query = requestUrl.searchParams.get("q") || "";

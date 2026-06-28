@@ -5,6 +5,7 @@ import ScoreEngine from "../src/engines/ScoreEngine.js";
 import RankingEngine from "../src/engines/RankingEngine.js";
 import MercadoLivreProvider from "../src/providers/MercadoLivreProvider.js";
 import CatalogManager from "../src/catalog/CatalogManager.js";
+import FeedImporter from "../src/importers/FeedImporter.js";
 
 const root = process.cwd();
 const publicDir = path.join(root, "public");
@@ -12,7 +13,39 @@ const oauthPath = path.join(root, "data", "mercadolivre-oauth.json");
 const productsPath = path.join(root, "data", "products.json");
 const mercadolivreDemoPath = path.join(root, "data", "mercadolivre-demo-products.json");
 const mlLinksPath = path.join(root, "data", "mercadolivre-links.json");
+const affiliateOffersPath = path.join(root, "data", "affiliate-offers.seed.json");
 const catalogManager = new CatalogManager({ seedPath: path.join(root, "data", "products.seed.json") });
+function buildFeedMapping(preset = "") {
+  if (String(preset || "").toLowerCase() === "cj-shopping") {
+    return {
+      id: "id",
+      externalId: "id",
+      title: "title",
+      category: "google_product_category",
+      brand: "brand",
+      model: "product_type",
+      price: "price",
+      currency: "price",
+      image: "image_link",
+      productUrl: "link",
+      affiliateUrl: "link",
+      marketplace: "marketplace",
+      sourceType: "sourceType",
+      condition: "condition",
+      availability: "availability",
+      seller: "seller",
+      rating: "rating",
+      shipping: "shipping",
+      installments: "installment",
+      lastCheckedAt: "lastCheckedAt",
+      gtin: "gtin",
+      mpn: "mpn",
+      sku: "id",
+    };
+  }
+  return {};
+}
+const feedImporter = new FeedImporter({ networkName: "feed", catalogManager, mapping: buildFeedMapping(process.env.OQC_FEED_PRESET || "") });
 
 function readJson(filePath, fallback) {
   try {
@@ -83,6 +116,10 @@ function readMercadoLivreDemoProducts() {
 
 function readMercadoLivreLinks() {
   return readJson(mlLinksPath, []);
+}
+
+function readAffiliateOffers() {
+  return readJson(affiliateOffersPath, []);
 }
 
 function buildMercadoLivreSearchUrl(product) {
@@ -768,6 +805,18 @@ export default async function handler(req, res) {
     }
     return;
   }
+
+  if (pathname === "/api/affiliate-offers") {
+    const offers = readAffiliateOffers().filter((item) => item && item.affiliateUrl);
+    sendJson(res, 200, {
+      ok: true,
+      updatedAt: new Date().toISOString(),
+      count: offers.length,
+      offers,
+    });
+    return;
+  }
+
   if (pathname === "/api/ml-connector-test") {
     const q = url.searchParams.get("q") || "";
     const mode = (url.searchParams.get("mode") || "monthly").toLowerCase();
@@ -1075,6 +1124,42 @@ export default async function handler(req, res) {
       ...catalogManager.diagnostics(),
       products: catalogManager.search(Object.fromEntries(url.searchParams.entries())),
     });
+    return;
+  }
+
+  if (pathname === "/api/cron/feed-sync") {
+    const source = url.searchParams.get("source") || path.join(root, "data", "products.to-fill.csv");
+    const type = (url.searchParams.get("type") || "csv").toLowerCase();
+    const name = url.searchParams.get("name") || "feed";
+    const preset = (url.searchParams.get("preset") || process.env.OQC_FEED_PRESET || "").toLowerCase();
+    const importer = new FeedImporter({ networkName: "feed", catalogManager, mapping: buildFeedMapping(preset) });
+    try {
+      const result = /^https?:\/\//i.test(source)
+        ? await importer.processRemoteFeed(source, type)
+        : await importer.processFeed(path.isAbsolute(source) ? source : path.join(root, source));
+      sendJson(res, 200, {
+        ok: true,
+        name,
+        source,
+        type,
+        preset,
+        processedCount: result.processedCount,
+        updatedCount: result.updatedCount,
+        rejectedCount: result.rejectedCount,
+        mode: result.mode,
+        catalog: catalogManager.diagnostics(),
+      });
+    } catch (error) {
+      sendJson(res, 502, {
+        ok: false,
+        name,
+        source,
+        type,
+        preset,
+        error: error.message,
+        catalog: catalogManager.diagnostics(),
+      });
+    }
     return;
   }
 

@@ -35,6 +35,7 @@
             <button class="active" type="button" data-mode="monthly">Orçamento Mensal</button>
             <button type="button" data-mode="total">Orçamento Total</button>
           </div>
+          <p class="mode-hint" id="modeHint">Modo mensal: diga quanto pode pagar por mês e em quantas parcelas.</p>
           <div class="field field-product">
             <label for="productInput">O que procura?</label>
             <div class="input-icon">
@@ -42,7 +43,7 @@
               <input id="productInput" name="product" value="celular" placeholder="Ex: Celular, Notebook..." required />
             </div>
           </div>
-          <div class="field">
+          <div class="field field-monthly">
             <label for="monthlyInput" id="monthlyLabel">Máx. mensal</label>
             <div class="money-input">
               <span>R$</span>
@@ -88,9 +89,67 @@
         </div>
       </section>
 
+      <section class="pechinchas">
+        <h2>Pechinchas em foco</h2>
+        <div class="pechincha-grid">
+          <button type="button" class="pechincha-card" data-query="presente" data-mode="total" data-total-budget="50" data-monthly="50" data-months="12">
+            <strong>R$ 50</strong>
+            <span>Presentes de entrada</span>
+          </button>
+          <button type="button" class="pechincha-card" data-query="casa" data-mode="total" data-total-budget="100" data-monthly="100" data-months="12">
+            <strong>R$ 100</strong>
+            <span>Achadinhos para casa</span>
+          </button>
+          <button type="button" class="pechincha-card" data-query="notebook" data-mode="monthly" data-monthly="250" data-months="10">
+            <strong>R$ 250</strong>
+            <span>Notebook em 10x</span>
+          </button>
+          <button type="button" class="pechincha-card" data-query="tv" data-mode="total" data-total-budget="500" data-monthly="500" data-months="12">
+            <strong>R$ 500</strong>
+            <span>TVs até R$ 500</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="deals-section" id="affiliateDeals" aria-live="polite">
+        <div class="deals-head">
+          <div>
+            <p class="panel-label">Ofertas do dia</p>
+            <h2>Cupons e links de afiliado em destaque</h2>
+          </div>
+          <p class="deals-copy">Cada card mostra validade, mínimo e link de destino. Se o cupom expirar, o card pode ser atualizado ou removido.</p>
+        </div>
+        <div class="deals-grid" id="affiliateDealsGrid">
+          <article class="deal-skeleton"></article>
+          <article class="deal-skeleton"></article>
+          <article class="deal-skeleton"></article>
+        </div>
+      </section>
+
       <section class="categories">
         <h2><span>↗</span> Categorias em Alta</h2>
         <div class="category-grid">
+          <details class="brand-menu">
+            <summary>
+              <div class="category-icon"><svg viewBox="0 0 24 24"><path d="M7 7.5A5.5 5.5 0 0 1 12.5 2H14v4.5A5.5 5.5 0 0 1 8.5 12H7V7.5Z"/><path d="M12 22c-3.8 0-7-3.4-7-7.5C5 10.3 6.8 7.9 9.5 7.9c1.5 0 2.6.7 3.5 1.5.9-.8 2-1.5 3.5-1.5 1.6 0 3 .7 4 1.8"/></svg></div>
+              <h3>Apple</h3>
+              <p>iPhone, tablet e computador</p>
+            </summary>
+            <div class="brand-menu-options" aria-label="Opções Apple">
+              <button type="button" class="brand-option" data-query="iphone 17 pro max" data-mode="total" data-total-budget="18500" data-monthly="1800" data-months="12">
+                <strong>iPhone</strong>
+                <span>iPhone 17 Pro Max</span>
+              </button>
+              <button type="button" class="brand-option" disabled>
+                <strong>Tablet</strong>
+                <span>Em breve</span>
+              </button>
+              <button type="button" class="brand-option" disabled>
+                <strong>Computador</strong>
+                <span>Em breve</span>
+              </button>
+            </div>
+          </details>
           <article>
             <div class="category-icon"><svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M12 18h.01"/></svg></div>
             <h3>Telemóveis / Celulares</h3>

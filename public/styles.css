@@ -149,6 +149,26 @@ h1 em {
   box-shadow: var(--shadow);
 }
 
+.search-card[data-mode="total"] {
+  grid-template-columns: minmax(280px, 1.35fr) minmax(210px, 1fr) minmax(180px, 0.82fr);
+}
+
+.search-card[data-mode="monthly"] {
+  grid-template-columns: minmax(280px, 1.35fr) minmax(190px, 1fr) minmax(150px, 0.66fr) minmax(170px, 0.75fr);
+}
+
+.search-card[data-mode="total"] #monthsField {
+  display: none;
+}
+
+.search-card[data-mode="monthly"] #totalField {
+  display: none;
+}
+
+.search-card[data-mode="total"] .field-monthly {
+  display: none;
+}
+
 .mode-tabs {
   grid-column: 1 / -1;
   justify-self: center;
@@ -179,6 +199,15 @@ h1 em {
   background: white;
   color: var(--ink);
   box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+}
+
+.mode-hint {
+  grid-column: 1 / -1;
+  margin: -8px 0 4px;
+  color: #6c7b91;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
 }
 
 .field {
@@ -305,6 +334,218 @@ footer {
 
 .results-area.has-results {
   display: block;
+}
+
+.pechinchas {
+  width: min(1640px, calc(100% - 44px));
+  margin: 22px auto 0;
+  padding: 24px 28px 28px;
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  background: #f8fbff;
+  box-shadow: 0 16px 42px rgba(15, 23, 42, 0.04);
+}
+
+.pechinchas h2 {
+  margin: 0 0 16px;
+}
+
+.pechincha-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.pechincha-card {
+  min-height: 130px;
+  display: grid;
+  gap: 8px;
+  align-content: center;
+  padding: 18px 18px 16px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: white;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.04);
+}
+
+.pechincha-card strong {
+  display: block;
+  color: var(--green);
+  font-size: clamp(28px, 2.2vw, 40px);
+  font-weight: 950;
+  line-height: 1;
+}
+
+.pechincha-card span {
+  color: #64748b;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.pechincha-card:hover {
+  border-color: rgba(20, 156, 255, 0.3);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
+}
+
+.deals-section {
+  width: min(1640px, calc(100% - 44px));
+  margin: 22px auto 0;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+  box-shadow: 0 16px 42px rgba(15, 23, 42, 0.05);
+}
+
+.deals-head {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 18px;
+  align-items: end;
+  margin-bottom: 18px;
+}
+
+.deals-head h2 {
+  margin: 6px 0 0;
+}
+
+.deals-copy {
+  margin: 0;
+  color: #68778d;
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.deals-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.deal-card,
+.deal-skeleton,
+.deal-empty {
+  min-height: 100%;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: white;
+  overflow: hidden;
+}
+
+.deal-card {
+  display: grid;
+}
+
+.deal-image {
+  position: relative;
+  min-height: 180px;
+  background: #edf5ff;
+}
+
+.deal-image img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.deal-fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  text-align: center;
+  color: #70819a;
+  font-weight: 800;
+}
+
+.deal-fallback .image-fallback-logo {
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+}
+
+.deal-body {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+}
+
+.deal-badge {
+  justify-self: start;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(20, 156, 255, 0.1);
+  color: var(--navy-2);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.deal-body h3 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.15;
+}
+
+.deal-body p {
+  margin: 0;
+  color: #68778d;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.deal-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  color: #5d6b83;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.deal-meta strong {
+  color: var(--ink);
+}
+
+.deal-body small {
+  color: #7b879a;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.deal-body a {
+  margin-top: 4px;
+}
+
+.deal-skeleton {
+  min-height: 280px;
+  background: linear-gradient(90deg, #eef3f8 0%, #f7f9fc 50%, #eef3f8 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+.deal-empty {
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  text-align: center;
+  color: #748196;
+}
+
+.deal-empty strong {
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 .section-head {
@@ -686,6 +927,68 @@ h2 {
   margin-top: 40px;
 }
 
+.brand-menu {
+  min-height: 220px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 34px;
+  background: white;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
+}
+
+.brand-menu > summary {
+  list-style: none;
+  padding: 44px;
+  cursor: pointer;
+}
+
+.brand-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.brand-menu[open] {
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
+}
+
+.brand-menu-options {
+  display: grid;
+  gap: 12px;
+  padding: 0 44px 44px;
+}
+
+.brand-option {
+  display: grid;
+  gap: 4px;
+  padding: 16px 18px;
+  border: 1px solid #dfe6ef;
+  border-radius: 18px;
+  background: #f8fbff;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.brand-option strong {
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.brand-option span {
+  color: #68778d;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.brand-option:not([disabled]):hover {
+  border-color: rgba(20, 156, 255, 0.32);
+  background: #edf7ff;
+}
+
+.brand-option:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+}
+
 .category-grid article {
   min-height: 220px;
   padding: 44px;
@@ -879,6 +1182,11 @@ footer strong {
   .category-grid article {
     min-height: auto;
   }
+
+  .deals-head,
+  .deals-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 720px) {
@@ -950,6 +1258,11 @@ footer strong {
   .how,
   footer {
     width: calc(100% - 28px);
+  }
+
+  .deals-section {
+    width: calc(100% - 28px);
+    padding: 20px;
   }
 
   .how {
