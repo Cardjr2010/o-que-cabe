@@ -59,5 +59,17 @@ Além disso, a função também dependia de caminhos resolvidos por `process.cwd
 - `GET /api/search?q=iphone&mode=total&totalBudget=3000` respondeu 200
 - `GET /api/search?q=tv&mode=total&totalBudget=500` respondeu 200
 
+## Validação em produção
+
+- `/` respondeu 200
+- `/api/health` respondeu 200
+- `/api/catalog/health` respondeu 200
+- `/api/search?q=xiaomi&mode=total&totalBudget=1500` respondeu 200
+- `X-Vercel-Error` veio vazio nas respostas validadas
+
+## Observação de produção
+
+O health report da produção indica `seedFileExists: false` e `catalogCount: 0` neste deploy. O hotfix resolveu a queda de runtime e manteve a aplicação viva com fallback seguro, mas o catálogo seed real ainda não está presente no bundle publicado deste deploy.
+
 ## Observação
 O hotfix é focado em impedir que a função quebre por caminho de arquivo incorreto e em manter respostas controladas para produção.
