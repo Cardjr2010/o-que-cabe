@@ -13,7 +13,24 @@
   },
   "routes": [
     {
-      "handle": "filesystem"
+      "src": "/",
+      "dest": "api/web.js"
+    },
+    {
+      "src": "/app.js",
+      "dest": "api/web.js"
+    },
+    {
+      "src": "/styles.css",
+      "dest": "api/web.js"
+    },
+    {
+      "src": "/favicon.svg",
+      "dest": "api/web.js"
+    },
+    {
+      "src": "/favicon.png",
+      "dest": "api/web.js"
     },
     {
       "src": "/api/(.*)",

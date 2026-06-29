@@ -7,6 +7,7 @@
 - Added explicit Vercel routes for `/`, `/app.js`, `/styles.css`, and favicon assets so the home shell loads even when static delivery precedence changes.
 - Moved the deployable frontend assets into `api/static/` and routed every request through `api/web.js` so production can serve HTML, CSS, and JS from the serverless bundle reliably.
 - Added root-level static copies of the frontend assets so Vercel filesystem delivery has a clean path for `/`, `/app.js`, and `/styles.css`.
+- Routed `/` and the frontend asset URLs directly to `api/web.js` so the home no longer depends on the filesystem delivery behavior of the platform.
 - Added an explicit frontend health endpoint so the deployment can verify that `public/index.html`, `public/app.js`, and `public/styles.css` are present.
 - Kept the API routes on `api/web.js` while letting Vercel serve static assets from `public/` again.
 
