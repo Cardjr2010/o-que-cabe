@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import { projectRoot, resolveProjectPath } from "../runtime/project-root.js";
 import { resolveCatalogSeedPath } from "../runtime/catalog-path.js";
-import bundledSeedProducts from "../data/products.seed.js";
 
 import path from "node:path";
 import CatalogRepository from "../catalog/CatalogRepository.js";
@@ -13,7 +12,6 @@ const canonicalSeedPaths = new Set(
   [
     resolveProjectPath("data", "products.seed.json"),
     resolveProjectPath("public", "data", "products.seed.json"),
-    resolveProjectPath("src", "data", "products.seed.js"),
     resolveProjectPath("src", "data", "products.seed.json"),
   ].map((value) => String(value || "").replace(/\\/g, "/")),
 );
@@ -113,14 +111,10 @@ export function normalizeImportedProduct(raw = {}) {
 export function loadSeedProducts(filePath = seedPath) {
   const resolvedPath = String(filePath || "").trim();
   const normalizedPath = resolvedPath.replace(/\\/g, "/");
-  const useBundledSeed =
-    normalizedPath.endsWith(".seed.js") ||
-    normalizedPath.endsWith("src/data/products.seed.js") ||
-    canonicalSeedPaths.has(normalizedPath);
-  const items = useBundledSeed
-    ? bundledSeedProducts
-    : fs.existsSync(resolvedPath)
-      ? repository.read(resolvedPath, [])
+  const items = fs.existsSync(resolvedPath)
+    ? repository.read(resolvedPath, [])
+    : canonicalSeedPaths.has(normalizedPath)
+      ? repository.read(resolveProjectPath("data", "products.seed.json"), [])
       : [];
   return Array.isArray(items) ? items.map((item) => normalizeImportedProduct(item)).filter(Boolean) : [];
 }

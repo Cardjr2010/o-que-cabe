@@ -5,6 +5,7 @@
 ### Vercel root-route hotfix
 - Simplified Vercel routing so `/` rewrites to `/index.html` and `/api/*` rewrites to `api/web.js`.
 - Kept the catalog, feeds, and engine layers untouched.
+- Removed the bundled seed JS import from the catalog loader so the serverless bundle stays lighter and prefers the JSON seed path.
 
 ### Frontend restoration hotfix
 - Restored the public homepage assets by letting the Vercel filesystem serve `public/` before the API routes, so `/app.js`, `/styles.css`, and icons are delivered normally again.
