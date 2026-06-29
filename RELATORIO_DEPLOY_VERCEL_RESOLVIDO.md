@@ -73,3 +73,7 @@ Corrigir o ponto exato que faz `app.mjs` entrar no bundle/routing da funcao serv
 
 Foi removido o arquivo raiz `app.js` do repositorio para evitar que o runtime da Vercel confunda o bundle do frontend com uma entrada executavel do servidor.
 O frontend continua definido em `public/app.js`, que e o arquivo que o navegador deve carregar.
+
+## Ajuste adicional
+
+Foi adicionado um `app.mjs` na raiz com um export seguro que aponta para `api/web.js`, de forma que qualquer resolucao acidental de `app.mjs` no runtime serverless execute apenas o handler de servidor e nunca o codigo de DOM do navegador.
