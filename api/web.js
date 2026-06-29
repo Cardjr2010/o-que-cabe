@@ -48,6 +48,7 @@ function getAwinFeedProvider() {
 let actionpayFeedProvider = null;
 let actionpayProvider = null;
 let actionpayYmlImporter = null;
+let mercadoLivreProviderInstance = null;
 function createFeedProvider(providerName = "mi_shop", options = {}) {
   const name = String(providerName || "").trim().toLowerCase();
   const baseOptions = {
@@ -110,6 +111,13 @@ function createActionpayImporter() {
     });
   }
   return actionpayYmlImporter;
+}
+
+function getMercadoLivreProvider() {
+  if (!mercadoLivreProviderInstance) {
+    mercadoLivreProviderInstance = new MercadoLivreProvider();
+  }
+  return mercadoLivreProviderInstance;
 }
 
 function getFeedProviderInstance(providerName = "mi_shop", options = {}) {
@@ -1084,7 +1092,7 @@ export default async function handler(req, res) {
     const totalBudget = Number(url.searchParams.get("totalBudget") || (monthly * months));
     let providerResult = null;
     try {
-      providerResult = await MercadoLivreProvider.searchProducts(q, {
+      providerResult = await getMercadoLivreProvider().searchProducts(q, {
         limit: 20,
         mode,
         monthly,
@@ -1283,10 +1291,10 @@ export default async function handler(req, res) {
     const monthly = Number(url.searchParams.get("monthly") || "50");
     const months = Number(url.searchParams.get("months") || "12");
     const totalBudget = Number(url.searchParams.get("totalBudget") || (monthly * months));
-    const result = await MercadoLivreProvider.searchProducts(q, { limit: 20, mode, monthly, months, totalBudget });
+    const result = await getMercadoLivreProvider().searchProducts(q, { limit: 20, mode, monthly, months, totalBudget });
     sendJson(res, result.statusHttp || 200, {
-      configured: MercadoLivreProvider.getDiagnostics ? MercadoLivreProvider.getDiagnostics().configured : true,
-      tokenState: result.tokenState || (MercadoLivreProvider.getDiagnostics ? MercadoLivreProvider.getDiagnostics().tokenState : "available"),
+      configured: getMercadoLivreProvider().getDiagnostics ? getMercadoLivreProvider().getDiagnostics().configured : true,
+      tokenState: result.tokenState || (getMercadoLivreProvider().getDiagnostics ? getMercadoLivreProvider().getDiagnostics().tokenState : "available"),
       strategyUsed: result.strategyUsed || "",
       statusHttp: result.statusHttp || 200,
       returnedCount: result.returnedCount || 0,

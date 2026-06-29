@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Hotfix api/web.js runtime failure
+- Fixed the serverless runtime crash caused by calling `MercadoLivreProvider.searchProducts(...)` on the class instead of on an instance.
+- Introduced a lazy singleton for the Mercado Livre provider inside `api/web.js` so the search and diagnostic routes can execute safely in Vercel.
+- Verified locally that `/api/health`, `/api/catalog/health`, `/api/ml-connector-test`, and `/api/search` all return 200 again.
+
 ### Vercel root-route hotfix
 - Simplified Vercel routing so `/` rewrites to `/index.html` and `/api/*` rewrites to `api/web.js`.
 - Kept the catalog, feeds, and engine layers untouched.
