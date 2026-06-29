@@ -292,6 +292,28 @@ function getCatalogHealthSnapshot() {
   }
 }
 
+function getFrontendHealthSnapshot() {
+  const indexPath = resolveProjectPath("public", "index.html");
+  const appPath = resolveProjectPath("public", "app.js");
+  const cssPath = resolveProjectPath("public", "styles.css");
+  const indexFound = fs.existsSync(indexPath);
+  const appFound = fs.existsSync(appPath);
+  const cssFound = fs.existsSync(cssPath);
+  const errors = [];
+  if (!indexFound) errors.push("public/index.html ausente");
+  if (!appFound) errors.push("public/app.js ausente");
+  if (!cssFound) errors.push("public/styles.css ausente");
+  return {
+    indexFound,
+    appFound,
+    cssFound,
+    mainLoaded: indexFound && appFound && cssFound,
+    buildVersion: process.env.VERCEL_GIT_COMMIT_SHA || process.env.VERCEL_BUILD_ID || process.env.GIT_COMMIT || "local",
+    environment: process.env.VERCEL_ENV || process.env.NODE_ENV || "local",
+    errors,
+  };
+}
+
 function buildMercadoLivreSearchUrl(product) {
   const query = String(product || "").trim().toLowerCase();
   if (!query) return "";
@@ -1148,6 +1170,14 @@ export default async function handler(req, res) {
       resolvedSeedPath: seedPathResolved,
       sourceUsed,
       ...catalogHealth,
+    });
+    return;
+  }
+
+  if (pathname === "/api/frontend-health") {
+    sendJson(res, 200, {
+      ok: true,
+      ...getFrontendHealthSnapshot(),
     });
     return;
   }

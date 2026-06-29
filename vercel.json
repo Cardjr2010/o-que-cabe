@@ -8,7 +8,23 @@
   ],
   "routes": [
     {
-      "src": "/(.*)",
+      "src": "/api/(.*)",
+      "dest": "api/web.js"
+    },
+    {
+      "src": "/teste-produtos",
+      "dest": "api/web.js"
+    },
+    {
+      "src": "/teste-viagens",
+      "dest": "api/web.js"
+    },
+    {
+      "src": "/mercadolivre-manual",
+      "dest": "api/web.js"
+    },
+    {
+      "src": "/catalog",
       "dest": "api/web.js"
     }
   ]

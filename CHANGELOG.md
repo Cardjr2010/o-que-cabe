@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Frontend restoration hotfix
+- Restored the public homepage assets by removing the catch-all Vercel route that was intercepting `/app.js`, `/styles.css`, and icons.
+- Added an explicit frontend health endpoint so the deployment can verify that `public/index.html`, `public/app.js`, and `public/styles.css` are present.
+- Kept the API routes on `api/web.js` while letting Vercel serve static assets from `public/` again.
+
 ### Hotfix catalog deployment
 - Ensured the real catalog seed is available in the Vercel bundle through `src/data/products.seed.js`.
 - Added stable seed resolution and catalog health reporting so production can see the loaded source and count.
