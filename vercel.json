@@ -7,36 +7,28 @@
   },
   "rewrites": [
     {
+      "source": "/",
+      "destination": "/api/web.js"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/web.js"
     },
     {
-      "source": "/",
-      "destination": "/public/index.html"
+      "source": "/teste-produtos",
+      "destination": "/api/web.js"
     },
     {
-      "source": "/app.js",
-      "destination": "/public/app.js"
+      "source": "/teste-viagens",
+      "destination": "/api/web.js"
     },
     {
-      "source": "/styles.css",
-      "destination": "/public/styles.css"
+      "source": "/mercadolivre-manual",
+      "destination": "/api/web.js"
     },
     {
-      "source": "/favicon.svg",
-      "destination": "/public/favicon.svg"
-    },
-    {
-      "source": "/favicon.png",
-      "destination": "/public/favicon.png"
-    },
-    {
-      "source": "/logo-oqc.png",
-      "destination": "/public/logo-oqc.png"
-    },
-    {
-      "source": "/logo-oqc.svg",
-      "destination": "/public/logo-oqc.svg"
+      "source": "/catalog",
+      "destination": "/api/web.js"
     }
   ]
 }
