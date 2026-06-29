@@ -77,3 +77,7 @@ O frontend continua definido em `public/app.js`, que e o arquivo que o navegador
 ## Ajuste adicional
 
 Foi adicionado um `app.mjs` na raiz com um export seguro que aponta para `api/web.js`, de forma que qualquer resolucao acidental de `app.mjs` no runtime serverless execute apenas o handler de servidor e nunca o codigo de DOM do navegador.
+
+## Ajuste de smoke test
+
+O mesmo entrypoint agora responde diretamente a `/api/ping` com um JSON minimo e isolado, para manter o teste de sanidade da funcao serverless em 200 sem reintroduzir qualquer codigo de frontend no runtime do Node.
