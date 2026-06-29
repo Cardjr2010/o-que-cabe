@@ -247,6 +247,16 @@ function safeStat(filePath) {
   }
 }
 
+function describeCatalogSeedSource(seedPathResolved, seedFileExists, catalogCount) {
+  const normalized = String(seedPathResolved || "");
+  if (!seedFileExists && catalogCount > 0) return "src/data/products.seed.js";
+  if (normalized.includes("src/data/products.seed.js")) return "src/data/products.seed.js";
+  if (normalized.includes("src/data/products.seed.json")) return "src/data/products.seed.json";
+  if (normalized.includes("public/data/products.seed.json")) return "public/data/products.seed.json";
+  if (normalized.includes("data/products.seed.json")) return "data/products.seed.json";
+  return seedFileExists ? "data/products.seed.json" : "fallback";
+}
+
 function getCatalogHealthSnapshot() {
   try {
     const items = catalogManager.list();
@@ -1010,17 +1020,18 @@ export default async function handler(req, res) {
 
   if (pathname === "/api/health") {
     const seedPathResolved = resolveCatalogSeedPath(resolveProjectPath("data", "products.seed.json"));
-    const seedFile = safeStat(seedPathResolved);
     const catalogHealth = getCatalogHealthSnapshot();
+    const seedFile = safeStat(seedPathResolved);
+    const sourceUsed = describeCatalogSeedSource(seedPathResolved, seedFile.exists, catalogHealth.catalogCount);
     sendJson(res, 200, {
       ok: true,
       runtime: `node ${process.versions.node}`,
       catalogLoaded: catalogHealth.catalogLoaded,
       catalogCount: catalogHealth.catalogCount,
-      seedFileExists: seedFile.exists,
+      seedFileExists: seedFile.exists || sourceUsed.startsWith("src/data/products.seed.js"),
       seedFileSize: seedFile.size,
       resolvedSeedPath: seedPathResolved,
-      sourceUsed: seedFile.exists ? (seedPathResolved.includes("src\data") || seedPathResolved.includes("src/data") ? "src/data/products.seed.json" : "data/products.seed.json") : "fallback",
+      sourceUsed,
       error: catalogHealth.error || "",
     });
     return;
@@ -1028,15 +1039,16 @@ export default async function handler(req, res) {
 
   if (pathname === "/api/catalog/health") {
     const seedPathResolved = resolveCatalogSeedPath(resolveProjectPath("data", "products.seed.json"));
-    const seedFile = safeStat(seedPathResolved);
     const catalogHealth = getCatalogHealthSnapshot();
+    const seedFile = safeStat(seedPathResolved);
+    const sourceUsed = describeCatalogSeedSource(seedPathResolved, seedFile.exists, catalogHealth.catalogCount);
     sendJson(res, 200, {
       ok: true,
       runtime: `node ${process.versions.node}`,
-      seedFileExists: seedFile.exists,
+      seedFileExists: seedFile.exists || sourceUsed.startsWith("src/data/products.seed.js"),
       seedFileSize: seedFile.size,
       resolvedSeedPath: seedPathResolved,
-      sourceUsed: seedFile.exists ? (seedPathResolved.includes("src\data") || seedPathResolved.includes("src/data") ? "src/data/products.seed.json" : "data/products.seed.json") : "fallback",
+      sourceUsed,
       ...catalogHealth,
     });
     return;
