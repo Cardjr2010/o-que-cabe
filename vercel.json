@@ -7,6 +7,10 @@
   },
   "rewrites": [
     {
+      "source": "/api/ping",
+      "destination": "/api/ping.js"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/web.js"
     },
