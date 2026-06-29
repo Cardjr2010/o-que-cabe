@@ -1,71 +1,75 @@
-# RELATORIO_DEPLOY_VERCEL_RESOLVIDO.md
+# Relatorio de investigacao da Vercel
 
-## Objetivo
+Data da verificacao: 2026-06-29 17:05 BRT
 
-Restaurar o deploy de producao do OQC na Vercel sem mexer em catalogo, motor, layout ou feeds.
+## Deployment ativo
 
-## Deployment analisado
+- Projeto: `o-que-cabe`
+- Deployment ativo: `AF3KR5yUA1RxLtr8T8PGbsbq9UQg`
+- Commit: `1a04751 — Add serverless reset report`
+- Status: `Ready`
+- Dominio principal apontando para este deployment: `o-que-cabe.vercel.app`
 
-- Commit observado no painel: `84f050d`
-- Mensagem: `Add minimal api health version marker`
-- Status visivel no painel: `Preparar`
-- Dominio ligado: `o-que-cabe.vercel.app`
+## O que foi confirmado
 
-## Causa raiz identificada
+O deployment ativo no painel da Vercel esta `Ready`.
+O dominio principal aponta para o deployment `Ready` mais recente.
 
-O runtime estava ficando dependente de uma resolucao de seed instavel e do empacotamento incompleto do catalogo:
+## Runtime logs reais
 
-1. O resolvedor de catalogo ainda podia cair em `src/data/products.seed.js`, um arquivo JS grande e desnecessario para producao.
-2. A configuracao da Vercel incluia apenas `api/static/**`, deixando `data/**` fora do bundle serverless.
-3. Com isso, o catalogo real nao ficava garantido no deploy e o health/catalogo em producao nao conseguiam refletir o JSON estavel.
+Os logs de runtime do deployment ativo mostram o seguinte erro repetido nas requisições para `/` e `favicon.ico`:
 
-## Correcao aplicada
+```text
+ReferenceError: document is not defined at file:///var/task/app.mjs:2:14
+at ModuleJob.run (node:internal/modules/esm/module_job:430:25)
+at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:661:26)
+at async d (/opt/rust/nodejs.js:18:1001)
+Node.js process exited with exit status: 1.
+```
 
-- `src/runtime/catalog-path.js`
-  - removi a prioridade para `src/data/products.seed.js`
-  - mantive apenas caminhos JSON estaveis
+## Causa raiz observada
 
-- `src/importers/ProductImporter.js`
-  - removi a copia de seed JS da lista canônica
+O runtime esta tentando executar `file:///var/task/app.mjs` e falha imediatamente com:
 
-- `api/web.js`
-  - passei a reportar apenas o seed JSON real em `seedFileExists`
-  - removi a dependencia de `src/data/products.seed.js` dos snapshots de health
+- `ReferenceError: document is not defined`
 
-- `vercel.json`
-  - ampliei `functions.api/web.js.includeFiles` para incluir:
-    - `api/static/**`
-    - `data/**`
-    - `public/**`
+Isso indica que a funcao serverless esta importando ou executando codigo de frontend no ambiente Node da Vercel.
 
-## Validacao local
+## Build logs
 
-### Health
+A pagina de deployment mostra o deployment como `Ready`, mas o trecho visivel do painel consultado nesta sessao nao expôs o texto completo do build log em formato copiado.
+O erro decisivo obtido foi o runtime log acima, que ja aponta a causa do crash.
 
+## Node runtime
+
+No log visivel, o runtime aparece executando em Node na Vercel com stack interna em:
+
+- `/opt/rust/nodejs.js`
+
+O numero exato da versao do Node nao apareceu no trecho capturado do log visivel.
+
+## Validação
+
+Mesmo com o deployment `Ready`, as requisicoes para:
+
+- `/`
 - `/api/health`
-  - `200`
-  - `apiVersion: "health-minimal-001"`
-
-### Catalog health
-
 - `/api/catalog/health`
-  - `200`
-  - `seedFileExists: true`
-  - `seedFileSize: 1118775`
-  - `resolvedSeedPath: .../data/products.seed.json`
-  - `sourceUsed: data/products.seed.json`
-  - `catalogCount: 829`
-
-### Search
-
 - `/api/search?q=xiaomi&mode=total&totalBudget=1500`
-  - `200`
+- `/api/ping`
 
-## Validacao final em producao
+continuaram retornando `500 FUNCTION_INVOCATION_FAILED` durante a janela anterior de teste.
 
-Pendente de redeploy apos a correcao acima.
+## Conclusao
 
-## Observacao
+A Vercel esta executando um deployment `Ready`, mas a funcao serverless esta quebrando porque `app.mjs` foi parar no runtime do servidor e tenta acessar `document`, que nao existe no Node.
 
-Nao foi possivel extrair o stack trace completo do painel da Vercel nesta sessao. A correcao foi guiada pela evidencia local e pela discrepancia do catalogo em producao.
+## Proximo passo recomendado
 
+Corrigir o ponto exato que faz `app.mjs` entrar no bundle/routing da funcao serverless e manter a home estatica separada da camada de API.
+
+## Acao aplicada nesta rodada
+
+Foi removido o arquivo raiz `app.js` do repositorio para evitar que o runtime da Vercel confunda o bundle do frontend com uma entrada executavel do servidor.
+O frontend continua definido em `public/app.js`, que e o arquivo que o navegador deve carregar.
