@@ -2,7 +2,6 @@ import fs from "node:fs";
 import { resolveProjectPath } from "./project-root.js";
 
 const CANDIDATES = [
-  resolveProjectPath("src", "data", "products.seed.js"),
   resolveProjectPath("src", "data", "products.seed.json"),
   resolveProjectPath("data", "products.seed.json"),
   resolveProjectPath("public", "data", "products.seed.json"),

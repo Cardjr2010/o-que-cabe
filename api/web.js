@@ -282,8 +282,6 @@ function safeStat(filePath) {
 
 function describeCatalogSeedSource(seedPathResolved, seedFileExists, catalogCount) {
   const normalized = String(seedPathResolved || "");
-  if (!seedFileExists && catalogCount > 0) return "src/data/products.seed.js";
-  if (normalized.includes("src/data/products.seed.js")) return "src/data/products.seed.js";
   if (normalized.includes("src/data/products.seed.json")) return "src/data/products.seed.json";
   if (normalized.includes("public/data/products.seed.json")) return "public/data/products.seed.json";
   if (normalized.includes("data/products.seed.json")) return "data/products.seed.json";
@@ -1211,7 +1209,7 @@ export default async function handler(req, res) {
       runtime: `node ${process.versions.node}`,
       catalogLoaded: catalogHealth.catalogLoaded,
       catalogCount: catalogHealth.catalogCount,
-      seedFileExists: seedFile.exists || sourceUsed.startsWith("src/data/products.seed.js"),
+      seedFileExists: seedFile.exists,
       seedFileSize: seedFile.size,
       resolvedSeedPath: seedPathResolved,
       sourceUsed,
@@ -1228,7 +1226,7 @@ export default async function handler(req, res) {
     sendJson(res, 200, {
       ok: true,
       runtime: `node ${process.versions.node}`,
-      seedFileExists: seedFile.exists || sourceUsed.startsWith("src/data/products.seed.js"),
+      seedFileExists: seedFile.exists,
       seedFileSize: seedFile.size,
       resolvedSeedPath: seedPathResolved,
       sourceUsed,

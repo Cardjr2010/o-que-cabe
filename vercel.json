@@ -2,7 +2,7 @@
   "version": 2,
   "functions": {
     "api/web.js": {
-      "includeFiles": "api/static/**"
+      "includeFiles": "{api/static/**,data/**,public/**}"
     }
   },
   "rewrites": [

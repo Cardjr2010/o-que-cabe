@@ -12,7 +12,6 @@ const canonicalSeedPaths = new Set(
   [
     resolveProjectPath("data", "products.seed.json"),
     resolveProjectPath("public", "data", "products.seed.json"),
-    resolveProjectPath("src", "data", "products.seed.json"),
   ].map((value) => String(value || "").replace(/\\/g, "/")),
 );
 
