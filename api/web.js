@@ -22,20 +22,26 @@ const oauthPath = resolveProjectPath("data", "mercadolivre-oauth.json");
 const productsPath = resolveProjectPath("data", "products.json");
 const mercadolivreDemoPath = resolveProjectPath("data", "mercadolivre-demo-products.json");
 const mlLinksPath = resolveProjectPath("data", "mercadolivre-links.json");
-const catalogManager = new CatalogManager({
-  seedPath: process.env.ACTIONPAY_CATALOG_SEED_PATH || resolveCatalogSeedPath(resolveProjectPath("data", "products.seed.json")),
-});
+let catalogManagerInstance = null;
+function getCatalogManager() {
+  if (!catalogManagerInstance) {
+    catalogManagerInstance = new CatalogManager({
+      seedPath: process.env.ACTIONPAY_CATALOG_SEED_PATH || resolveCatalogSeedPath(resolveProjectPath("data", "products.seed.json")),
+    });
+  }
+  return catalogManagerInstance;
+}
 let googleMerchantAdapter = null;
 function getGoogleMerchantAdapter() {
   if (!googleMerchantAdapter) {
-    googleMerchantAdapter = new GoogleMerchantProductsAdapter({ catalogManager });
+    googleMerchantAdapter = new GoogleMerchantProductsAdapter({ catalogManager: getCatalogManager() });
   }
   return googleMerchantAdapter;
 }
 let awinFeedProvider = null;
 function getAwinFeedProvider() {
   if (!awinFeedProvider) {
-    awinFeedProvider = new AwinFeedProvider({ catalogManager });
+    awinFeedProvider = new AwinFeedProvider({ catalogManager: getCatalogManager() });
   }
   return awinFeedProvider;
 }
@@ -45,7 +51,7 @@ let actionpayYmlImporter = null;
 function createFeedProvider(providerName = "mi_shop", options = {}) {
   const name = String(providerName || "").trim().toLowerCase();
   const baseOptions = {
-    catalogManager,
+    catalogManager: getCatalogManager(),
     seedPath: options.seedPath || resolveCatalogSeedPath(resolveProjectPath("data", "products.seed.json")),
     fetchImpl: options.fetchImpl || globalThis.fetch,
   };
@@ -65,7 +71,7 @@ function createFeedProvider(providerName = "mi_shop", options = {}) {
     if (!actionpayFeedProvider) {
       actionpayFeedProvider = new ActionpayFeedProvider({
         provider: createActionpayProvider(),
-        catalogManager,
+        catalogManager: getCatalogManager(),
         importer: createActionpayImporter(),
       });
     }
@@ -97,7 +103,7 @@ function createActionpayImporter() {
   if (!actionpayYmlImporter) {
     actionpayYmlImporter = new ActionpayYmlImporter({
       provider: createActionpayProvider(),
-      catalogManager,
+      catalogManager: getCatalogManager(),
       catalogSeedPath: process.env.ACTIONPAY_CATALOG_SEED_PATH || resolveCatalogSeedPath(resolveProjectPath("data", "products.seed.json")),
       sourceOfferId: process.env.ACTIONPAY_SALDAO_OFFER_ID || "13241",
       sourceOfferName: "Saldão da Informática - Notebooks, iPhones e TVs.",
@@ -109,7 +115,7 @@ function createActionpayImporter() {
 function getFeedProviderInstance(providerName = "mi_shop", options = {}) {
   const name = String(providerName || "").trim().toLowerCase();
   const baseOptions = {
-    catalogManager,
+    catalogManager: getCatalogManager(),
     seedPath: options.seedPath || resolveCatalogSeedPath(resolveProjectPath("data", "products.seed.json")),
     fetchImpl: options.fetchImpl || globalThis.fetch,
   };
@@ -123,7 +129,7 @@ function getFeedProviderInstance(providerName = "mi_shop", options = {}) {
     if (!actionpayFeedProvider) {
       actionpayFeedProvider = new ActionpayFeedProvider({
         provider: createActionpayProvider(),
-        catalogManager,
+        catalogManager: getCatalogManager(),
         importer: createActionpayImporter(),
       });
     }
@@ -278,7 +284,7 @@ function describeCatalogSeedSource(seedPathResolved, seedFileExists, catalogCoun
 
 function getCatalogHealthSnapshot() {
   try {
-    const items = catalogManager.list();
+    const items = getCatalogManager().list();
     const sample = items.slice(0, 3).map((item) => ({
       id: item?.id || "",
       title: item?.title || "",
@@ -903,7 +909,7 @@ function normalizeMercadoLivreSearchItem(item, monthly, months) {
 }
 
 function renderCatalogPage(query = {}) {
-  const items = catalogManager.search({
+  const items = getCatalogManager().search({
     q: query.q || "",
     category: query.category || "",
     brand: query.brand || "",
@@ -1714,7 +1720,7 @@ export default async function handler(req, res) {
     const action = (url.searchParams.get("action") || "list").toLowerCase();
     const format = (url.searchParams.get("format") || "json").toLowerCase();
     if (action === "export") {
-      const body = catalogManager.export(format);
+      const body = getCatalogManager().export(format);
       send(res, 200, body, {
         "Content-Type": format === "csv" ? "text/csv; charset=utf-8" : "application/json; charset=utf-8",
       });
@@ -1722,8 +1728,8 @@ export default async function handler(req, res) {
     }
     sendJson(res, 200, {
       ok: true,
-      ...catalogManager.diagnostics(),
-      products: catalogManager.search(Object.fromEntries(url.searchParams.entries())),
+      ...getCatalogManager().diagnostics(),
+      products: getCatalogManager().search(Object.fromEntries(url.searchParams.entries())),
     });
     return;
   }
@@ -1789,6 +1795,8 @@ export default async function handler(req, res) {
     }
   }
 }
+
+
 
 
 
