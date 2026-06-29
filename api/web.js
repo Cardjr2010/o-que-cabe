@@ -1,10 +1,11 @@
-﻿import fs from "node:fs";
+import fs from "node:fs";
 import path from "node:path";
 import BudgetEngine from "../src/engines/BudgetEngine.js";
 import ScoreEngine from "../src/engines/ScoreEngine.js";
 import RankingEngine from "../src/engines/RankingEngine.js";
 import MercadoLivreProvider from "../src/providers/MercadoLivreProvider.js";
 import CatalogManager from "../src/catalog/CatalogManager.js";
+import googleMerchantProductsAdapter from "../src/adapters/GoogleMerchantProductsAdapter.js";
 
 const root = process.cwd();
 const publicDir = path.join(root, "public");
@@ -13,6 +14,7 @@ const productsPath = path.join(root, "data", "products.json");
 const mercadolivreDemoPath = path.join(root, "data", "mercadolivre-demo-products.json");
 const mlLinksPath = path.join(root, "data", "mercadolivre-links.json");
 const catalogManager = new CatalogManager({ seedPath: path.join(root, "data", "products.seed.json") });
+const googleMerchantAdapter = googleMerchantProductsAdapter;
 
 function readJson(filePath, fallback) {
   try {
@@ -704,6 +706,7 @@ function buildMercadoLivreManualResult({ item, itemId, monthly, months }) {
 export default async function handler(req, res) {
   const url = new URL(req.url, "http://localhost");
   const pathname = url.pathname;
+  const method = String(req.method || "GET").toUpperCase();
 
   if (pathname === "/") {
     send(res, 200, renderHome(), { "Content-Type": "text/html; charset=utf-8" });
@@ -933,6 +936,43 @@ export default async function handler(req, res) {
       redirectUri: mercadolivreRedirectUri(),
       hasClientId: Boolean(process.env.MELI_CLIENT_ID),
       hasClientSecret: Boolean(process.env.MELI_CLIENT_SECRET),
+    });
+    return;
+  }
+
+  if (pathname === "/api/google-merchant/status") {
+    const diagnostics = googleMerchantAdapter.getDiagnostics();
+    sendJson(res, 200, {
+      hasAccountId: diagnostics.hasAccountId,
+      hasAccessToken: diagnostics.hasAccessToken,
+      configured: diagnostics.configured,
+    });
+    return;
+  }
+
+  if (pathname === "/api/google-merchant/import") {
+    if (method !== "POST") {
+      sendJson(res, 405, { ok: false, message: "Use POST para importar produtos do Google Merchant." });
+      return;
+    }
+    if (!googleMerchantAdapter.configured()) {
+      sendJson(res, 400, {
+        ok: false,
+        message: "Google Merchant não configurado.",
+        configured: false,
+        hasAccountId: googleMerchantAdapter.getDiagnostics().hasAccountId,
+        hasAccessToken: googleMerchantAdapter.getDiagnostics().hasAccessToken,
+      });
+      return;
+    }
+    const result = await googleMerchantAdapter.importToCatalog({
+      pageSize: Number(url.searchParams.get("pageSize") || "250"),
+      pageToken: url.searchParams.get("pageToken") || "",
+      mode: url.searchParams.get("mode") || "merge",
+    });
+    sendJson(res, result.statusHttp || 200, {
+      ok: true,
+      ...result,
     });
     return;
   }

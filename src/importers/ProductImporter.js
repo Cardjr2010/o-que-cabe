@@ -1,8 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
+import CatalogRepository from "../catalog/CatalogRepository.js";
 
 const root = process.cwd();
 const seedPath = path.join(root, "data", "products.seed.json");
+const repository = new CatalogRepository();
 
 function readJson(filePath, fallback) {
   try {
@@ -59,10 +61,17 @@ export function normalizeImportedProduct(raw = {}) {
   const marketplace = String(raw.marketplace || raw.store || "Mercado Livre").trim() || "Mercado Livre";
   const importedAt = String(raw.importedAt || raw.lastCheckedAt || new Date().toISOString()).trim();
   const sourceType = String(raw.sourceType || "woocommerce-style").trim();
+  const sourceValue = String(raw.source || raw.sourceType || marketplace)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
 
   return {
-    id: String(raw.id || raw.externalId || slugify(title) || `oqc-${Date.now()}`),
-    externalId: String(raw.externalId || raw.id || slugify(title) || ""),
+    id: String(raw.id || raw.externalId || raw.gtin || raw.ean || raw.upc || slugify(title) || `oqc-${Date.now()}`),
+    externalId: String(raw.externalId || raw.id || raw.gtin || raw.ean || raw.upc || slugify(title) || ""),
+    gtin: String(raw.gtin || raw.ean || raw.upc || raw.isbn || "").trim(),
+    mpn: String(raw.mpn || "").trim(),
+    sku: String(raw.sku || "").trim(),
     title,
     category,
     brand: raw.brand || null,
@@ -75,12 +84,13 @@ export function normalizeImportedProduct(raw = {}) {
     marketplace,
     sourceType,
     condition: raw.condition || "new",
+    availability: raw.availability || "available",
     lastCheckedAt: raw.lastCheckedAt || importedAt,
     importedAt,
-    dataMode: "seed",
+    dataMode: String(raw.dataMode || raw.mode || "seed"),
     priceHistory: Array.isArray(raw.priceHistory) ? raw.priceHistory : [],
     description: raw.description || raw.summary || "",
-    source: "mercadolivre",
+    source: raw.source || sourceValue || "seed",
     store: marketplace,
     url: productUrl,
     permalink: isValidProductUrl(raw.permalink) ? raw.permalink : productUrl,
@@ -88,7 +98,7 @@ export function normalizeImportedProduct(raw = {}) {
 }
 
 export function loadSeedProducts(filePath = seedPath) {
-  const items = readJson(filePath, []);
+  const items = repository.read(filePath, []);
   return Array.isArray(items) ? items.map((item) => normalizeImportedProduct(item)).filter(Boolean) : [];
 }
 

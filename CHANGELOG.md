@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Sprint 19
+- Added a Google Merchant adapter that reads products from an authorized Merchant Center account and normalizes them into the OQC catalog contract.
+- Exposed internal Google Merchant status and import endpoints so the catalog can be populated without exposing tokens.
+- Extended the catalog import path and tests to preserve real-source metadata instead of forcing every import into the old Mercado Livre seed shape.
+
 ### Sprint 18
 - Simplified the homepage shortcuts so the lower section reads cleaner on mobile and desktop.
 - Improved the product card presentation with clearer image fallbacks and more consistent button treatment.

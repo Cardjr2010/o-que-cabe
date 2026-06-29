@@ -5,6 +5,7 @@ import path from "node:path";
 import { URL, pathToFileURL } from "node:url";
 import dummyJsonAdapter from "./src/adapters/products.dummyjson.js";
 import mercadolivreAdapter from "./src/adapters/products.mercadolivre.js";
+import googleMerchantProductsAdapter from "./src/adapters/GoogleMerchantProductsAdapter.js";
 import MercadoLivreProvider from "./src/providers/MercadoLivreProvider.js";
 import travelMockAdapter from "./src/adapters/travel.mock.js";
 import BudgetEngine from "./src/engines/BudgetEngine.js";
@@ -21,6 +22,7 @@ const mlDebugReportPath = path.join(root, "RELATORIO_MERCADOLIVRE_403.md");
 const mlOAuthPath = path.join(root, "data", "mercadolivre-oauth.json");
 const httpsPfxPath = path.join(root, ".certs", "localhost.pfx");
 const httpsPfxPassword = "codex-local";
+const googleMerchantAdapter = googleMerchantProductsAdapter;
 
 if (fs.existsSync(envPath)) {
   for (const line of fs.readFileSync(envPath, "utf8").split(/\r?\n/)) {
@@ -198,14 +200,14 @@ function matchesCategoryQuery(query, product) {
   const rules = {
     celular: {
       include: ["celular", "smartphone", "galaxy", "moto", "redmi", "iphone"],
-      exclude: ["air fryer", "câmera", "camera", "notebook", "tablet", "casa"],
+      exclude: ["air fryer", "cÃ¢mera", "camera", "notebook", "tablet", "casa"],
     },
     tv: {
-      include: ["tv", "televisao", "televisão", "smart tv", "smarttv", "oled", "qled", "roku"],
+      include: ["tv", "televisao", "televisÃ£o", "smart tv", "smarttv", "oled", "qled", "roku"],
       exclude: ["celular", "smartphone", "notebook", "tablet", "casa", "presente"],
     },
     relogio: {
-      include: ["relógio", "relogio", "smartwatch", "watch", "pulseira inteligente"],
+      include: ["relÃ³gio", "relogio", "smartwatch", "watch", "pulseira inteligente"],
       exclude: ["celular", "smartphone", "notebook", "tablet", "casa", "presente"],
     },
     notebook: {
@@ -213,7 +215,7 @@ function matchesCategoryQuery(query, product) {
       exclude: ["celular", "smartphone", "tablet", "casa", "presente"],
     },
     presente: {
-      include: ["presente", "kit", "caneca", "bloco", "acessório", "acessorio"],
+      include: ["presente", "kit", "caneca", "bloco", "acessÃ³rio", "acessorio"],
       exclude: ["celular", "smartphone", "notebook", "tablet"],
     },
     casa: {
@@ -232,22 +234,22 @@ function matchesCategoryQuery(query, product) {
 function buildButtonLabel(product) {
   const mode = String(product?.dataMode || "demo").toLowerCase();
   if (mode === "demo") {
-    return "Demo � sem an�ncio real";
+    return "Demo — sem anúncio real";
   }
   if (!product || !product.url && !product.permalink && !product.productUrl && !product.affiliateUrl) {
-    return "Link indisponível";
+    return "Link indisponÃ­vel";
   }
-  return "Abrir anúncio";
+  return "Abrir anÃºncio";
 }
 
 function buildOqcRecommendationText(product) {
   const mode = String(product.dataMode || "seed").toLowerCase();
   const status = product.status || product.budgetStatus || "CABE";
-  const statusText = status === "CABE" ? "cabe no orçamento" : status === "APERTADO" ? "cabe, mas está apertado" : "fica acima do orçamento";
+  const statusText = status === "CABE" ? "cabe no orÃ§amento" : status === "APERTADO" ? "cabe, mas estÃ¡ apertado" : "fica acima do orÃ§amento";
   if (mode === "real") {
-    return `É um resultado real do Mercado Livre. Este item ${statusText}.`;
+    return `Ã‰ um resultado real do Mercado Livre. Este item ${statusText}.`;
   }
-  return `É uma demonstração do OQC. Este exemplo ${statusText}.`;
+  return `Ã‰ uma demonstraÃ§Ã£o do OQC. Este exemplo ${statusText}.`;
 }
 
 function buildSearchBudgetContext({ mode, monthly, months, totalBudget }) {
@@ -427,7 +429,7 @@ function stringifyReportValue(value) {
 
 function buildMercadoLivreDebugReport({ target, steps, notes }) {
   const lines = [
-    "# RELATÓRIO DE DIAGNÓSTICO MERCADO LIVRE",
+    "# RELATÃ“RIO DE DIAGNÃ“STICO MERCADO LIVRE",
     "",
     `Data do teste: ${new Date().toISOString()}`,
     "",
@@ -445,7 +447,7 @@ function buildMercadoLivreDebugReport({ target, steps, notes }) {
     lines.push("");
     lines.push(`- URL chamada: ${step.url}`);
     lines.push(`- Status HTTP: ${step.status}`);
-    lines.push(`- Ok: ${step.ok ? "sim" : "não"}`);
+    lines.push(`- Ok: ${step.ok ? "sim" : "nÃ£o"}`);
     lines.push("");
     lines.push("### Headers");
     lines.push("");
@@ -461,12 +463,12 @@ function buildMercadoLivreDebugReport({ target, steps, notes }) {
     lines.push("");
   }
 
-  lines.push("## Observações");
+  lines.push("## ObservaÃ§Ãµes");
   lines.push("");
-  lines.push("- O endpoint de item do Mercado Livre respondeu com bloqueio de política (`PA_UNAUTHORIZED_RESULT_FROM_POLICIES`) neste ambiente.");
-  lines.push("- O teste confirma que o item MLB consultado é extraído corretamente da URL.");
-  lines.push("- A documentação oficial do Mercado Livre mostra APIs com autenticação via `Authorization: Bearer $ACCESS_TOKEN`, o que indica exigência de OAuth em vários recursos.");
-  lines.push("- A criação/gestão de aplicativos e credenciais é parte do fluxo oficial, então App ID e segredo podem ser necessários para cenários autenticados.");
+  lines.push("- O endpoint de item do Mercado Livre respondeu com bloqueio de polÃ­tica (`PA_UNAUTHORIZED_RESULT_FROM_POLICIES`) neste ambiente.");
+  lines.push("- O teste confirma que o item MLB consultado Ã© extraÃ­do corretamente da URL.");
+  lines.push("- A documentaÃ§Ã£o oficial do Mercado Livre mostra APIs com autenticaÃ§Ã£o via `Authorization: Bearer $ACCESS_TOKEN`, o que indica exigÃªncia de OAuth em vÃ¡rios recursos.");
+  lines.push("- A criaÃ§Ã£o/gestÃ£o de aplicativos e credenciais Ã© parte do fluxo oficial, entÃ£o App ID e segredo podem ser necessÃ¡rios para cenÃ¡rios autenticados.");
   lines.push("");
 
   return lines.join("\n");
@@ -484,7 +486,7 @@ function sendFile(res, filePath) {
   fs.readFile(filePath, (err, content) => {
     if (err) {
       res.writeHead(404);
-      res.end("Arquivo não encontrado");
+      res.end("Arquivo nÃ£o encontrado");
       return;
     }
     res.writeHead(200, { "Content-Type": type });
@@ -540,7 +542,7 @@ function normalizeAmazonItem(item) {
     price: moneyToNumber(price),
     installments: 10,
     installmentValue: moneyToNumber(price) ? moneyToNumber(price) / 10 : null,
-    note: "Resultado vindo da Amazon. Confira preço, frete e parcelamento na loja.",
+    note: "Resultado vindo da Amazon. Confira preÃ§o, frete e parcelamento na loja.",
     source: "amazon",
   };
 }
@@ -676,7 +678,7 @@ async function fetchMercadoLivreByUrl(url, monthlyBudget, months) {
     return {
       ok: false,
       products: [],
-      errors: [{ title: url, error: "Não foi possível extrair o ID MLB da URL." }],
+      errors: [{ title: url, error: "NÃ£o foi possÃ­vel extrair o ID MLB da URL." }],
     };
   }
 
@@ -747,7 +749,7 @@ function classifyFit(product, monthlyBudget, months) {
   const installment = product.price_brl / months;
   if (installment <= monthlyBudget) return "CABE";
   if (installment <= monthlyBudget * 1.2) return "APERTADO";
-  return "NÃO CABE";
+  return "NÃƒO CABE";
 }
 
 function normalizeDummyProducts(products, monthlyBudget, months) {
@@ -766,7 +768,7 @@ function normalizeDummyProducts(products, monthlyBudget, months) {
         image: product.image,
         rating: product.rating,
         description: product.description,
-        note: "Dados de teste — preços simulados.",
+        note: "Dados de teste â€” preÃ§os simulados.",
         url: `https://dummyjson.com/products/${product.id}`,
         installments: months,
         installmentValue,
@@ -776,13 +778,13 @@ function normalizeDummyProducts(products, monthlyBudget, months) {
       };
     })
     .sort((a, b) => {
-      const rank = { "CABE": 0, "APERTADO": 1, "NÃO CABE": 2 };
+      const rank = { "CABE": 0, "APERTADO": 1, "NÃƒO CABE": 2 };
       const byRank = rank[a.status] - rank[b.status];
       if (byRank !== 0) return byRank;
       return b.score - a.score;
     });
 
-  const grouped = { "CABE": [], "APERTADO": [], "NÃO CABE": [] };
+  const grouped = { "CABE": [], "APERTADO": [], "NÃƒO CABE": [] };
   for (const product of normalized) {
     grouped[product.status].push(product);
   }
@@ -790,7 +792,7 @@ function normalizeDummyProducts(products, monthlyBudget, months) {
   return [
     ...grouped["CABE"].slice(0, 8),
     ...grouped["APERTADO"].slice(0, 4),
-    ...grouped["NÃO CABE"].slice(0, 3),
+    ...grouped["NÃƒO CABE"].slice(0, 3),
   ];
 }
 
@@ -813,7 +815,7 @@ function renderExplorerPage({ title, heading, description, view, badge, endpoint
     <body data-view="${escapeHtml(view)}" data-endpoint="${escapeHtml(endpoint)}">
       <header class="topbar">
         <a class="brand" href="/"><img class="brand-mark" src="/logo-oqc.svg" alt="OQC" /><strong>O Que Cabe</strong></a>
-        <div class="trust-pill">Curadoria de Confiança</div>
+        <div class="trust-pill">Curadoria de ConfianÃ§a</div>
       </header>
       <main>
         <section class="hero">
@@ -822,9 +824,9 @@ function renderExplorerPage({ title, heading, description, view, badge, endpoint
             <p>${escapeHtml(description)}</p>
           </div>
           <form id="searchForm" class="search-card">
-            <div class="mode-tabs" aria-label="Tipo de orçamento">
-              <button class="active" type="button">Orçamento Mensal</button>
-              <button type="button">Orçamento Total</button>
+            <div class="mode-tabs" aria-label="Tipo de orÃ§amento">
+              <button class="active" type="button">OrÃ§amento Mensal</button>
+              <button type="button">OrÃ§amento Total</button>
             </div>
             <div class="field field-product">
               <label for="productInput">${escapeHtml(inputLabel)}</label>
@@ -834,7 +836,7 @@ function renderExplorerPage({ title, heading, description, view, badge, endpoint
               </div>
             </div>
             <div class="field">
-              <label for="monthlyInput">Máx. mensal</label>
+              <label for="monthlyInput">MÃ¡x. mensal</label>
               <div class="money-input">
                 <span>R$</span>
                 <input id="monthlyInput" name="monthly" type="number" min="1" step="1" value="100" required />
@@ -860,16 +862,16 @@ function renderExplorerPage({ title, heading, description, view, badge, endpoint
         <section class="results-area">
           <div class="section-head">
             <div>
-              <p class="panel-label">Seu teto estimado: <strong id="budgetTotal">R$ 1.200,00</strong> <span id="budgetLine">R$ 100,00 por mês em até 12x</span></p>
-              <h2 id="summaryTitle">Faça uma busca para começar</h2>
+              <p class="panel-label">Seu teto estimado: <strong id="budgetTotal">R$ 1.200,00</strong> <span id="budgetLine">R$ 100,00 por mÃªs em atÃ© 12x</span></p>
+              <h2 id="summaryTitle">FaÃ§a uma busca para comeÃ§ar</h2>
             </div>
             <span class="source-badge" id="sourceBadge">${escapeHtml(badge)}</span>
           </div>
           <div class="notice" id="notice" hidden></div>
           <div class="grid" id="results">
             <article class="empty-state">
-              <strong>Teste uma busca rápida</strong>
-              <span>O resultado aparece aqui com parcela, total e botão de oferta.</span>
+              <strong>Teste uma busca rÃ¡pida</strong>
+              <span>O resultado aparece aqui com parcela, total e botÃ£o de oferta.</span>
             </article>
           </div>
         </section>
@@ -897,7 +899,7 @@ function renderProductExplorerPage() {
     ],
   }).replace(
     '<div class="notice" id="notice" hidden></div>',
-    '<div class="notice" id="notice">Classificamos os produtos em três faixas: Cabe no orçamento, Apertado e Não cabe. Assim você consegue comparar sem perder a noção do limite mensal.</div>'
+    '<div class="notice" id="notice">Classificamos os produtos em trÃªs faixas: Cabe no orÃ§amento, Apertado e NÃ£o cabe. Assim vocÃª consegue comparar sem perder a noÃ§Ã£o do limite mensal.</div>'
   );
 }
 
@@ -905,7 +907,7 @@ function renderTravelExplorerPage() {
   return renderExplorerPage({
     title: "Teste Viagens | O Que Cabe",
     heading: "Teste viagens com cards mockados.",
-    description: "Simulação de destinos para preparar a futura vertical de viagens.",
+    description: "SimulaÃ§Ã£o de destinos para preparar a futura vertical de viagens.",
     view: "travel",
     badge: "Viagem mock",
     endpoint: "/api/teste-viagens",
@@ -914,7 +916,7 @@ function renderTravelExplorerPage() {
     quickLabel: "Destinos:",
     quickButtons: [
       { label: "Rio", query: "Rio", monthly: 150, months: 12 },
-      { label: "São Paulo", query: "São Paulo", monthly: 120, months: 12 },
+      { label: "SÃ£o Paulo", query: "SÃ£o Paulo", monthly: 120, months: 12 },
       { label: "Salvador", query: "Salvador", monthly: 180, months: 12 },
     ],
   });
@@ -940,7 +942,7 @@ function renderMercadoLivrePage() {
   }).replace(
     '<div class="notice" id="notice" hidden></div>',
     connected
-      ? '<div class="notice" id="notice">Digite ou cole uma URL do Mercado Livre. Também é possível testar por categoria. A busca roda com debounce.</div>'
+      ? '<div class="notice" id="notice">Digite ou cole uma URL do Mercado Livre. TambÃ©m Ã© possÃ­vel testar por categoria. A busca roda com debounce.</div>'
       : '<div class="notice" id="notice">Conecte sua conta Mercado Livre para consultar produtos reais.</div>'
   );
 }
@@ -951,7 +953,7 @@ function renderMercadoLivreAuthNotice() {
     <head>
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <title>Autenticação Mercado Livre | O Que Cabe</title>
+      <title>AutenticaÃ§Ã£o Mercado Livre | O Que Cabe</title>
       <link rel="stylesheet" href="/styles.css" />
     </head>
     <body>
@@ -976,7 +978,7 @@ function renderAdminPage() {
     <body>
       <header class="topbar">
         <a class="brand" href="/"><img class="brand-mark" src="/logo-oqc.svg" alt="OQC" /><strong>O Que Cabe</strong></a>
-        <div class="trust-pill">Curadoria de Confiança</div>
+        <div class="trust-pill">Curadoria de ConfianÃ§a</div>
       </header>
       <main class="seo-page">
         <a class="seo-back" href="/">Voltar para a busca</a>
@@ -984,7 +986,7 @@ function renderAdminPage() {
         <p>Preencha os dados abaixo e copie o JSON gerado para <code>data/mercadolivre-links.json</code>.</p>
         <section class="seo-box">
           <div class="field" style="gap:12px">
-            <label>Título</label>
+            <label>TÃ­tulo</label>
             <input id="admTitle" />
             <label>Categoria</label>
             <input id="admCategory" />
@@ -992,13 +994,13 @@ function renderAdminPage() {
             <input id="admUrl" />
             <label>affiliateUrl opcional</label>
             <input id="admAffiliateUrl" />
-            <label>Observação</label>
+            <label>ObservaÃ§Ã£o</label>
             <input id="admNotes" />
             <button class="submit-button" type="button" id="admGenerate">Gerar JSON</button>
           </div>
         </section>
         <section class="seo-box">
-          <h2>Saída</h2>
+          <h2>SaÃ­da</h2>
           <pre id="admOutput" style="white-space:pre-wrap; background:#fbfcff; padding:16px; border-radius:16px; border:1px solid var(--line);"></pre>
         </section>
       </main>
@@ -1040,7 +1042,7 @@ function renderSeoPage(page) {
           (product) => `
             <article class="seo-product">
               <strong>${escapeHtml(product.title)}</strong>
-              <span>${escapeHtml(product.store)} · ${product.installments}x de R$ ${product.installmentValue.toFixed(2).replace(".", ",")}</span>
+              <span>${escapeHtml(product.store)} Â· ${product.installments}x de R$ ${product.installmentValue.toFixed(2).replace(".", ",")}</span>
               <a href="${escapeHtml(product.url)}" target="_blank" rel="noopener">Ver oferta</a>
             </article>
           `,
@@ -1061,14 +1063,14 @@ function renderSeoPage(page) {
     <body>
       <header class="topbar">
         <a class="brand" href="/"><img class="brand-mark" src="/logo-oqc.svg" alt="OQC" /><strong>O Que Cabe</strong></a>
-        <div class="trust-pill">Curadoria de Confiança</div>
+        <div class="trust-pill">Curadoria de ConfianÃ§a</div>
       </header>
       <main class="seo-page">
         <a class="seo-back" href="/">Voltar para a busca</a>
         <h1>${escapeHtml(page.title)}</h1>
         <p>${escapeHtml(page.description)}</p>
         <section class="seo-box">
-          <h2>Produtos que cabem no orçamento</h2>
+          <h2>Produtos que cabem no orÃ§amento</h2>
           <div class="seo-products">${cards}</div>
         </section>
         <section class="seo-box">
@@ -1087,19 +1089,19 @@ function renderCollectionPage() {
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
       <title>Mais vendidos da Amazon | O Que Cabe</title>
-      <meta name="description" content="Curadoria dos mais vendidos da Amazon com foco em produtos que cabem no orçamento." />
+      <meta name="description" content="Curadoria dos mais vendidos da Amazon com foco em produtos que cabem no orÃ§amento." />
       <link rel="stylesheet" href="/styles.css" />
       <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     </head>
     <body>
       <header class="topbar">
         <a class="brand" href="/"><img class="brand-mark" src="/logo-oqc.svg" alt="OQC" /><strong>O Que Cabe</strong></a>
-        <div class="trust-pill">Curadoria de Confiança</div>
+        <div class="trust-pill">Curadoria de ConfianÃ§a</div>
       </header>
       <main class="seo-page">
         <a class="seo-back" href="/">Voltar para a busca</a>
         <h1>Mais vendidos da Amazon</h1>
-        <p>Esse link funciona como uma vitrine de apoio. O cálculo de parcela acontece quando o produto individual entra na base com preço e prazo definidos.</p>
+        <p>Esse link funciona como uma vitrine de apoio. O cÃ¡lculo de parcela acontece quando o produto individual entra na base com preÃ§o e prazo definidos.</p>
         <section class="seo-box">
           <h2>Link de apoio</h2>
           <p class="seo-muted">Lista oficial de mais vendidos com tag de afiliado.</p>
@@ -1107,7 +1109,7 @@ function renderCollectionPage() {
         </section>
         <section class="seo-box">
           <h2>Como calcular</h2>
-          <p>Para calcular de forma confiável, precisamos do produto individual com preço total ou preço parcelado. A lista por si só não traz esse dado de forma estável para o MVP.</p>
+          <p>Para calcular de forma confiÃ¡vel, precisamos do produto individual com preÃ§o total ou preÃ§o parcelado. A lista por si sÃ³ nÃ£o traz esse dado de forma estÃ¡vel para o MVP.</p>
         </section>
       </main>
     </body>
@@ -1116,6 +1118,7 @@ function renderCollectionPage() {
 
 export async function requestHandler(req, res) {
   const requestUrl = new URL(req.url, `http://localhost:${port}`);
+  const method = String(req.method || "GET").toUpperCase();
 
   if (requestUrl.pathname === "/api/search") {
     const query = requestUrl.searchParams.get("q") || "";
@@ -1162,7 +1165,7 @@ export async function requestHandler(req, res) {
         budget: buildSearchBudgetContext({ mode, monthly, months, totalBudget }),
         dataMode: "demo",
         recommendations: [],
-        groups: { "CABE": [], "APERTADO": [], "NÃO CABE": [] },
+        groups: { "CABE": [], "APERTADO": [], "NÃƒO CABE": [] },
         summary: "Nenhum an?ncio dispon?vel no momento.",
         products: [],
         warning: "N?o encontramos produtos com an?ncio dispon?vel para este or?amento.",
@@ -1208,7 +1211,7 @@ export async function requestHandler(req, res) {
       sendJson(res, 200, {
         ok: true,
         products: products.slice(0, 24),
-        warning: products.length ? "" : "Nenhum produto encontrado dentro desse orçamento. Tente aumentar o valor mensal ou o número de parcelas.",
+        warning: products.length ? "" : "Nenhum produto encontrado dentro desse orÃ§amento. Tente aumentar o valor mensal ou o nÃºmero de parcelas.",
       });
     } catch (error) {
       sendJson(res, 500, { ok: false, message: error.message });
@@ -1271,6 +1274,40 @@ export async function requestHandler(req, res) {
     return;
   }
 
+  if (requestUrl.pathname === "/api/google-merchant/status") {
+    const diagnostics = googleMerchantAdapter.getDiagnostics();
+    sendJson(res, 200, {
+      hasAccountId: diagnostics.hasAccountId,
+      hasAccessToken: diagnostics.hasAccessToken,
+      configured: diagnostics.configured,
+    });
+    return;
+  }
+
+  if (requestUrl.pathname === "/api/google-merchant/import") {
+    if (method !== "POST") {
+      sendJson(res, 405, { ok: false, message: "Use POST para importar produtos do Google Merchant." });
+      return;
+    }
+    if (!googleMerchantAdapter.configured()) {
+      const diagnostics = googleMerchantAdapter.getDiagnostics();
+      sendJson(res, 400, {
+        ok: false,
+        message: "Google Merchant não configurado.",
+        configured: false,
+        hasAccountId: diagnostics.hasAccountId,
+        hasAccessToken: diagnostics.hasAccessToken,
+      });
+      return;
+    }
+    const result = await googleMerchantAdapter.importToCatalog({
+      pageSize: Number(requestUrl.searchParams.get("pageSize") || "250"),
+      pageToken: requestUrl.searchParams.get("pageToken") || "",
+      mode: requestUrl.searchParams.get("mode") || "merge",
+    });
+    sendJson(res, result.statusHttp || 200, { ok: true, ...result });
+    return;
+  }
   if (requestUrl.pathname === "/api/ml-test-item") {
     const itemId = requestUrl.searchParams.get("itemId") || "";
     if (!itemId) {
@@ -1307,7 +1344,7 @@ export async function requestHandler(req, res) {
   if (requestUrl.pathname === "/auth/mercadolivre") {
     const clientId = mercadolivreClientId();
     if (!clientId) {
-      sendJson(res, 400, { ok: false, message: "CLIENT_ID do Mercado Livre não configurado." });
+      sendJson(res, 400, { ok: false, message: "CLIENT_ID do Mercado Livre nÃ£o configurado." });
       return;
     }
     res.writeHead(302, { Location: buildMercadoLivreAuthUrl() });
@@ -1324,7 +1361,7 @@ export async function requestHandler(req, res) {
     }
     const code = requestUrl.searchParams.get("code") || "";
     if (!code) {
-      sendJson(res, 400, { ok: false, message: "Código OAuth ausente." });
+      sendJson(res, 400, { ok: false, message: "CÃ³digo OAuth ausente." });
       return;
     }
     try {
@@ -1392,7 +1429,7 @@ export async function requestHandler(req, res) {
       );
       steps.push(searchStep);
       if (JSON.stringify(searchStep.body || "").includes("PA_UNAUTHORIZED_RESULT_FROM_POLICIES")) {
-        notes.push("O endpoint de busca também retornou bloqueio de política.");
+        notes.push("O endpoint de busca tambÃ©m retornou bloqueio de polÃ­tica.");
       }
     } catch (error) {
       steps.push({
@@ -1444,7 +1481,7 @@ export async function requestHandler(req, res) {
       steps,
       notes: notes.length
         ? notes
-        : ["Nenhum bloqueio explícito em texto foi detectado no corpo dos testes executados."],
+        : ["Nenhum bloqueio explÃ­cito em texto foi detectado no corpo dos testes executados."],
     });
 
     fs.writeFileSync(mlDebugReportPath, report, "utf8");
