@@ -8,6 +8,9 @@ import mercadolivreAdapter from "./src/adapters/products.mercadolivre.js";
 import googleMerchantProductsAdapter from "./src/adapters/GoogleMerchantProductsAdapter.js";
 import MercadoLivreProvider from "./src/providers/MercadoLivreProvider.js";
 import AwinFeedProvider from "./src/providers/AwinFeedProvider.js";
+import actionpayProviderDefault, { ActionpayProvider } from "./src/providers/ActionpayProvider.js";
+import actionpayYmlImporterDefault, { ActionpayYmlImporter } from "./src/importers/ActionpayYmlImporter.js";
+import CatalogManager from "./src/catalog/CatalogManager.js";
 import travelMockAdapter from "./src/adapters/travel.mock.js";
 import BudgetEngine from "./src/engines/BudgetEngine.js";
 import ScoreEngine from "./src/engines/ScoreEngine.js";
@@ -25,6 +28,29 @@ const httpsPfxPath = path.join(root, ".certs", "localhost.pfx");
 const httpsPfxPassword = "codex-local";
 const googleMerchantAdapter = googleMerchantProductsAdapter;
 const awinFeedProvider = AwinFeedProvider;
+const actionpayProvider = actionpayProviderDefault instanceof ActionpayProvider ? actionpayProviderDefault : new ActionpayProvider();
+const actionpayCatalogSeedPath = process.env.ACTIONPAY_CATALOG_SEED_PATH || path.join(root, "data", "products.seed.json");
+function createActionpayProvider() {
+  return actionpayProviderDefault instanceof ActionpayProvider
+    ? new ActionpayProvider({
+      apiKey: process.env.ACTIONPAY_API_KEY || "",
+      sourceId: process.env.ACTIONPAY_SOURCE_ID || "",
+      defaultSubId: process.env.ACTIONPAY_DEFAULT_SUBID || "oqc",
+      saldaoOfferId: process.env.ACTIONPAY_SALDAO_OFFER_ID || "13241",
+    })
+    : new ActionpayProvider({
+      apiKey: process.env.ACTIONPAY_API_KEY || "",
+      sourceId: process.env.ACTIONPAY_SOURCE_ID || "",
+      defaultSubId: process.env.ACTIONPAY_DEFAULT_SUBID || "oqc",
+      saldaoOfferId: process.env.ACTIONPAY_SALDAO_OFFER_ID || "13241",
+    });
+}
+function createActionpayImporter() {
+  const provider = createActionpayProvider();
+  return actionpayYmlImporterDefault instanceof ActionpayYmlImporter
+    ? new ActionpayYmlImporter({ provider, catalogManager: new CatalogManager({ seedPath: actionpayCatalogSeedPath }), catalogSeedPath: actionpayCatalogSeedPath, sourceOfferId: process.env.ACTIONPAY_SALDAO_OFFER_ID || "13241", sourceOfferName: "Saldão da Informática - Notebooks, iPhones e TVs." })
+    : new ActionpayYmlImporter({ provider, catalogManager: new CatalogManager({ seedPath: actionpayCatalogSeedPath }), catalogSeedPath: actionpayCatalogSeedPath, sourceOfferId: process.env.ACTIONPAY_SALDAO_OFFER_ID || "13241", sourceOfferName: "Saldão da Informática - Notebooks, iPhones e TVs." });
+}
 
 if (fs.existsSync(envPath)) {
   for (const line of fs.readFileSync(envPath, "utf8").split(/\r?\n/)) {
@@ -1341,6 +1367,68 @@ export async function requestHandler(req, res) {
       format: requestUrl.searchParams.get("format") || "",
     });
     sendJson(res, result.configured ? 200 : 400, { ok: true, ...result });
+    return;
+  }
+  if (requestUrl.pathname === "/api/actionpay/status") {
+    const actionpayProvider = createActionpayProvider();
+    const diagnostics = actionpayProvider.getDiagnostics();
+    sendJson(res, 200, {
+      configured: diagnostics.configured,
+      hasApiKey: diagnostics.hasApiKey,
+      hasSourceId: diagnostics.hasSourceId,
+      offerId: diagnostics.offerId,
+      defaultSubId: diagnostics.defaultSubId,
+    });
+    return;
+  }
+  if (requestUrl.pathname === "/api/actionpay/ymls") {
+    const actionpayProvider = createActionpayProvider();
+    if (!actionpayProvider.isConfigured()) {
+      sendJson(res, 400, { ok: false, configured: false, message: "Actionpay não configurada." });
+      return;
+    }
+    const offerId = requestUrl.searchParams.get("offerId") || actionpayProvider.saldaoOfferId;
+    const result = await actionpayProvider.getYmls(offerId);
+    sendJson(res, result.ok ? 200 : (result.statusHttp || 400), {
+      ok: result.ok,
+      configured: actionpayProvider.isConfigured(),
+      offerId,
+      ymls: (result.items || []).map((item) => ({
+        offerId: item.offerId,
+        offerName: item.offerName,
+        ymlId: item.ymlId,
+        ymlName: item.ymlName,
+        hasFile: Boolean(item.file?.url),
+        hasInfoFile: Boolean(item.infoFile?.url),
+        hasRegionalFile: Boolean(item.regionalFile?.url),
+      })),
+      count: (result.items || []).length,
+    });
+    return;
+  }
+  if (requestUrl.pathname === "/api/actionpay/import-saldao") {
+    if (method !== "POST") {
+      sendJson(res, 405, { ok: false, message: "Use POST para importar o feed da Actionpay." });
+      return;
+    }
+    const actionpayProvider = createActionpayProvider();
+    const actionpayYmlImporter = createActionpayImporter();
+    if (!actionpayProvider.isConfigured()) {
+      sendJson(res, 400, {
+        ok: false,
+        configured: false,
+        message: "Actionpay não configurada.",
+        hasApiKey: actionpayProvider.getDiagnostics().hasApiKey,
+        hasSourceId: actionpayProvider.getDiagnostics().hasSourceId,
+      });
+      return;
+    }
+    const result = await actionpayYmlImporter.importActionpaySaldaoToCatalog({
+      offerId: requestUrl.searchParams.get("offerId") || actionpayProvider.saldaoOfferId,
+      sourceId: requestUrl.searchParams.get("sourceId") || actionpayProvider.sourceId,
+      subId1: requestUrl.searchParams.get("subId1") || actionpayProvider.defaultSubId,
+    });
+    sendJson(res, result.configured ? 200 : 400, { ok: result.configured, ...result });
     return;
   }
   if (requestUrl.pathname === "/api/ml-test-item") {

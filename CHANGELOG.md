@@ -63,6 +63,11 @@
 - Connected the Awin import flow to the CatalogManager so real feed products become part of the official product database.
 - Added Awin status/import endpoints and regression tests for parsing, normalization, deduplication, and safe import behavior.
 
+### Sprint 13
+- Added an Actionpay provider and YML importer for the Saldão da Informática feed.
+- Wired Actionpay status, YML listing, and import endpoints to import real affiliate products into the CatalogManager.
+- Added regression tests for Actionpay URL building, HTTP error handling, YML parsing, normalization, catalog import, and secret-safe API responses.
+
 ### Sprint 10
 - Reworked the home pechinchas into practical budget shortcuts for R$ 50, R$ 100, R$ 250, and R$ 500.
 - Expanded the Mercado Livre demo base with more realistic low-budget examples so the MVP has useful results in demo mode.
