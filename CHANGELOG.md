@@ -3,7 +3,7 @@
 ## Unreleased
 
 ### Frontend restoration hotfix
-- Restored the public homepage assets by removing the catch-all Vercel route that was intercepting `/app.js`, `/styles.css`, and icons.
+- Restored the public homepage assets by letting the Vercel filesystem serve `public/` before the API routes, so `/app.js`, `/styles.css`, and icons are delivered normally again.
 - Added an explicit frontend health endpoint so the deployment can verify that `public/index.html`, `public/app.js`, and `public/styles.css` are present.
 - Kept the API routes on `api/web.js` while letting Vercel serve static assets from `public/` again.
 

@@ -1,17 +1,17 @@
 # Relatorio Restauracao Frontend Vercel
 
 ## Causa raiz
-A configuracao da Vercel estava com uma rota coringa apontando tudo para `api/web.js`. Isso fazia a funcao interceptar tambem `/app.js`, `/styles.css`, `favicon` e demais arquivos do `public/`, impedindo o carregamento da interface completa.
+A configuracao da Vercel estava sem uma etapa de filesystem antes das rotas da API. Isso fazia as requisicoes de `public/` e dos assets dependerem da funcao, em vez de serem servidas como arquivos estaticos da propria plataforma.
 
 ## Correcao aplicada
-- Removi o catch-all que enviava todas as rotas para `api/web.js`.
+- Adicionei `handle: "filesystem"` no `vercel.json` para que a Vercel entregue primeiro os arquivos estaticos do `public/`.
 - Mantive `api/web.js` apenas para as rotas de API e paginas dinamicas do projeto.
-- Permiti que a Vercel sirva `public/index.html`, `public/app.js`, `public/styles.css` e icones como arquivos estaticos.
+- Preservei a entrega de `public/index.html`, `public/app.js`, `public/styles.css` e icones como arquivos estaticos.
 - Adicionei `GET /api/frontend-health` para validar a presenca dos arquivos do frontend.
 
 ## Diferenca entre local e producao
 - Localmente, o projeto ja carregava a home porque os arquivos existiam no disco e o servidor local resolvia tudo.
-- Em producao, o catch-all da Vercel estava desviando os assets para a funcao, causando 404 nos arquivos estaticos.
+- Em producao, a ausencia de filesystem precedence fazia os assets estaticos nao serem servidos como esperado.
 
 ## Como evitar regressao
 - Nao voltar a usar rota coringa para toda a aplicacao.
