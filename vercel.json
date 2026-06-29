@@ -29,5 +29,11 @@
       "src": "/catalog",
       "dest": "api/web.js"
     }
+  ],
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/index.html"
+    }
   ]
 }

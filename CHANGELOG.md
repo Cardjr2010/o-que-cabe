@@ -3,7 +3,7 @@
 ## Unreleased
 
 ### Vercel root-route hotfix
-- Let the Vercel filesystem handle `/` before the function routes so the real static home can be served directly.
+- Rewrote `/` to `/index.html` so the real static home is served directly instead of falling into the function.
 - Kept `/api/*` routed to `api/web.js` and left the catalog, feeds, and engine layers untouched.
 
 ### Frontend restoration hotfix

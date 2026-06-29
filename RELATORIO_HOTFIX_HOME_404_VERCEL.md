@@ -4,7 +4,7 @@
 A home da producao seguia retornando 404 enquanto a API e o catalogo permaneciam funcionando. Depois de varias tentativas, a configuracao mostrou que mexer no roteamento da home podia afetar a API.
 
 ## Correcao aplicada
-- Deixei o filesystem da Vercel atender primeiro os arquivos estaticos, para que `/` seja servido pelo `index.html` real da aplicacao.
+- Reescrevi `/` para `/index.html`, que ja responde 200 na producao e carrega a home real.
 - Mantive `/api/(.*)` indo para `api/web.js` usando `routes`.
 - Mantive `includeFiles` como string, no formato aceito pela Vercel.
 - Mantive os assets do frontend disponiveis em `public/` e `api/static/` para a home e os arquivos auxiliares.
