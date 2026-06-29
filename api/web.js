@@ -358,6 +358,15 @@ function buildMercadoLivreSearchUrl(product) {
   return `https://lista.mercadolivre.com.br/${slug}`;
 }
 
+function getBuildMarker() {
+  return {
+    ok: true,
+    buildCommit: process.env.VERCEL_GIT_COMMIT_SHA || "unknown",
+    buildTime: process.env.VERCEL_DEPLOYMENT_CREATED_AT || new Date().toISOString(),
+    apiVersion: "health-minimal-001",
+  };
+}
+
 function isGenericMercadoLivreUrl(value) {
   const normalized = String(value || "").trim().toLowerCase();
   return !normalized || normalized === "https://www.mercadolivre.com.br" || normalized === "https://mercadolivre.com.br" || normalized === "https://www.mercadolivre.com.br/" || normalized === "https://mercadolivre.com.br/";
@@ -1062,6 +1071,11 @@ export default async function handler(req, res) {
     const url = new URL(req.url, "http://localhost");
   const pathname = url.pathname;
   const method = String(req.method || "GET").toUpperCase();
+
+  if (pathname === "/api/health") {
+    sendJson(res, 200, getBuildMarker());
+    return;
+  }
 
   if (pathname === "/") {
     send(res, 200, renderHome(), { "Content-Type": "text/html; charset=utf-8" });
