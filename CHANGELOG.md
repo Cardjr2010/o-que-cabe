@@ -9,6 +9,7 @@
 - Added root-level static copies of the frontend assets so Vercel filesystem delivery has a clean path for `/`, `/app.js`, and `/styles.css`.
 - Routed `/` and the frontend asset URLs directly to `api/web.js` so the home no longer depends on the filesystem delivery behavior of the platform.
 - Simplified Vercel routing to a single `/(.*)` handler so the page and the assets are consistently resolved by `api/web.js`.
+- Reworked `vercel.json` again to keep the API on `api/web.js` while letting `/` fall back to the static home entrypoint.
 - Added an explicit frontend health endpoint so the deployment can verify that `public/index.html`, `public/app.js`, and `public/styles.css` are present.
 - Kept the API routes on `api/web.js` while letting Vercel serve static assets from `public/` again.
 

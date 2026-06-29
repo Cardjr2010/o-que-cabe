@@ -11,10 +11,26 @@
       "includeFiles": "api/static/**"
     }
   },
-  "routes": [
+  "rewrites": [
     {
-      "src": "/(.*)",
-      "dest": "api/web.js"
+      "source": "/api/(.*)",
+      "destination": "/api/web.js"
+    },
+    {
+      "source": "/teste-produtos",
+      "destination": "/api/web.js"
+    },
+    {
+      "source": "/teste-viagens",
+      "destination": "/api/web.js"
+    },
+    {
+      "source": "/mercadolivre-manual",
+      "destination": "/api/web.js"
+    },
+    {
+      "source": "/catalog",
+      "destination": "/api/web.js"
     }
   ]
 }
