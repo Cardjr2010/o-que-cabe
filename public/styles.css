@@ -315,6 +315,16 @@ footer {
   margin-bottom: 18px;
 }
 
+.section-head-tight {
+  margin-bottom: 12px;
+}
+
+.section-head-tight .marketline {
+  margin: 0;
+  max-width: 460px;
+  text-align: right;
+}
+
 .panel-label {
   margin: 0;
   color: #728199;
@@ -407,6 +417,7 @@ h2 {
   border: 1px solid var(--line);
   border-radius: 18px;
   background: white;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.04);
 }
 
 .oqc-recommendation-head {
@@ -474,6 +485,7 @@ h2 {
   border: 1px solid var(--line);
   border-radius: 24px;
   background: white;
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.05);
 }
 
 .image-box {
@@ -530,7 +542,7 @@ h2 {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 18px;
+  padding: 20px 18px 18px;
 }
 
 .store {
@@ -538,18 +550,24 @@ h2 {
   font-size: 12px;
   font-weight: 950;
   text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .card h2 {
   margin: 10px 0;
   font-size: 18px;
   line-height: 1.28;
+  letter-spacing: 0;
 }
 
 .small {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.45;
+}
+
+.small + .small {
+  margin-top: 2px;
 }
 
 .price {
@@ -563,6 +581,7 @@ h2 {
   color: var(--green);
   font-size: 30px;
   font-weight: 950;
+  letter-spacing: -0.02em;
 }
 
 .card a {
@@ -636,8 +655,8 @@ h2 {
 }
 
 .pechincha-grid {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -655,6 +674,7 @@ h2 {
   color: var(--ink);
   cursor: pointer;
   transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  text-align: left;
 }
 
 .pechincha-card strong {
@@ -674,12 +694,19 @@ h2 {
   font-size: 14px;
   font-weight: 700;
   color: #516179;
+  line-height: 1.2;
 }
 
 .pechincha-card:hover {
   transform: translateY(-1px);
   box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
   border-color: #b9d7ff;
+}
+
+.pechincha-card:focus-visible,
+.card a:focus-visible {
+  outline: 3px solid rgba(20, 156, 255, 0.28);
+  outline-offset: 3px;
 }
 
 .empty-state strong {
@@ -930,6 +957,10 @@ footer strong {
     grid-template-columns: 1fr;
   }
 
+  .pechincha-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .collection {
     grid-template-columns: 1fr;
   }
@@ -940,6 +971,15 @@ footer strong {
 
   .category-grid article {
     min-height: auto;
+  }
+
+  .section-head-tight {
+    flex-direction: column;
+  }
+
+  .section-head-tight .marketline {
+    text-align: left;
+    max-width: none;
   }
 }
 
@@ -1014,9 +1054,22 @@ footer strong {
     width: calc(100% - 28px);
   }
 
+  .pechinchas {
+    width: calc(100% - 28px);
+  }
+
   .how {
     padding: 42px 24px;
     border-radius: 34px;
+  }
+
+  .pechincha-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pechincha-card {
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .how-grid {
