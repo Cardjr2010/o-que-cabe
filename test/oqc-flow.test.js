@@ -23,7 +23,7 @@ function createResponse() {
   };
 }
 
-test("Busca seed retorna recommendations e scoreBreakdown", async () => {
+test("Busca do catálogo real retorna recommendations e scoreBreakdown", async () => {
   const originalFetch = global.fetch;
   global.fetch = async () => {
     throw new Error("offline");
@@ -37,7 +37,8 @@ test("Busca seed retorna recommendations e scoreBreakdown", async () => {
 
     assert.equal(res.statusCode, 200);
     assert.equal(body.ok, true);
-    assert.equal(body.dataMode, "seed");
+    assert.equal(body.dataMode, "real");
+    assert.equal(body.recommendations[0].product.marketplace, "mi_shop");
     assert.ok(Array.isArray(body.recommendations));
     assert.ok(body.recommendations.length > 0);
     assert.ok(Array.isArray(body.products));
@@ -70,7 +71,7 @@ test("Modo total responde 200 e preserva totalBudget", async () => {
   }
 });
 
-test("Demo mantém categorias coerentes por busca", async () => {
+test("Busca do catálogo real mantém categorias coerentes por busca", async () => {
   const originalFetch = global.fetch;
   global.fetch = async () => {
     throw new Error("offline");
@@ -89,7 +90,10 @@ test("Demo mantém categorias coerentes por busca", async () => {
       const body = JSON.parse(res.body);
 
       assert.equal(res.statusCode, 200);
-      assert.equal(body.dataMode, "seed");
+      assert.equal(body.dataMode, "real");
+      assert.ok(
+        body.products.some((item) => String(item.marketplace || "").toLowerCase() === "mi_shop" || String(item.store || "").toLowerCase() === "mi shop"),
+      );
       assert.ok(body.products.length > 0);
       assert.ok(body.products.every((product) => testCase.matcher.test(`${product.title} ${product.category || ""}`)));
       assert.ok(body.products.every((product) => !testCase.reject.test(`${product.title} ${product.category || ""}`)));
@@ -180,7 +184,7 @@ test("Cada recomendação possui reason", () => {
   ]);
 
   assert.ok(ranked.recommended.every((item) => typeof item.reason === "string" && item.reason.length > 0));
-  assert.match(ranked.summary, /priorizam produtos que cabem no orçamento|exemplos demonstrativos/i);
+  assert.match(ranked.summary, /cabem no orçamento|exemplos demonstrativos|melhor escolha/i);
 });
 
 test("Resultado não usa anúncio externo inválido", async () => {
@@ -200,7 +204,7 @@ test("Resultado não usa anúncio externo inválido", async () => {
     const body = JSON.parse(res.body);
     const first = body.products[0];
 
-    assert.ok(body.dataMode === "demo" || body.dataMode === "seed" || body.dataMode === "real-authenticated" || body.dataMode === "real-public");
+    assert.ok(body.dataMode === "demo" || body.dataMode === "seed" || body.dataMode === "real" || body.dataMode === "real-authenticated" || body.dataMode === "real-public");
     assert.ok(typeof first.title === "string" && first.title.length > 0);
     const link = String(first.permalink || first.productUrl || first.affiliateUrl || "");
     assert.ok(link.includes("mercadolivre") || link.includes("example.com") || link.startsWith("https://"));
@@ -216,6 +220,7 @@ test("Texto do botao permanece claro", () => {
   assert.ok(appJs.includes("Link indisponível"));
   assert.ok(appJs.includes("Preço e disponibilidade devem ser confirmados na loja."));
 });
+
 
 
 

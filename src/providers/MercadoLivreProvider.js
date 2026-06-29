@@ -2,11 +2,11 @@ import fs from "node:fs";
 import path from "node:path";
 import MarketplaceProvider from "./MarketplaceProvider.js";
 import MercadoLivreConnector from "../connectors/MercadoLivreConnector.js";
-import WooCommerceStyleImporter from "../importers/WooCommerceStyleImporter.js";
+import CatalogManager from "../catalog/CatalogManager.js";
 
 const root = process.cwd();
 const seedPath = path.join(root, "data", "products.seed.json");
-const productImporter = new WooCommerceStyleImporter({ seedPath });
+const catalogManager = new CatalogManager({ seedPath });
 
 function readJson(filePath, fallback) {
   try {
@@ -77,29 +77,134 @@ function mapSeedProduct(raw = {}) {
   };
 }
 
+function catalogSourceLabel(item = {}) {
+  const source = String(item.marketplace || item.source || item.store || "").trim().toLowerCase();
+  if (source === "mi_shop" || source === "mishop" || source === "mi shop") return "Mi Shop";
+  if (source === "actionpay") return "Actionpay";
+  if (source === "awin") return "Awin";
+  if (source === "google_merchant") return "Google Merchant";
+  if (source === "mercadolivre" || source === "mercado livre") return "Loja parceira";
+  return String(item.store || item.marketplace || item.source || "Loja parceira");
+}
+
+function buildCatalogSearchText(item = {}) {
+  return normalizeText([
+    item.title,
+    item.category,
+    item.brand,
+    item.model,
+    item.description,
+    item.seller,
+    item.marketplace,
+    item.source,
+    item.store,
+  ].filter(Boolean).join(" "));
+}
+
+function matchCatalogQuery(item = {}, query = "") {
+  const q = normalizeText(query).trim();
+  if (!q) return true;
+  const text = buildCatalogSearchText(item);
+  const termsByQuery = {
+    celular: ["celular", "smartphone", "galaxy", "moto", "redmi", "iphone"],
+    smartphone: ["celular", "smartphone", "galaxy", "moto", "redmi", "iphone"],
+    relogio: ["relogio", "relógio", "smartwatch", "watch", "pulseira inteligente"],
+    relógio: ["relogio", "relógio", "smartwatch", "watch", "pulseira inteligente"],
+    notebook: ["notebook", "laptop", "ideapad", "vivobook", "aspire", "inspiron"],
+    tablet: ["tablet", "ipad", "galaxy tab", "tab"],
+    fone: ["fone", "headphone", "earbud", "auricular", "airpods", "buds"],
+    carregador: ["carregador", "charger", "fonte", "usb c", "usb-c"],
+    xiaomi: ["xiaomi", "redmi", "poco", "mi "],
+    redmi: ["xiaomi", "redmi", "poco", "mi "],
+    poco: ["xiaomi", "redmi", "poco", "mi "],
+  };
+  const terms = termsByQuery[q] || [q];
+  return terms.some((term) => text.includes(normalizeText(term)));
+}
+
+function isRealCatalogItem(item = {}) {
+  const source = String(item.dataMode || item.mode || item.marketplace || item.source || "").toLowerCase();
+  return source === "real" || source === "real-authenticated" || source === "real-public" || source === "seed" || String(item.marketplace || "").toLowerCase() === "mi_shop" || String(item.marketplace || "").toLowerCase() === "awin" || String(item.marketplace || "").toLowerCase() === "actionpay" || String(item.marketplace || "").toLowerCase() === "google_merchant";
+}
+
+function normalizeCatalogProduct(item = {}) {
+  const permalink = String(item.permalink || item.productUrl || item.affiliateUrl || item.url || "").trim();
+  const productUrl = String(item.productUrl || item.affiliateUrl || item.permalink || item.url || "").trim();
+  const image = String(item.image || item.thumbnail || "").trim();
+  return {
+    id: String(item.id || item.externalId || item.sku || item.gtin || item.ean || item.title || ""),
+    title: String(item.title || ""),
+    category: String(item.category || ""),
+    store: catalogSourceLabel(item),
+    price: Number(item.price || 0),
+    currency: String(item.currency || "BRL"),
+    image,
+    productUrl,
+    permalink,
+    marketplace: String(item.marketplace || item.source || "mercadolivre"),
+    condition: String(item.condition || "new"),
+    lastCheckedAt: String(item.lastCheckedAt || item.updatedAt || item.importedAt || ""),
+    dataMode: String(item.dataMode || item.mode || "seed"),
+    source: String(item.source || item.marketplace || "mercadolivre"),
+    description: String(item.description || ""),
+    availableQuantity: item.availableQuantity ?? null,
+    seller: item.seller || null,
+    rating: item.rating ?? null,
+    soldQuantity: item.soldQuantity ?? null,
+    shipping: item.shipping || null,
+    installments: item.installments ?? null,
+    affiliateUrl: String(item.affiliateUrl || ""),
+    priceHistory: Array.isArray(item.priceHistory) ? item.priceHistory : [],
+    raw: item.raw || item,
+  };
+}
+
 class MercadoLivreProvider extends MarketplaceProvider {
+  searchCatalogProducts(query = "", options = {}) {
+    const q = String(query || "").trim();
+    const catalog = catalogManager.list().filter((item) => item && Number(item.price || 0) > 0 && (item.productUrl || item.affiliateUrl || item.permalink || item.url));
+    const realItems = catalog.filter((item) => isRealCatalogItem(item) && matchCatalogQuery(item, q));
+    const seedItems = catalog.filter((item) => !isRealCatalogItem(item) && matchCatalogQuery(item, q));
+    const ranked = [...realItems, ...seedItems].sort((a, b) => {
+      const aReal = isRealCatalogItem(a) ? 1 : 0;
+      const bReal = isRealCatalogItem(b) ? 1 : 0;
+      if (bReal !== aReal) return bReal - aReal;
+      const aSource = String(a.marketplace || a.source || "").toLowerCase() === "mi_shop" ? 1 : 0;
+      const bSource = String(b.marketplace || b.source || "").toLowerCase() === "mi_shop" ? 1 : 0;
+      if (bSource !== aSource) return bSource - aSource;
+      const byPrice = Number(a.price || 0) - Number(b.price || 0);
+      if (byPrice !== 0) return byPrice;
+      return String(a.title || "").localeCompare(String(b.title || ""), "pt-BR");
+    });
+    const limited = ranked.slice(0, Number(options.limit || 20));
+    return {
+      products: limited.map((item) => normalizeCatalogProduct({
+        ...item,
+        marketplace: String(item.marketplace || item.source || "mercadolivre"),
+        source: String(item.source || item.marketplace || "mercadolivre"),
+        dataMode: String(item.dataMode || item.mode || (isRealCatalogItem(item) ? "real" : "seed")),
+        store: catalogSourceLabel(item),
+      })),
+      dataMode: ranked.some(isRealCatalogItem) ? "real" : "seed",
+      strategyUsed: ranked.some(isRealCatalogItem) ? "catalog_real" : "catalog_seed",
+      statusHttp: 200,
+      error: "",
+      tokenState: "available",
+      rawCount: ranked.length,
+      returnedCount: limited.length,
+      firstFive: limited.slice(0, 5).map((item) => ({
+        title: item.title,
+        price: item.price,
+        permalink: item.productUrl || item.affiliateUrl || item.permalink || item.url || "",
+        image: item.image || item.thumbnail || "",
+      })),
+    };
+  }
+
   async searchProducts(query, options = {}) {
-    const seed = productImporter.loadSeedProducts().filter((item) => item && item.title && matchSeedProduct(item, query));
-    if (seed.length) {
-      const products = seed
-        .map((item) => mapSeedProduct(item))
-        .slice(0, Number(options.limit || 20));
-      return {
-        products: products.map((product) => this.normalizeProduct(product)),
-        dataMode: "seed",
-        strategyUsed: "seed",
-        statusHttp: 200,
-        error: "",
-        tokenState: "available",
-        rawCount: seed.length,
-        returnedCount: products.length,
-        firstFive: products.slice(0, 5).map((item) => ({
-          title: item.title,
-          price: item.price,
-          permalink: item.permalink,
-          image: item.image,
-        })),
-      };
+    const catalogResult = this.searchCatalogProducts(query, options);
+    if (catalogResult.products.length) {
+      return catalogResult;
     }
 
     const result = await MercadoLivreConnector.searchProducts(query, options);

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Sprint 20
+- Validated the real Mi Shop catalog experience across the main MVP search terms and confirmed the API continues returning HTTP 200.
+- Confirmed that the real catalog responses carry `dataMode=real`, images, and usable links for the Mi Shop-backed searches.
+- Tightened ranking labels so out-of-budget products are no longer surfaced as `Melhor escolha`.
+- Added a validation report for the current real catalog base and updated the tests to match the live Mi Shop-backed behavior.
+
 ### Sprint 10
 - Unified the feed pipeline so Actionpay, Awin, Mi Shop, and CSV imports flow through the same provider layer into the CatalogManager.
 - Added a shared feed status endpoint and provider-specific import routes to standardize real product ingestion.

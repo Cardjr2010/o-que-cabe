@@ -75,7 +75,7 @@ test("affiliateUrl tem prioridade sobre productUrl", () => {
   assert.equal(normalized.permalink, "https://affiliate.example/item");
 });
 
-test("/api/search usa seed antes de demo", async () => {
+test("/api/search usa catálogo real antes de demo", async () => {
   const originalFetch = global.fetch;
   global.fetch = async () => {
     throw new Error("offline");
@@ -87,9 +87,10 @@ test("/api/search usa seed antes de demo", async () => {
     const body = JSON.parse(res.body);
 
     assert.equal(res.statusCode, 200);
-    assert.equal(body.dataMode, "seed");
+    assert.equal(body.dataMode, "real");
     assert.ok(Array.isArray(body.products));
     assert.ok(body.products.length > 0);
+    assert.equal(body.recommendations[0].product.marketplace, "mi_shop");
   } finally {
     global.fetch = originalFetch;
   }
@@ -103,7 +104,7 @@ test("demo continua sem link externo", async () => {
 
   try {
     const res = createResponse();
-    await handler({ url: "/api/search?q=casa&mode=total&totalBudget=100" }, res);
+    await handler({ url: "/api/search?q=shampoo&mode=total&totalBudget=100" }, res);
     const body = JSON.parse(res.body);
 
     assert.equal(res.statusCode, 200);

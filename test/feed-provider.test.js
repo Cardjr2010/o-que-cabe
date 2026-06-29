@@ -148,11 +148,14 @@ test("API /api/feed/providers e /api/feed/import funcionam e alimentam a busca",
     assert.equal(importBody.rejected, 1);
 
     const searchRes = createResponse();
-    await handler({ url: "/api/search?q=iphone&mode=total&totalBudget=6000", method: "GET" }, searchRes);
+    await handler({ url: "/api/search?q=iphone%2015&mode=total&totalBudget=6000", method: "GET" }, searchRes);
     const searchBody = JSON.parse(searchRes.body);
     assert.equal(searchRes.statusCode, 200);
     assert.ok(Array.isArray(searchBody.products));
     assert.ok(searchBody.products.some((item) => /iphone 15/i.test(item.title || "")));
-    assert.equal(searchBody.dataMode, "seed");
+    assert.equal(searchBody.dataMode, "real");
+    assert.ok(
+      searchBody.products.some((item) => String(item.marketplace || "").toLowerCase() === "mi_shop" || String(item.store || "").toLowerCase() === "mi shop"),
+    );
   });
 });

@@ -134,7 +134,7 @@ test("produto inválido retorna motivo", () => {
   assert.ok(result.reason.length > 0);
 });
 
-test("/api/search encontra produto importado na seed", async () => {
+test("/api/search encontra produto importado no catálogo real", async () => {
   const originalFetch = global.fetch;
   global.fetch = async () => {
     throw new Error("offline");
@@ -147,9 +147,9 @@ test("/api/search encontra produto importado na seed", async () => {
 
     assert.equal(res.statusCode, 200);
     assert.ok(body.products.length > 0);
-    assert.equal(body.dataMode, "seed");
-    assert.equal(body.recommendations[0].product.dataMode, "seed");
-    assert.equal(body.recommendations[0].product.source, "mercadolivre");
+    assert.equal(body.dataMode, "real");
+    assert.equal(body.recommendations[0].product.dataMode, "real");
+    assert.equal(body.recommendations[0].product.marketplace, "mi_shop");
   } finally {
     global.fetch = originalFetch;
   }

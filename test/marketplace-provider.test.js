@@ -26,16 +26,16 @@ test("MercadoLivreProvider normaliza produto no formato OQC", () => {
   assert.equal(normalized.dataMode, "real-authenticated");
 });
 
-test("MercadoLivreProvider usa seed real para categorias cobertas", async () => {
+test("MercadoLivreProvider prioriza catálogo real para categorias cobertas", async () => {
   const result = await MercadoLivreProvider.searchProducts("celular", { limit: 5 });
 
-  assert.equal(result.dataMode, "seed");
-  assert.equal(result.strategyUsed, "seed");
+  assert.equal(result.dataMode, "real");
+  assert.equal(result.strategyUsed, "catalog_real");
   assert.ok(Array.isArray(result.products));
   assert.ok(result.products.length > 0);
-  assert.equal(result.products[0].source, "mercadolivre");
-  assert.equal(result.products[0].dataMode, "seed");
-  assert.match(result.products[0].title, /celular|galaxy|moto|redmi|iphone/i);
-  assert.ok(result.products.every((product) => typeof product.productUrl === "string" && product.productUrl.includes("lista.mercadolivre.com.br/")));
+  assert.equal(result.products[0].marketplace, "mi_shop");
+  assert.equal(result.products[0].dataMode, "real");
+  assert.match(result.products[0].title, /xiaomi|redmi|poco|fone|carregador|celular|smartphone/i);
+  assert.ok(result.products.every((product) => typeof product.productUrl === "string" && product.productUrl.startsWith("http")));
   assert.ok(result.products.every((product) => !/mercadolivre\.com\.br\/?$/.test(product.productUrl)));
 });
