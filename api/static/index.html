@@ -1,0 +1,182 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>O Que Cabe — Compra inteligente pelo seu orçamento</title>
+    <meta name="description" content="Você diz quanto pode pagar por mês. O Que Cabe mostra produtos compatíveis com seu orçamento, parcelas e ofertas verificadas." />
+    <meta name="theme-color" content="#091a35" />
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="icon" href="/favicon.png" type="image/png" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/logo-oqc.png" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/">
+        <img class="brand-mark" src="/logo-oqc.png" alt="OQC" />
+        <strong>O Que Cabe</strong>
+      </a>
+      <div class="trust-pill">
+        <svg viewBox="0 0 24 24"><path d="M12 3 19 6v5c0 5-3 8-7 10-4-2-7-5-7-10V6l7-3Z"/><path d="m9 12 2 2 4-5"/></svg>
+        <span>Curadoria de Confiança</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <h1>Você diz quanto pode pagar.<br />A gente mostra <em>o que cabe.</em></h1>
+          <p>Seu orçamento. Sua escolha. Sem complicação.</p>
+        </div>
+
+        <form id="searchForm" class="search-card" data-mode="monthly">
+          <div class="mode-tabs" aria-label="Tipo de orçamento">
+            <button class="active" type="button" data-mode="monthly">Orçamento Mensal</button>
+            <button type="button" data-mode="total">Orçamento Total</button>
+          </div>
+          <div class="field field-product">
+            <label for="productInput">O que procura?</label>
+            <div class="input-icon">
+              <svg viewBox="0 0 24 24"><path d="m21 21-5-5"/><circle cx="10" cy="10" r="7"/></svg>
+              <input id="productInput" name="product" value="celular" placeholder="Ex: Celular, Notebook..." required />
+            </div>
+          </div>
+          <div class="field">
+            <label for="monthlyInput" id="monthlyLabel">Máx. mensal</label>
+            <div class="money-input">
+              <span>R$</span>
+              <input id="monthlyInput" name="monthly" type="number" min="1" step="1" value="50" required />
+            </div>
+          </div>
+          <div class="field" id="monthsField">
+            <label for="monthsInput">Prazo</label>
+            <select id="monthsInput" name="months">
+              <option value="3">3x</option>
+              <option value="6">6x</option>
+              <option value="10">10x</option>
+              <option value="12" selected>12x</option>
+              <option value="24">24x</option>
+            </select>
+          </div>
+          <div class="field" id="totalField" hidden>
+            <label for="totalBudgetInput">Orçamento total</label>
+            <div class="money-input">
+              <span>R$</span>
+              <input id="totalBudgetInput" name="totalBudget" type="number" min="1" step="1" value="500" disabled />
+            </div>
+          </div>
+          <button class="submit-button" type="submit">Descobrir</button>
+        </form>
+      </section>
+
+      <section class="results-area">
+        <div class="section-head">
+          <div>
+            <p class="panel-label">Seu teto estimado: <strong id="budgetTotal">R$ 600,00</strong> <span id="budgetLine">R$ 50,00 por mês em até 12x</span></p>
+            <h2 id="summaryTitle">Faça uma busca para começar</h2>
+          </div>
+        </div>
+        <p class="marketline" id="marketline">Seu teto estimado: R$ 600, considerando R$ 50 por mês em até 12x.</p>
+
+        <div class="notice" id="notice" hidden></div>
+        <div class="grid" id="results">
+          <article class="empty-state">
+        <strong>Teste uma busca rápida</strong>
+            <span>O resultado aparece aqui com parcela, total e botão de oferta.</span>
+          </article>
+        </div>
+      </section>
+
+      <section class="pechinchas">
+        <h2>Pechinchas em foco</h2>
+        <div class="pechincha-grid">
+          <button type="button" class="pechincha-card" data-query="iphone" data-mode="total" data-total-budget="20000" data-monthly="1800" data-months="12">
+            <strong>Apple</strong>
+            <span>iPhone em destaque</span>
+          </button>
+          <button type="button" class="pechincha-card" data-query="presente" data-mode="total" data-total-budget="50" data-monthly="50" data-months="12">
+            <strong>R$ 50</strong>
+            <span>Presentes de entrada</span>
+          </button>
+          <button type="button" class="pechincha-card" data-query="casa" data-mode="total" data-total-budget="100" data-monthly="100" data-months="12">
+            <strong>R$ 100</strong>
+            <span>Achadinhos para casa</span>
+          </button>
+          <button type="button" class="pechincha-card" data-query="notebook" data-mode="monthly" data-monthly="250" data-months="10">
+            <strong>R$ 250</strong>
+            <span>Notebook em 10x</span>
+          </button>
+          <button type="button" class="pechincha-card" data-query="tv" data-mode="total" data-total-budget="500" data-monthly="500" data-months="12">
+            <strong>R$ 500</strong>
+            <span>TVs até R$ 500</span>
+          </button>
+        </div>
+      </section>
+      <section class="categories">
+        <h2><span>↗</span> Categorias em Alta</h2>
+        <div class="category-grid">
+          <article>
+            <div class="category-icon"><svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M12 18h.01"/></svg></div>
+          <h3>Celulares</h3>
+          <p>Bons e baratos</p>
+          </article>
+          <article>
+            <div class="category-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v10H4z"/><path d="M2 19h20"/></svg></div>
+            <h3>Notebooks</h3>
+            <p>Para trabalho e estudo</p>
+          </article>
+          <article>
+            <div class="category-icon"><svg viewBox="0 0 24 24"><path d="M20 12v9H4v-9"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H8a2.5 2.5 0 1 1 2.5-2.5C10.5 6 12 7 12 7Z"/><path d="M12 7h4a2.5 2.5 0 1 0-2.5-2.5C13.5 6 12 7 12 7Z"/></svg></div>
+            <h3>Presentes</h3>
+            <p>Até R$ 50,00</p>
+          </article>
+          <article>
+            <div class="category-icon"><svg viewBox="0 0 24 24"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></div>
+            <h3>Para Casa</h3>
+            <p>Achadinhos úteis</p>
+          </article>
+          <article>
+            <div class="category-icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg></div>
+            <h3>TVs</h3>
+            <p>Mensal até R$ 200</p>
+          </article>
+          <article>
+            <div class="category-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></div>
+            <h3>Relógios</h3>
+            <p>Até R$ 300 total</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="how">
+          <h2>Como fazemos a mágica acontecer</h2>
+        <div class="how-grid">
+          <article>
+            <div><svg viewBox="0 0 24 24"><path d="m21 21-5-5"/><circle cx="10" cy="10" r="7"/></svg></div>
+            <h3>1. Você dita as regras</h3>
+            <p>Esqueça ver produtos que não pode pagar. Diga exatamente o seu limite mensal ou total.</p>
+          </article>
+          <article>
+            <div><svg viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4 2v-8L3 5Z"/></svg></div>
+            <h3>2. Filtramos as armadilhas</h3>
+            <p>A curadoria corta juros abusivos, fretes absurdos e vendedores com má reputação.</p>
+          </article>
+          <article>
+            <div><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z"/><path d="m8 12 2 2 5-5"/></svg></div>
+            <h3>3. Compra segura</h3>
+            <p>Direcionamos você para a loja parceira quando houver produto real validado no catálogo.</p>
+          </article>
+        </div>
+      </section>
+
+      <footer>
+        <strong>O Que Cabe</strong>
+        <span>Ajudamos pessoas a comprar melhor todos os meses. Sem endividamento, sem stress.</span>
+      </footer>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
+

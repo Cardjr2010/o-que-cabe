@@ -16,7 +16,8 @@ import { projectRoot, resolveProjectPath } from "../src/runtime/project-root.js"
 import { resolveCatalogSeedPath, getCatalogSeedCandidates } from "../src/runtime/catalog-path.js";
 
 const root = projectRoot;
-const publicDir = resolveProjectPath("public");
+const bundledPublicDir = resolveProjectPath("api", "static");
+const publicDir = fs.existsSync(bundledPublicDir) ? bundledPublicDir : resolveProjectPath("public");
 const oauthPath = resolveProjectPath("data", "mercadolivre-oauth.json");
 const productsPath = resolveProjectPath("data", "products.json");
 const mercadolivreDemoPath = resolveProjectPath("data", "mercadolivre-demo-products.json");
