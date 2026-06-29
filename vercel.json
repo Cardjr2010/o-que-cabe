@@ -6,29 +6,33 @@
       "use": "@vercel/node"
     }
   ],
+  "functions": {
+    "api/web.js": {
+      "includeFiles": [
+        "public/**"
+      ]
+    }
+  },
   "routes": [
     {
       "src": "/",
-      "dest": "/public/index.html"
+      "dest": "api/web.js"
     },
     {
       "src": "/app.js",
-      "dest": "/public/app.js"
+      "dest": "api/web.js"
     },
     {
       "src": "/styles.css",
-      "dest": "/public/styles.css"
+      "dest": "api/web.js"
     },
     {
       "src": "/favicon.svg",
-      "dest": "/public/favicon.svg"
+      "dest": "api/web.js"
     },
     {
       "src": "/favicon.png",
-      "dest": "/public/favicon.png"
-    },
-    {
-      "handle": "filesystem"
+      "dest": "api/web.js"
     },
     {
       "src": "/api/(.*)",

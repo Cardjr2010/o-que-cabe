@@ -1035,6 +1035,22 @@ export default async function handler(req, res) {
     return;
   }
 
+  if (pathname === "/app.js") {
+    const filePath = path.join(publicDir, "app.js");
+    if (fs.existsSync(filePath)) {
+      send(res, 200, fs.readFileSync(filePath), { "Content-Type": contentType(filePath) });
+      return;
+    }
+  }
+
+  if (pathname === "/styles.css") {
+    const filePath = path.join(publicDir, "styles.css");
+    if (fs.existsSync(filePath)) {
+      send(res, 200, fs.readFileSync(filePath), { "Content-Type": contentType(filePath) });
+      return;
+    }
+  }
+
   if (pathname === "/api/search") {
     const q = url.searchParams.get("q") || "";
     const mode = (url.searchParams.get("mode") || "monthly").toLowerCase();
@@ -1711,6 +1727,30 @@ export default async function handler(req, res) {
     const pngPath = path.join(publicDir, "favicon.png");
     if (fs.existsSync(pngPath)) {
       send(res, 200, fs.readFileSync(pngPath), { "Content-Type": contentType(pngPath) });
+      return;
+    }
+  }
+
+  if (pathname === "/favicon.svg") {
+    const svgPath = path.join(publicDir, "favicon.svg");
+    if (fs.existsSync(svgPath)) {
+      send(res, 200, fs.readFileSync(svgPath), { "Content-Type": contentType(svgPath) });
+      return;
+    }
+  }
+
+  if (pathname === "/logo-oqc.png") {
+    const pngPath = path.join(publicDir, "logo-oqc.png");
+    if (fs.existsSync(pngPath)) {
+      send(res, 200, fs.readFileSync(pngPath), { "Content-Type": contentType(pngPath) });
+      return;
+    }
+  }
+
+  if (pathname === "/logo-oqc.svg") {
+    const svgPath = path.join(publicDir, "logo-oqc.svg");
+    if (fs.existsSync(svgPath)) {
+      send(res, 200, fs.readFileSync(svgPath), { "Content-Type": contentType(svgPath) });
       return;
     }
   }
