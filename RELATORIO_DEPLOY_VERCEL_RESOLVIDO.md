@@ -81,3 +81,11 @@ Foi adicionado um `app.mjs` na raiz com um export seguro que aponta para `api/we
 ## Ajuste de smoke test
 
 O mesmo entrypoint agora responde diretamente a `/api/ping` com um JSON minimo e isolado, para manter o teste de sanidade da funcao serverless em 200 sem reintroduzir qualquer codigo de frontend no runtime do Node.
+
+## Validacao final desta rodada
+
+- `/api/ping` -> `200 OK`
+- `/api/health` -> `200 OK` com `apiVersion: "health-minimal-001"`
+- `/` -> `200 OK`
+- `/api/catalog/health` -> `200 OK` (catalogo ainda vazio na producão, separado da correção deste hotfix)
+- `/api/search?q=xiaomi&mode=total&totalBudget=1500` -> `200 OK`
