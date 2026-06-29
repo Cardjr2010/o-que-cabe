@@ -6,6 +6,8 @@ import { URL, pathToFileURL } from "node:url";
 import dummyJsonAdapter from "./src/adapters/products.dummyjson.js";
 import mercadolivreAdapter from "./src/adapters/products.mercadolivre.js";
 import googleMerchantProductsAdapter from "./src/adapters/GoogleMerchantProductsAdapter.js";
+import CsvFeedProvider from "./src/feed/providers/CsvFeedProvider.js";
+import MiShopFeedProvider from "./src/feed/providers/MiShopFeedProvider.js";
 import MercadoLivreProvider from "./src/providers/MercadoLivreProvider.js";
 import AwinFeedProvider from "./src/providers/AwinFeedProvider.js";
 import actionpayProviderDefault, { ActionpayProvider } from "./src/providers/ActionpayProvider.js";
@@ -30,6 +32,33 @@ const googleMerchantAdapter = googleMerchantProductsAdapter;
 const awinFeedProvider = AwinFeedProvider;
 const actionpayProvider = actionpayProviderDefault instanceof ActionpayProvider ? actionpayProviderDefault : new ActionpayProvider();
 const actionpayCatalogSeedPath = process.env.ACTIONPAY_CATALOG_SEED_PATH || path.join(root, "data", "products.seed.json");
+const feedCatalogSeedPath = process.env.FEED_CATALOG_SEED_PATH || path.join(root, "data", "products.seed.json");
+function getFeedProviderNames() {
+  return ["mi_shop", "csv", "actionpay", "awin"];
+}
+
+function createFeedProvider(providerName = "mi_shop", options = {}) {
+  const name = String(providerName || "").trim().toLowerCase();
+  const baseOptions = {
+    catalogManager: new CatalogManager({ seedPath: feedCatalogSeedPath }),
+    seedPath: options.seedPath || feedCatalogSeedPath,
+    fetchImpl: options.fetchImpl || globalThis.fetch,
+  };
+  if (name === "mi_shop") {
+    return new MiShopFeedProvider({
+      ...baseOptions,
+      ...options,
+    });
+  }
+  if (name === "csv") {
+    return new CsvFeedProvider({
+      ...baseOptions,
+      ...options,
+    });
+  }
+  return null;
+}
+
 function createActionpayProvider() {
   return actionpayProviderDefault instanceof ActionpayProvider
     ? new ActionpayProvider({
@@ -1198,6 +1227,64 @@ export async function requestHandler(req, res) {
         products: [],
         warning: "N?o encontramos produtos com an?ncio dispon?vel para este or?amento.",
         error: error.message,
+      });
+    }
+    return;
+  }
+
+  if (requestUrl.pathname === "/api/feed/providers") {
+    sendJson(res, 200, {
+      ok: true,
+      providers: getFeedProviderNames(),
+    });
+    return;
+  }
+
+  if (requestUrl.pathname === "/api/feed/import") {
+    if (method !== "POST") {
+      sendJson(res, 405, { ok: false, message: "Use POST para importar feeds." });
+      return;
+    }
+    const providerName = String(requestUrl.searchParams.get("provider") || "mi_shop").trim().toLowerCase();
+    const feedProvider = createFeedProvider(providerName, {
+      fetchImpl: globalThis.fetch,
+    });
+    if (!feedProvider) {
+      sendJson(res, 400, {
+        ok: false,
+        provider: providerName,
+        message: "Provider de feed nao suportado.",
+        providers: getFeedProviderNames(),
+      });
+      return;
+    }
+    try {
+      const source = requestUrl.searchParams.get("feedPath")
+        || requestUrl.searchParams.get("feedUrl")
+        || "";
+      const result = await feedProvider.import(source, {
+        mode: requestUrl.searchParams.get("mode") || "merge",
+        format: requestUrl.searchParams.get("format") || "",
+        feedText: requestUrl.searchParams.get("feedText") || "",
+      });
+      sendJson(res, 200, {
+        ok: true,
+        provider: providerName,
+        imported: result.imported || 0,
+        updated: result.updated || 0,
+        duplicates: result.duplicates || 0,
+        rejected: result.rejected || 0,
+        errors: result.errors || [],
+      });
+    } catch (error) {
+      sendJson(res, 200, {
+        ok: false,
+        provider: providerName,
+        imported: 0,
+        updated: 0,
+        duplicates: 0,
+        rejected: 0,
+        errors: [error.message || "Erro ao importar feed."],
       });
     }
     return;

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Sprint 9
+- Added a generic feed provider layer so CSV feeds can be parsed, validated, normalized, and imported through the CatalogManager without duplicating feed-specific code.
+- Implemented a Mi Shop CSV provider as the first real feed-backed source for the new feed architecture.
+- Added `/api/feed/providers` and `/api/feed/import` endpoints plus regression tests covering CSV detection, Mi Shop normalization, invalid-row rejection, and catalog-backed search after import.
+
 ### Sprint 19
 - Added a Google Merchant adapter that reads products from an authorized Merchant Center account and normalizes them into the OQC catalog contract.
 - Exposed internal Google Merchant status and import endpoints so the catalog can be populated without exposing tokens.

@@ -3,6 +3,8 @@ import path from "node:path";
 import BudgetEngine from "../src/engines/BudgetEngine.js";
 import ScoreEngine from "../src/engines/ScoreEngine.js";
 import RankingEngine from "../src/engines/RankingEngine.js";
+import CsvFeedProvider from "../src/feed/providers/CsvFeedProvider.js";
+import MiShopFeedProvider from "../src/feed/providers/MiShopFeedProvider.js";
 import MercadoLivreProvider from "../src/providers/MercadoLivreProvider.js";
 import AwinFeedProvider from "../src/providers/AwinFeedProvider.js";
 import actionpayProviderDefault, { ActionpayProvider } from "../src/providers/ActionpayProvider.js";
@@ -21,6 +23,32 @@ const catalogManager = new CatalogManager({
 });
 const googleMerchantAdapter = googleMerchantProductsAdapter;
 const awinFeedProvider = AwinFeedProvider;
+function createFeedProvider(providerName = "mi_shop", options = {}) {
+  const name = String(providerName || "").trim().toLowerCase();
+  const baseOptions = {
+    catalogManager,
+    seedPath: options.seedPath || path.join(root, "data", "products.seed.json"),
+    fetchImpl: options.fetchImpl || globalThis.fetch,
+  };
+  if (name === "mi_shop") {
+    return new MiShopFeedProvider({
+      ...baseOptions,
+      ...options,
+    });
+  }
+  if (name === "csv") {
+    return new CsvFeedProvider({
+      ...baseOptions,
+      ...options,
+    });
+  }
+  return null;
+}
+
+function getFeedProviderNames() {
+  return ["mi_shop", "csv", "actionpay", "awin"];
+}
+
 function createActionpayProvider() {
   return actionpayProviderDefault instanceof ActionpayProvider
     ? new ActionpayProvider({
@@ -807,6 +835,63 @@ export default async function handler(req, res) {
         ok: true,
         ...response,
         warning: `${error.message || "Falha na integração Mercado Livre"}. Mostrando demonstração por enquanto.`,
+      });
+    }
+    return;
+  }
+  if (pathname === "/api/feed/providers") {
+    sendJson(res, 200, {
+      ok: true,
+      providers: getFeedProviderNames(),
+    });
+    return;
+  }
+
+  if (pathname === "/api/feed/import") {
+    if (method !== "POST") {
+      sendJson(res, 405, { ok: false, message: "Use POST para importar feeds." });
+      return;
+    }
+    const providerName = String(url.searchParams.get("provider") || "mi_shop").trim().toLowerCase();
+    const feedProvider = createFeedProvider(providerName, {
+      fetchImpl: globalThis.fetch,
+    });
+    if (!feedProvider) {
+      sendJson(res, 400, {
+        ok: false,
+        provider: providerName,
+        message: "Provider de feed nao suportado.",
+        providers: getFeedProviderNames(),
+      });
+      return;
+    }
+    try {
+      const source = url.searchParams.get("feedPath")
+        || url.searchParams.get("feedUrl")
+        || "";
+      const result = await feedProvider.import(source, {
+        mode: url.searchParams.get("mode") || "merge",
+        format: url.searchParams.get("format") || "",
+        feedText: url.searchParams.get("feedText") || "",
+      });
+      sendJson(res, 200, {
+        ok: true,
+        provider: providerName,
+        imported: result.imported || 0,
+        updated: result.updated || 0,
+        duplicates: result.duplicates || 0,
+        rejected: result.rejected || 0,
+        errors: result.errors || [],
+      });
+    } catch (error) {
+      sendJson(res, 200, {
+        ok: false,
+        provider: providerName,
+        imported: 0,
+        updated: 0,
+        duplicates: 0,
+        rejected: 0,
+        errors: [error.message || "Erro ao importar feed."],
       });
     }
     return;
