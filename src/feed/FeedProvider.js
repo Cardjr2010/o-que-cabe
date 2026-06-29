@@ -1,6 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import CatalogManager from "../catalog/CatalogManager.js";
+import { projectRoot } from "../runtime/project-root.js";
+
+const root = projectRoot;
+
 
 function cleanText(value = "") {
   return String(value ?? "").replace(/\s+/g, " ").trim();
@@ -77,7 +81,7 @@ export default class FeedProvider {
     this.catalog = options.catalogManager || new CatalogManager(options.catalogOptions || {});
     this.networkName = options.networkName || "feed";
     this.fetchImpl = options.fetchImpl || globalThis.fetch;
-    this.seedPath = options.seedPath || path.join(process.cwd(), "data", "products.seed.json");
+    this.seedPath = options.seedPath || path.join(root, "data", "products.seed.json");
   }
 
   get name() {

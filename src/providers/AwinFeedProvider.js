@@ -1,9 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import CatalogManager from "../catalog/CatalogManager.js";
+import { projectRoot } from "../runtime/project-root.js";
+
 import FeedProvider from "../feed/FeedProvider.js";
 
-const root = process.cwd();
+const root = projectRoot;
 const defaultStatePath = path.join(root, "data", "awin-import-state.json");
 const defaultAdvertisersPath = path.join(root, "data", "awin-advertisers.json");
 const defaultCategoryMapPath = path.join(root, "data", "awin-category-map.json");

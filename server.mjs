@@ -13,12 +13,14 @@ import AwinFeedProvider from "./src/providers/AwinFeedProvider.js";
 import actionpayProviderDefault, { ActionpayProvider } from "./src/providers/ActionpayProvider.js";
 import actionpayYmlImporterDefault, { ActionpayYmlImporter } from "./src/importers/ActionpayYmlImporter.js";
 import CatalogManager from "./src/catalog/CatalogManager.js";
+import { projectRoot } from "./src/runtime/project-root.js";
+
 import travelMockAdapter from "./src/adapters/travel.mock.js";
 import BudgetEngine from "./src/engines/BudgetEngine.js";
 import ScoreEngine from "./src/engines/ScoreEngine.js";
 import RankingEngine from "./src/engines/RankingEngine.js";
 
-const root = process.cwd();
+const root = projectRoot;
 const envPath = path.join(root, ".env");
 const productsPath = path.join(root, "data", "products.json");
 const mercadolivreDemoPath = path.join(root, "data", "mercadolivre-demo-products.json");

@@ -1,4 +1,8 @@
 import CatalogManager from "../catalog/CatalogManager.js";
+import { projectRoot } from "../runtime/project-root.js";
+
+const root = projectRoot;
+
 
 const MERCHANT_API_BASE = "https://merchantapi.googleapis.com";
 

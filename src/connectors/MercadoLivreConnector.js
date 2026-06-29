@@ -1,7 +1,9 @@
 import fs from "node:fs";
+import { projectRoot } from "../runtime/project-root.js";
+
 import path from "node:path";
 
-const root = process.cwd();
+const root = projectRoot;
 const oauthPath = path.join(root, "data", "mercadolivre-oauth.json");
 const demoPath = path.join(root, "data", "mercadolivre-demo-products.json");
 

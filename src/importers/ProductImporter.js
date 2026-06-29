@@ -1,8 +1,10 @@
 import fs from "node:fs";
+import { projectRoot } from "../runtime/project-root.js";
+
 import path from "node:path";
 import CatalogRepository from "../catalog/CatalogRepository.js";
 
-const root = process.cwd();
+const root = projectRoot;
 const seedPath = path.join(root, "data", "products.seed.json");
 const repository = new CatalogRepository();
 

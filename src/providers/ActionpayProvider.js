@@ -1,4 +1,8 @@
 import fs from "node:fs";
+import { projectRoot } from "../runtime/project-root.js";
+
+const root = projectRoot;
+
 
 function cleanText(value = "") {
   return String(value ?? "").replace(/\s+/g, " ").trim();

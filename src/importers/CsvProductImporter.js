@@ -1,5 +1,9 @@
 import path from "node:path";
+import { projectRoot } from "../runtime/project-root.js";
+
 import { normalizeImportedProduct } from "./ProductImporter.js";
+
+const root = projectRoot;
 
 function splitCsvLine(line = "") {
   const cells = [];
@@ -107,7 +111,7 @@ function rowToProduct(row = {}) {
 
 export class CsvProductImporter {
   constructor(options = {}) {
-    this.seedPath = options.seedPath || path.join(process.cwd(), "data", "products.seed.json");
+    this.seedPath = options.seedPath || path.join(root, "data", "products.seed.json");
   }
 
   parse(csvText) {

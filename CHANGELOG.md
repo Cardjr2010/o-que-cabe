@@ -99,6 +99,13 @@
 - Added Awin import and status endpoints plus local/manual feed support so the OQC can start from approved real products without changing the engine stack.
 - Added tests for Awin feed parsing, normalization, import deduplication, and endpoint diagnostics.
 
+# Changelog
+
+### Hotfix Vercel Production
+- Fixed the serverless root-path resolution so the Vercel function no longer looks for `public/index.html` and seed files inside the `api/` directory when the runtime working directory differs.
+- Added safe `/api/health` and `/api/catalog/health` diagnostics so production can report catalog state without taking the function down.
+- Wrapped the Vercel handler in a global try/catch and added a safe fallback home page to prevent `FUNCTION_INVOCATION_FAILED` from uncaught file-path errors.
+
 ### Sprint 9
 - Added a new "Pechinchas em foco" entry point on the home with budget shortcuts for R$ 50, R$ 100, R$ 250, and R$ 500.
 - Wired the pechincha cards to reuse the existing monthly and total search flows without changing the MVP rules or reintroducing marketplace redirects.

@@ -1,4 +1,4 @@
-﻿import fs from "node:fs";
+import fs from "node:fs";
 import path from "node:path";
 import BudgetEngine from "../src/engines/BudgetEngine.js";
 import ScoreEngine from "../src/engines/ScoreEngine.js";
@@ -12,15 +12,16 @@ import actionpayProviderDefault, { ActionpayProvider } from "../src/providers/Ac
 import actionpayYmlImporterDefault, { ActionpayYmlImporter } from "../src/importers/ActionpayYmlImporter.js";
 import CatalogManager from "../src/catalog/CatalogManager.js";
 import googleMerchantProductsAdapter from "../src/adapters/GoogleMerchantProductsAdapter.js";
+import { projectRoot, resolveProjectPath } from "../src/runtime/project-root.js";
 
-const root = process.cwd();
-const publicDir = path.join(root, "public");
-const oauthPath = path.join(root, "data", "mercadolivre-oauth.json");
-const productsPath = path.join(root, "data", "products.json");
-const mercadolivreDemoPath = path.join(root, "data", "mercadolivre-demo-products.json");
-const mlLinksPath = path.join(root, "data", "mercadolivre-links.json");
+const root = projectRoot;
+const publicDir = resolveProjectPath("public");
+const oauthPath = resolveProjectPath("data", "mercadolivre-oauth.json");
+const productsPath = resolveProjectPath("data", "products.json");
+const mercadolivreDemoPath = resolveProjectPath("data", "mercadolivre-demo-products.json");
+const mlLinksPath = resolveProjectPath("data", "mercadolivre-links.json");
 const catalogManager = new CatalogManager({
-  seedPath: process.env.ACTIONPAY_CATALOG_SEED_PATH || path.join(root, "data", "products.seed.json"),
+  seedPath: process.env.ACTIONPAY_CATALOG_SEED_PATH || resolveProjectPath("data", "products.seed.json"),
 });
 const googleMerchantAdapter = googleMerchantProductsAdapter;
 const awinFeedProvider = AwinFeedProvider;
@@ -29,7 +30,7 @@ function createFeedProvider(providerName = "mi_shop", options = {}) {
   const name = String(providerName || "").trim().toLowerCase();
   const baseOptions = {
     catalogManager,
-    seedPath: options.seedPath || path.join(root, "data", "products.seed.json"),
+    seedPath: options.seedPath || resolveProjectPath("data", "products.seed.json"),
     fetchImpl: options.fetchImpl || globalThis.fetch,
   };
   if (name === "mi_shop") {
@@ -79,14 +80,14 @@ function createActionpayImporter() {
     ? new ActionpayYmlImporter({
       provider,
       catalogManager,
-      catalogSeedPath: process.env.ACTIONPAY_CATALOG_SEED_PATH || path.join(root, "data", "products.seed.json"),
+      catalogSeedPath: process.env.ACTIONPAY_CATALOG_SEED_PATH || resolveProjectPath("data", "products.seed.json"),
       sourceOfferId: process.env.ACTIONPAY_SALDAO_OFFER_ID || "13241",
       sourceOfferName: "Saldão da Informática - Notebooks, iPhones e TVs.",
     })
     : new ActionpayYmlImporter({
       provider,
       catalogManager,
-      catalogSeedPath: process.env.ACTIONPAY_CATALOG_SEED_PATH || path.join(root, "data", "products.seed.json"),
+      catalogSeedPath: process.env.ACTIONPAY_CATALOG_SEED_PATH || resolveProjectPath("data", "products.seed.json"),
       sourceOfferId: process.env.ACTIONPAY_SALDAO_OFFER_ID || "13241",
       sourceOfferName: "Saldão da Informática - Notebooks, iPhones e TVs.",
     });
@@ -96,7 +97,7 @@ function getFeedProviderInstance(providerName = "mi_shop", options = {}) {
   const name = String(providerName || "").trim().toLowerCase();
   const baseOptions = {
     catalogManager,
-    seedPath: options.seedPath || path.join(root, "data", "products.seed.json"),
+    seedPath: options.seedPath || resolveProjectPath("data", "products.seed.json"),
     fetchImpl: options.fetchImpl || globalThis.fetch,
   };
   if (name === "mi_shop") {
@@ -228,6 +229,56 @@ function readMercadoLivreDemoProducts() {
 
 function readMercadoLivreLinks() {
   return readJson(mlLinksPath, []);
+}
+
+function safeStat(filePath) {
+  try {
+    const stats = fs.statSync(filePath);
+    return {
+      exists: true,
+      size: stats.size,
+    };
+  } catch {
+    return {
+      exists: false,
+      size: 0,
+    };
+  }
+}
+
+function getCatalogHealthSnapshot() {
+  try {
+    const items = catalogManager.list();
+    const sample = items.slice(0, 3).map((item) => ({
+      id: item?.id || "",
+      title: item?.title || "",
+      price: Number(item?.price || 0),
+      marketplace: item?.marketplace || "",
+      dataMode: item?.dataMode || "",
+    }));
+    const schemaErrors = items.flatMap((item, index) => {
+      const issues = [];
+      if (!item?.title) issues.push(`item[${index}] missing title`);
+      if (!item?.category) issues.push(`item[${index}] missing category`);
+      if (!Number.isFinite(Number(item?.price || 0)) || Number(item?.price || 0) <= 0) issues.push(`item[${index}] invalid price`);
+      return issues;
+    }).slice(0, 10);
+    return {
+      catalogLoaded: true,
+      catalogCount: items.length,
+      sample,
+      schemaErrors,
+      error: "",
+    };
+  } catch (error) {
+    return {
+      catalogLoaded: false,
+      catalogCount: 0,
+      sample: [],
+      schemaErrors: [],
+      error: error?.message || "CATALOG_HEALTH_ERROR",
+    };
+  }
 }
 
 function buildMercadoLivreSearchUrl(product) {
@@ -579,7 +630,25 @@ function renderExplorerPage({ title, heading, description, view, badge, endpoint
 }
 
 function renderHome() {
-  return fs.readFileSync(path.join(publicDir, "index.html"), "utf8");
+  try {
+    return fs.readFileSync(path.join(publicDir, "index.html"), "utf8");
+  } catch {
+    return `<!doctype html>
+    <html lang="pt-BR">
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>O Que Cabe</title>
+        <meta name="theme-color" content="#091a35" />
+      </head>
+      <body>
+        <main style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;padding:32px;max-width:720px;margin:0 auto;">
+          <h1>O Que Cabe</h1>
+          <p>O site está iniciando em modo seguro. A interface completa será carregada assim que o arquivo principal estiver disponível.</p>
+        </main>
+      </body>
+    </html>`;
+  }
 }
 
 function renderProductPage() {
@@ -847,7 +916,8 @@ function buildMercadoLivreManualResult({ item, itemId, monthly, months }) {
 }
 
 export default async function handler(req, res) {
-  const url = new URL(req.url, "http://localhost");
+  try {
+    const url = new URL(req.url, "http://localhost");
   const pathname = url.pathname;
   const method = String(req.method || "GET").toUpperCase();
 
@@ -933,6 +1003,34 @@ export default async function handler(req, res) {
     sendJson(res, 200, {
       ok: true,
       providers: getFeedProviderNames(),
+    });
+    return;
+  }
+
+  if (pathname === "/api/health") {
+    const seedFile = safeStat(resolveProjectPath("data", "products.seed.json"));
+    const catalogHealth = getCatalogHealthSnapshot();
+    sendJson(res, 200, {
+      ok: true,
+      runtime: `node ${process.versions.node}`,
+      catalogLoaded: catalogHealth.catalogLoaded,
+      catalogCount: catalogHealth.catalogCount,
+      seedFileExists: seedFile.exists,
+      seedFileSize: seedFile.size,
+      error: catalogHealth.error || "",
+    });
+    return;
+  }
+
+  if (pathname === "/api/catalog/health") {
+    const seedFile = safeStat(resolveProjectPath("data", "products.seed.json"));
+    const catalogHealth = getCatalogHealthSnapshot();
+    sendJson(res, 200, {
+      ok: true,
+      runtime: `node ${process.versions.node}`,
+      seedFileExists: seedFile.exists,
+      seedFileSize: seedFile.size,
+      ...catalogHealth,
     });
     return;
   }
@@ -1471,6 +1569,19 @@ export default async function handler(req, res) {
   }
 
   sendJson(res, 404, { status: "not_found" });
+  } catch (error) {
+    try {
+      sendJson(res, 500, {
+        ok: false,
+        error: error?.message || "ERRO_INTERNO_DO_SERVIDOR",
+        status: "error",
+      });
+    } catch {
+      res.statusCode = 500;
+      res.setHeader("Content-Type", "application/json; charset=utf-8");
+      res.end(JSON.stringify({ ok: false, error: error?.message || "ERRO_INTERNO_DO_SERVIDOR", status: "error" }));
+    }
+  }
 }
 
 

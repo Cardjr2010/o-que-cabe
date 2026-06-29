@@ -3,8 +3,10 @@ import path from "node:path";
 import MarketplaceProvider from "./MarketplaceProvider.js";
 import MercadoLivreConnector from "../connectors/MercadoLivreConnector.js";
 import CatalogManager from "../catalog/CatalogManager.js";
+import { projectRoot } from "../runtime/project-root.js";
 
-const root = process.cwd();
+
+const root = projectRoot;
 const seedPath = path.join(root, "data", "products.seed.json");
 const catalogManager = new CatalogManager({ seedPath });
 

@@ -2,10 +2,12 @@ import fs from "node:fs";
 import path from "node:path";
 import FeedProvider from "../feed/FeedProvider.js";
 import CatalogManager from "../catalog/CatalogManager.js";
+import { projectRoot } from "../runtime/project-root.js";
+
 import actionpayProviderDefault, { ActionpayProvider } from "./ActionpayProvider.js";
 import { ActionpayYmlImporter } from "../importers/ActionpayYmlImporter.js";
 
-const root = process.cwd();
+const root = projectRoot;
 const defaultStatePath = path.join(root, "data", "actionpay-import-state.json");
 const defaultCatalogSeedPath = path.join(root, "data", "products.seed.json");
 

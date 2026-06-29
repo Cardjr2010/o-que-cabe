@@ -1,8 +1,12 @@
 import fs from "node:fs";
+import { projectRoot } from "../runtime/project-root.js";
+
 import path from "node:path";
 
-const linksPath = path.join(process.cwd(), "data", "mercadolivre-links.json");
-const oauthTokenPath = path.join(process.cwd(), "data", "mercadolivre-oauth.json");
+const root = projectRoot;
+
+const linksPath = path.join(root, "data", "mercadolivre-links.json");
+const oauthTokenPath = path.join(root, "data", "mercadolivre-oauth.json");
 
 function readJson(filePath, fallback) {
   try {
