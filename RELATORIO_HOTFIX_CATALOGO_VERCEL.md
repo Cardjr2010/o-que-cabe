@@ -18,6 +18,7 @@ Fazer o catálogo real do OQC entrar corretamente no deploy da Vercel sem quebra
    - `catalogCount`
    - `resolvedSeedPath`
    - `sourceUsed`
+5. A rota `/api/search` ganhou um fallback real resiliente para continuar devolvendo produtos do catálogo caso o ranking completo encontre uma falha de ambiente no runtime serverless.
 
 ## Validação local
 - `node --test` passou

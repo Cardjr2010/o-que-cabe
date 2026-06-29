@@ -6,6 +6,7 @@
 - Ensured the real catalog seed is available in the Vercel bundle through `src/data/products.seed.js`.
 - Added stable seed resolution and catalog health reporting so production can see the loaded source and count.
 - Kept the demo fallback intact while restoring the real catalog path for serverless deployment.
+- Added a resilient real-search fallback so production can keep returning catalog products even if the full ranking path stumbles in the serverless runtime.
 
 ### Sprint 20
 - Validated the real Mi Shop catalog experience across the main MVP search terms and confirmed the API continues returning HTTP 200.

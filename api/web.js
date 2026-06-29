@@ -554,6 +554,82 @@ function buildOqcResponse({ products, query, mode, monthly, months, totalBudget,
     products: ranked.products || enriched,
   };
 }
+
+function buildFallbackRealResponse({ products, query, mode, monthly, months, totalBudget, dataMode }) {
+  const budget = buildOqcBudgetContext({ mode, monthly, months, totalBudget });
+  const enriched = products.map((product) => {
+    const price = Number(product.price || 0);
+    let scoreResult = { score: 0, breakdown: [], explanation: "" };
+    try {
+      scoreResult = ScoreEngine.evaluateProduct({
+        ...product,
+        title: product.title || "",
+        price,
+        seller: product.seller || {
+          reputation: product.store || product.source || "",
+          rating: product.storeRating ?? product.rating ?? null,
+          sales: product.soldQuantity ?? product.availableQuantity ?? 0,
+        },
+        shippingCost: product.shippingCost ?? product.shipping_cost ?? 0,
+        freeShipping: Boolean(product.freeShipping ?? product.free_shipping ?? false),
+        deliveryDays: product.deliveryDays ?? product.delivery_days ?? 0,
+        warrantyMonths: product.warrantyMonths ?? product.warranty_months ?? 0,
+        brand: product.brand || "",
+        reviewCount: product.reviewCount ?? product.reviewsCount ?? 0,
+        soldQuantity: product.soldQuantity ?? 0,
+        referencePrice: product.referencePrice ?? 0,
+      }, budget);
+    } catch {
+      scoreResult = { score: 0, breakdown: [], explanation: "" };
+    }
+
+    const budgetStatus = BudgetEngine.classifyBudgetFit(price, budget);
+    return {
+      ...product,
+      budgetStatus,
+      status: budgetStatus,
+      score: scoreResult.score,
+      scoreBreakdown: scoreResult.breakdown,
+      scoreExplanation: scoreResult.explanation,
+      searchTerm: query,
+      productUrl: product.productUrl || product.permalink || product.url || "",
+      permalink: product.permalink || product.productUrl || product.url || "",
+      oqc: {
+        ...(product.oqc || {}),
+        budgetStatus,
+        budgetScore: budgetStatus === "CABE" ? 1 : budgetStatus === "APERTADO" ? 0.55 : 0.05,
+        trustScore: 0,
+        valueScore: 0,
+        relevanceScore: 0,
+        finalScore: scoreResult.score / 100,
+        reasons: Array.isArray(scoreResult.breakdown) ? scoreResult.breakdown.map((item) => item?.reason).filter(Boolean) : [],
+        warnings: [],
+        badges: [budgetStatus === "CABE" ? "cabe" : budgetStatus === "APERTADO" ? "apertado" : "fora-do-orcamento", "real"],
+      },
+    };
+  });
+  const ordered = BudgetEngine.sortByBudgetPriority(enriched);
+  const groups = BudgetEngine.groupBudgetPriority(enriched);
+  const recommended = ordered.slice(0, 3).map((product, index) => ({
+    rank: index + 1,
+    label: index === 0 ? (product.status === "CABE" ? "Melhor escolha" : "Melhor alternativa dentro do possível") : index === 1 ? "Boa alternativa" : "Opção econômica",
+    reason: `${product.status === "CABE" ? "Cabe no orçamento." : product.status === "APERTADO" ? "Cabe, mas está apertado." : "Fica acima do orçamento."} Produto real do catálogo disponível.`,
+    product: {
+      ...product,
+      reason: `${product.status === "CABE" ? "Cabe no orçamento." : product.status === "APERTADO" ? "Cabe, mas está apertado." : "Fica acima do orçamento."} Produto real do catálogo disponível.`,
+    },
+  }));
+  return {
+    query,
+    mode,
+    budget,
+    dataMode,
+    recommendations: recommended,
+    groups,
+    summary: "Os resultados priorizam produtos reais do catálogo quando a pontuação completa precisa de fallback.",
+    products: ordered,
+  };
+}
 function renderExplorerPage({ title, heading, description, view, badge, endpoint, inputLabel, inputPlaceholder, quickLabel, quickButtons }) {
   const buttons = quickButtons
     .map((item) => `<button type="button" data-query="${escapeHtml(item.query)}" data-monthly="${item.monthly || 100}" data-months="${item.months || 12}">${escapeHtml(item.label)}</button>`)
@@ -943,8 +1019,9 @@ export default async function handler(req, res) {
     const monthly = Number(url.searchParams.get("monthly") || "50");
     const months = Number(url.searchParams.get("months") || "12");
     const totalBudget = Number(url.searchParams.get("totalBudget") || (monthly * months));
+    let providerResult = null;
     try {
-      const providerResult = await MercadoLivreProvider.searchProducts(q, {
+      providerResult = await MercadoLivreProvider.searchProducts(q, {
         limit: 20,
         mode,
         monthly,
@@ -974,23 +1051,44 @@ export default async function handler(req, res) {
         warning: selectedProducts.length ? "" : "Não encontramos exemplo demonstrativo confiável para este orçamento.",
       });
     } catch (error) {
-      const demoProducts = normalizeDemoProducts(readMercadoLivreDemoProducts(), monthly, months, q, "mercadolivre").map((item) => ({
-        ...item,
-        dataMode: "demo",
-      }));
-      const response = buildOqcResponse({
-        products: demoProducts,
-        query: q,
-        mode,
-        monthly,
-        months,
-        totalBudget,
-        dataMode: "demo",
-      });
+      let response = null;
+      const providerProducts = Array.isArray(providerResult?.products) ? providerResult.products : [];
+      if (providerProducts.length) {
+        try {
+          response = buildFallbackRealResponse({
+            products: providerProducts,
+            query: q,
+            mode,
+            monthly,
+            months,
+            totalBudget,
+            dataMode: providerResult?.dataMode || "real",
+          });
+        } catch {
+          response = null;
+        }
+      }
+      if (!response) {
+        const demoProducts = normalizeDemoProducts(readMercadoLivreDemoProducts(), monthly, months, q, "mercadolivre").map((item) => ({
+          ...item,
+          dataMode: "demo",
+        }));
+        response = buildOqcResponse({
+          products: demoProducts,
+          query: q,
+          mode,
+          monthly,
+          months,
+          totalBudget,
+          dataMode: "demo",
+        });
+      }
       sendJson(res, 200, {
         ok: true,
         ...response,
-        warning: `${error.message || "Falha na integração com a base parceira"}. Mostrando demonstração por enquanto.`,
+        warning: providerProducts.length
+          ? `${error.message || "Falha na integração com a base parceira"}. Mostrando resultados reais com fallback de ranking por enquanto.`
+          : `${error.message || "Falha na integração com a base parceira"}. Mostrando demonstração por enquanto.`,
       });
     }
     return;

@@ -2,6 +2,34 @@ import BudgetEngine from "./BudgetEngine.js";
 import ScoreEngine from "./ScoreEngine.js";
 import ValueEngine from "./ValueEngine.js";
 
+function evaluateBudgetSafe(price, context = {}) {
+  if (BudgetEngine && typeof BudgetEngine.evaluateBudget === "function") {
+    return BudgetEngine.evaluateBudget(price, context);
+  }
+  if (BudgetEngine && BudgetEngine.default && typeof BudgetEngine.default.evaluateBudget === "function") {
+    return BudgetEngine.default.evaluateBudget(price, context);
+  }
+  if (typeof BudgetEngine?.classifyBudgetFit === "function") {
+    const status = BudgetEngine.classifyBudgetFit(price, context);
+    return {
+      status,
+      budgetScore: status === "CABE" ? 1 : status === "APERTADO" ? 0.55 : 0.05,
+      budgetUsage: null,
+      remainingBudget: null,
+      reasons: [status === "CABE" ? "Cabe no orçamento." : status === "APERTADO" ? "Cabe, mas está apertado." : "Fica acima do orçamento."],
+      warnings: [],
+    };
+  }
+  return {
+    status: "CABE",
+    budgetScore: 1,
+    budgetUsage: null,
+    remainingBudget: null,
+    reasons: ["Cabe no orçamento."],
+    warnings: [],
+  };
+}
+
 function toNumber(value, fallback = 0) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -140,7 +168,7 @@ function labelForProduct(product, index, hasAnyReal, hasAnyDemo, topFitExists) {
 }
 
 function attachOqc(product, siblings = [], query = "") {
-  const budget = product.oqc?.budget || BudgetEngine.evaluateBudget(product.price, product.budgetContext || product.context || product);
+  const budget = product.oqc?.budget || evaluateBudgetSafe(product.price, product.budgetContext || product.context || product);
   const trust = product.oqc?.trustScore != null
     ? toNumber(product.oqc.trustScore, 0)
     : toNumber(ScoreEngine.evaluateProduct(product).trustScore, 0);
