@@ -5,29 +5,31 @@
       "includeFiles": "api/static/**"
     }
   },
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "api/web.js"
+    },
+    {
+      "src": "/teste-produtos",
+      "dest": "api/web.js"
+    },
+    {
+      "src": "/teste-viagens",
+      "dest": "api/web.js"
+    },
+    {
+      "src": "/mercadolivre-manual",
+      "dest": "api/web.js"
+    },
+    {
+      "src": "/catalog",
+      "dest": "api/web.js"
+    }
+  ],
   "rewrites": [
     {
       "source": "/",
-      "destination": "/api/web.js"
-    },
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/web.js"
-    },
-    {
-      "source": "/teste-produtos",
-      "destination": "/api/web.js"
-    },
-    {
-      "source": "/teste-viagens",
-      "destination": "/api/web.js"
-    },
-    {
-      "source": "/mercadolivre-manual",
-      "destination": "/api/web.js"
-    },
-    {
-      "source": "/catalog",
       "destination": "/api/web.js"
     }
   ]
