@@ -7,6 +7,7 @@ import CsvFeedProvider from "../src/feed/providers/CsvFeedProvider.js";
 import MiShopFeedProvider from "../src/feed/providers/MiShopFeedProvider.js";
 import MercadoLivreProvider from "../src/providers/MercadoLivreProvider.js";
 import AwinFeedProvider from "../src/providers/AwinFeedProvider.js";
+import ActionpayFeedProvider from "../src/providers/ActionpayFeedProvider.js";
 import actionpayProviderDefault, { ActionpayProvider } from "../src/providers/ActionpayProvider.js";
 import actionpayYmlImporterDefault, { ActionpayYmlImporter } from "../src/importers/ActionpayYmlImporter.js";
 import CatalogManager from "../src/catalog/CatalogManager.js";
@@ -23,6 +24,7 @@ const catalogManager = new CatalogManager({
 });
 const googleMerchantAdapter = googleMerchantProductsAdapter;
 const awinFeedProvider = AwinFeedProvider;
+const actionpayFeedProvider = ActionpayFeedProvider;
 function createFeedProvider(providerName = "mi_shop", options = {}) {
   const name = String(providerName || "").trim().toLowerCase();
   const baseOptions = {
@@ -41,6 +43,12 @@ function createFeedProvider(providerName = "mi_shop", options = {}) {
       ...baseOptions,
       ...options,
     });
+  }
+  if (name === "actionpay") {
+    return actionpayFeedProvider;
+  }
+  if (name === "awin") {
+    return awinFeedProvider;
   }
   return null;
 }
@@ -84,12 +92,79 @@ function createActionpayImporter() {
     });
 }
 
+function getFeedProviderInstance(providerName = "mi_shop", options = {}) {
+  const name = String(providerName || "").trim().toLowerCase();
+  const baseOptions = {
+    catalogManager,
+    seedPath: options.seedPath || path.join(root, "data", "products.seed.json"),
+    fetchImpl: options.fetchImpl || globalThis.fetch,
+  };
+  if (name === "mi_shop") {
+    return new MiShopFeedProvider({ ...baseOptions, ...options });
+  }
+  if (name === "csv") {
+    return new CsvFeedProvider({ ...baseOptions, ...options });
+  }
+  if (name === "actionpay") {
+    return actionpayFeedProvider;
+  }
+  if (name === "awin") {
+    return awinFeedProvider;
+  }
+  return null;
+}
+
 function readJson(filePath, fallback) {
   try {
     return JSON.parse(fs.readFileSync(filePath, "utf8"));
   } catch {
     return fallback;
   }
+}
+
+function getFeedProviderStatus(providerName = "") {
+  const name = String(providerName || "").trim().toLowerCase();
+  const provider = getFeedProviderInstance(name, { fetchImpl: globalThis.fetch });
+  if (!provider) {
+    return {
+      provider: name,
+      configured: false,
+      lastSync: null,
+      productCount: 0,
+      updated: 0,
+      errors: ["Provider não suportado."],
+    };
+  }
+  const diagnostics = typeof provider.getDiagnostics === "function"
+    ? provider.getDiagnostics()
+    : typeof provider.getStatus === "function"
+      ? provider.getStatus()
+      : {};
+  const catalogCount = provider?.getCatalogManager?.()
+    ? provider.getCatalogManager().list().filter((item) => {
+      const marketplace = String(item.marketplace || item.sourceType || item.source || "").toLowerCase();
+      if (name === "mi_shop") return marketplace === "mi_shop";
+      if (name === "csv") return marketplace === "csv" || marketplace === "csv_feed";
+      if (name === "actionpay") return marketplace === "actionpay";
+      if (name === "awin") return marketplace === "awin";
+      return false;
+    }).length
+    : 0;
+  const productCount = typeof diagnostics.totalProducts === "number"
+    ? diagnostics.totalProducts
+    : typeof diagnostics.count === "number"
+      ? diagnostics.count
+      : Array.isArray(diagnostics.products)
+        ? diagnostics.products.length
+        : catalogCount;
+  return {
+    provider: name,
+    configured: Boolean(diagnostics.configured),
+    lastSync: diagnostics.lastImport || diagnostics.lastSync || null,
+    productCount,
+    updated: diagnostics.updated || 0,
+    errors: Array.isArray(diagnostics.errors) ? diagnostics.errors : [],
+  };
 }
 
 function send(res, status, body, headers = {}) {
@@ -839,6 +914,21 @@ export default async function handler(req, res) {
     }
     return;
   }
+  if (pathname === "/api/feed/status") {
+    const providers = getFeedProviderNames().map((name) => getFeedProviderStatus(name));
+    sendJson(res, 200, {
+      ok: true,
+      providers,
+      totalProducts: providers.reduce((sum, item) => sum + Number(item.productCount || 0), 0),
+      lastSync: providers.reduce((latest, item) => {
+        if (!item.lastSync) return latest;
+        if (!latest) return item.lastSync;
+        return String(item.lastSync) > String(latest) ? item.lastSync : latest;
+      }, null),
+    });
+    return;
+  }
+
   if (pathname === "/api/feed/providers") {
     sendJson(res, 200, {
       ok: true,
@@ -847,12 +937,14 @@ export default async function handler(req, res) {
     return;
   }
 
-  if (pathname === "/api/feed/import") {
+  if (pathname === "/api/feed/import" || pathname.startsWith("/api/feed/import/")) {
     if (method !== "POST") {
       sendJson(res, 405, { ok: false, message: "Use POST para importar feeds." });
       return;
     }
-    const providerName = String(url.searchParams.get("provider") || "mi_shop").trim().toLowerCase();
+    const providerName = pathname.startsWith("/api/feed/import/")
+      ? String(pathname.split("/").pop() || "").trim().toLowerCase()
+      : String(url.searchParams.get("provider") || "mi_shop").trim().toLowerCase();
     const feedProvider = createFeedProvider(providerName, {
       fetchImpl: globalThis.fetch,
     });
@@ -873,6 +965,9 @@ export default async function handler(req, res) {
         mode: url.searchParams.get("mode") || "merge",
         format: url.searchParams.get("format") || "",
         feedText: url.searchParams.get("feedText") || "",
+        offerId: url.searchParams.get("offerId") || "",
+        sourceId: url.searchParams.get("sourceId") || "",
+        subId1: url.searchParams.get("subId1") || "",
       });
       sendJson(res, 200, {
         ok: true,

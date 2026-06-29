@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Sprint 10
+- Unified the feed pipeline so Actionpay, Awin, Mi Shop, and CSV imports flow through the same provider layer into the CatalogManager.
+- Added a shared feed status endpoint and provider-specific import routes to standardize real product ingestion.
+- Kept the OQC engine untouched while consolidating real product feeds behind the same contract.
+
 ### Hotfix
 - Fixed UTF-8 text on the public home so budget labels, section headings, and helper copy render correctly again.
 - Made demo cards honest by removing Mercado Livre as a fixed visual source, disabling external demo navigation, and keeping real offers labeled with their actual source.

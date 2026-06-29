@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import CatalogManager from "../catalog/CatalogManager.js";
-import MarketplaceProvider from "./MarketplaceProvider.js";
+import FeedProvider from "../feed/FeedProvider.js";
 
 const root = process.cwd();
 const defaultStatePath = path.join(root, "data", "awin-import-state.json");
@@ -290,9 +290,9 @@ function normalizeCategoryMapping(value = {}) {
   return mapping;
 }
 
-export class AwinFeedProvider extends MarketplaceProvider {
+export class AwinFeedProvider extends FeedProvider {
   constructor(options = {}) {
-    super();
+    super({ ...options, networkName: options.networkName || "awin" });
     this.catalogManager = options.catalogManager || null;
     this.fetchImpl = options.fetchImpl || globalThis.fetch;
     this.statePath = cleanText(options.statePath || "");
