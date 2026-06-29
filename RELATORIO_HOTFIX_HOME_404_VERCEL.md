@@ -5,7 +5,7 @@ A home da producao seguia retornando 404 enquanto a API e o catalogo permaneciam
 
 ## Correcao aplicada
 - Reescrevi `/` para `/index.html`, que ja responde 200 na producao e carrega a home real.
-- Mantive `/api/(.*)` indo para `api/web.js` usando `routes`.
+- Reescrevi `/api/(.*)` para `api/web.js` usando `rewrites`.
 - Mantive `includeFiles` como string, no formato aceito pela Vercel.
 - Mantive os assets do frontend disponiveis em `public/` e `api/static/` para a home e os arquivos auxiliares.
 

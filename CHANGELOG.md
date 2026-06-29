@@ -3,8 +3,8 @@
 ## Unreleased
 
 ### Vercel root-route hotfix
-- Rewrote `/` to `/index.html` so the real static home is served directly instead of falling into the function.
-- Kept `/api/*` routed to `api/web.js` and left the catalog, feeds, and engine layers untouched.
+- Simplified Vercel routing so `/` rewrites to `/index.html` and `/api/*` rewrites to `api/web.js`.
+- Kept the catalog, feeds, and engine layers untouched.
 
 ### Frontend restoration hotfix
 - Restored the public homepage assets by letting the Vercel filesystem serve `public/` before the API routes, so `/app.js`, `/styles.css`, and icons are delivered normally again.

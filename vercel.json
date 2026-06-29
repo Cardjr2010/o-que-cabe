@@ -5,32 +5,11 @@
       "includeFiles": "api/static/**"
     }
   },
-  "routes": [
-    {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "api/web.js"
-    },
-    {
-      "src": "/teste-produtos",
-      "dest": "api/web.js"
-    },
-    {
-      "src": "/teste-viagens",
-      "dest": "api/web.js"
-    },
-    {
-      "src": "/mercadolivre-manual",
-      "dest": "api/web.js"
-    },
-    {
-      "src": "/catalog",
-      "dest": "api/web.js"
-    }
-  ],
   "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/web.js"
+    },
     {
       "source": "/",
       "destination": "/index.html"
