@@ -107,6 +107,11 @@
 - Added safe `/api/health` and `/api/catalog/health` diagnostics so production can report catalog state without taking the function down.
 - Wrapped the Vercel handler in a global try/catch and added a safe fallback home page to prevent `FUNCTION_INVOCATION_FAILED` from uncaught file-path errors.
 
+### Hotfix Catalog Deployment
+- Added a bundled copy of `products.seed.json` under `src/data/` so Vercel can package the real catalog with the serverless function.
+- Added a catalog path resolver that prefers bundled files and falls back to local paths when available.
+- Extended catalog health diagnostics with resolved path and source information so production can confirm which seed file is active.
+
 ### Sprint 9
 - Added a new "Pechinchas em foco" entry point on the home with budget shortcuts for R$ 50, R$ 100, R$ 250, and R$ 500.
 - Wired the pechincha cards to reuse the existing monthly and total search flows without changing the MVP rules or reintroducing marketplace redirects.

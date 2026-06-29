@@ -1,11 +1,12 @@
 import fs from "node:fs";
 import { projectRoot } from "../runtime/project-root.js";
+import { resolveCatalogSeedPath } from "../runtime/catalog-path.js";
 
 import path from "node:path";
 import CatalogRepository from "../catalog/CatalogRepository.js";
 
 const root = projectRoot;
-const seedPath = path.join(root, "data", "products.seed.json");
+const seedPath = resolveCatalogSeedPath(path.join(root, "data", "products.seed.json"));
 const repository = new CatalogRepository();
 
 function readJson(filePath, fallback) {

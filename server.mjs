@@ -13,6 +13,7 @@ import AwinFeedProvider from "./src/providers/AwinFeedProvider.js";
 import actionpayProviderDefault, { ActionpayProvider } from "./src/providers/ActionpayProvider.js";
 import actionpayYmlImporterDefault, { ActionpayYmlImporter } from "./src/importers/ActionpayYmlImporter.js";
 import CatalogManager from "./src/catalog/CatalogManager.js";
+import { resolveCatalogSeedPath } from "./src/runtime/catalog-path.js";
 import { projectRoot } from "./src/runtime/project-root.js";
 
 import travelMockAdapter from "./src/adapters/travel.mock.js";
@@ -33,8 +34,8 @@ const httpsPfxPassword = "codex-local";
 const googleMerchantAdapter = googleMerchantProductsAdapter;
 const awinFeedProvider = AwinFeedProvider;
 const actionpayProvider = actionpayProviderDefault instanceof ActionpayProvider ? actionpayProviderDefault : new ActionpayProvider();
-const actionpayCatalogSeedPath = process.env.ACTIONPAY_CATALOG_SEED_PATH || path.join(root, "data", "products.seed.json");
-const feedCatalogSeedPath = process.env.FEED_CATALOG_SEED_PATH || path.join(root, "data", "products.seed.json");
+const actionpayCatalogSeedPath = process.env.ACTIONPAY_CATALOG_SEED_PATH || resolveCatalogSeedPath(path.join(root, "data", "products.seed.json"));
+const feedCatalogSeedPath = process.env.FEED_CATALOG_SEED_PATH || resolveCatalogSeedPath(path.join(root, "data", "products.seed.json"));
 function getFeedProviderNames() {
   return ["mi_shop", "csv", "actionpay", "awin"];
 }

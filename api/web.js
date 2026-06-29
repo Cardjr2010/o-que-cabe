@@ -13,6 +13,7 @@ import actionpayYmlImporterDefault, { ActionpayYmlImporter } from "../src/import
 import CatalogManager from "../src/catalog/CatalogManager.js";
 import googleMerchantProductsAdapter from "../src/adapters/GoogleMerchantProductsAdapter.js";
 import { projectRoot, resolveProjectPath } from "../src/runtime/project-root.js";
+import { resolveCatalogSeedPath, getCatalogSeedCandidates } from "../src/runtime/catalog-path.js";
 
 const root = projectRoot;
 const publicDir = resolveProjectPath("public");
@@ -21,7 +22,7 @@ const productsPath = resolveProjectPath("data", "products.json");
 const mercadolivreDemoPath = resolveProjectPath("data", "mercadolivre-demo-products.json");
 const mlLinksPath = resolveProjectPath("data", "mercadolivre-links.json");
 const catalogManager = new CatalogManager({
-  seedPath: process.env.ACTIONPAY_CATALOG_SEED_PATH || resolveProjectPath("data", "products.seed.json"),
+  seedPath: process.env.ACTIONPAY_CATALOG_SEED_PATH || resolveCatalogSeedPath(resolveProjectPath("data", "products.seed.json")),
 });
 const googleMerchantAdapter = googleMerchantProductsAdapter;
 const awinFeedProvider = AwinFeedProvider;
@@ -30,7 +31,7 @@ function createFeedProvider(providerName = "mi_shop", options = {}) {
   const name = String(providerName || "").trim().toLowerCase();
   const baseOptions = {
     catalogManager,
-    seedPath: options.seedPath || resolveProjectPath("data", "products.seed.json"),
+    seedPath: options.seedPath || resolveCatalogSeedPath(resolveProjectPath("data", "products.seed.json")),
     fetchImpl: options.fetchImpl || globalThis.fetch,
   };
   if (name === "mi_shop") {
@@ -80,14 +81,14 @@ function createActionpayImporter() {
     ? new ActionpayYmlImporter({
       provider,
       catalogManager,
-      catalogSeedPath: process.env.ACTIONPAY_CATALOG_SEED_PATH || resolveProjectPath("data", "products.seed.json"),
+      catalogSeedPath: process.env.ACTIONPAY_CATALOG_SEED_PATH || resolveCatalogSeedPath(resolveProjectPath("data", "products.seed.json")),
       sourceOfferId: process.env.ACTIONPAY_SALDAO_OFFER_ID || "13241",
       sourceOfferName: "Saldão da Informática - Notebooks, iPhones e TVs.",
     })
     : new ActionpayYmlImporter({
       provider,
       catalogManager,
-      catalogSeedPath: process.env.ACTIONPAY_CATALOG_SEED_PATH || resolveProjectPath("data", "products.seed.json"),
+      catalogSeedPath: process.env.ACTIONPAY_CATALOG_SEED_PATH || resolveCatalogSeedPath(resolveProjectPath("data", "products.seed.json")),
       sourceOfferId: process.env.ACTIONPAY_SALDAO_OFFER_ID || "13241",
       sourceOfferName: "Saldão da Informática - Notebooks, iPhones e TVs.",
     });
@@ -97,7 +98,7 @@ function getFeedProviderInstance(providerName = "mi_shop", options = {}) {
   const name = String(providerName || "").trim().toLowerCase();
   const baseOptions = {
     catalogManager,
-    seedPath: options.seedPath || resolveProjectPath("data", "products.seed.json"),
+    seedPath: options.seedPath || resolveCatalogSeedPath(resolveProjectPath("data", "products.seed.json")),
     fetchImpl: options.fetchImpl || globalThis.fetch,
   };
   if (name === "mi_shop") {
@@ -1008,7 +1009,8 @@ export default async function handler(req, res) {
   }
 
   if (pathname === "/api/health") {
-    const seedFile = safeStat(resolveProjectPath("data", "products.seed.json"));
+    const seedPathResolved = resolveCatalogSeedPath(resolveProjectPath("data", "products.seed.json"));
+    const seedFile = safeStat(seedPathResolved);
     const catalogHealth = getCatalogHealthSnapshot();
     sendJson(res, 200, {
       ok: true,
@@ -1017,19 +1019,24 @@ export default async function handler(req, res) {
       catalogCount: catalogHealth.catalogCount,
       seedFileExists: seedFile.exists,
       seedFileSize: seedFile.size,
+      resolvedSeedPath: seedPathResolved,
+      sourceUsed: seedFile.exists ? (seedPathResolved.includes("src\data") || seedPathResolved.includes("src/data") ? "src/data/products.seed.json" : "data/products.seed.json") : "fallback",
       error: catalogHealth.error || "",
     });
     return;
   }
 
   if (pathname === "/api/catalog/health") {
-    const seedFile = safeStat(resolveProjectPath("data", "products.seed.json"));
+    const seedPathResolved = resolveCatalogSeedPath(resolveProjectPath("data", "products.seed.json"));
+    const seedFile = safeStat(seedPathResolved);
     const catalogHealth = getCatalogHealthSnapshot();
     sendJson(res, 200, {
       ok: true,
       runtime: `node ${process.versions.node}`,
       seedFileExists: seedFile.exists,
       seedFileSize: seedFile.size,
+      resolvedSeedPath: seedPathResolved,
+      sourceUsed: seedFile.exists ? (seedPathResolved.includes("src\data") || seedPathResolved.includes("src/data") ? "src/data/products.seed.json" : "data/products.seed.json") : "fallback",
       ...catalogHealth,
     });
     return;

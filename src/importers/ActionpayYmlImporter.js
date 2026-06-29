@@ -1,4 +1,5 @@
 import CatalogManager from "../catalog/CatalogManager.js";
+import { resolveCatalogSeedPath } from "../runtime/catalog-path.js";
 import { projectRoot } from "../runtime/project-root.js";
 
 import actionpayProviderDefault, { ActionpayProvider } from "../providers/ActionpayProvider.js";
@@ -123,7 +124,7 @@ export class ActionpayYmlImporter {
     this.provider = options.provider || (actionpayProviderDefault instanceof ActionpayProvider ? actionpayProviderDefault : new ActionpayProvider(options.providerOptions || {}));
     this.catalogManager = options.catalogManager || new CatalogManager({
       ...options.catalogOptions,
-      seedPath: options.catalogSeedPath || process.env.ACTIONPAY_CATALOG_SEED_PATH || path.join(root, "data", "products.seed.json"),
+      seedPath: options.catalogSeedPath || process.env.ACTIONPAY_CATALOG_SEED_PATH || resolveCatalogSeedPath(path.join(root, "data", "products.seed.json")),
     });
     this.sourceOfferId = cleanText(options.sourceOfferId || process.env.ACTIONPAY_SALDAO_OFFER_ID || "13241") || "13241";
     this.sourceOfferName = cleanText(options.sourceOfferName || "Saldão da Informática - Notebooks, iPhones e TVs.");

@@ -1,5 +1,6 @@
 import path from "node:path";
 import { projectRoot } from "../runtime/project-root.js";
+import { resolveCatalogSeedPath } from "../runtime/catalog-path.js";
 
 import { normalizeImportedProduct } from "./ProductImporter.js";
 
@@ -111,7 +112,7 @@ function rowToProduct(row = {}) {
 
 export class CsvProductImporter {
   constructor(options = {}) {
-    this.seedPath = options.seedPath || path.join(root, "data", "products.seed.json");
+    this.seedPath = options.seedPath || resolveCatalogSeedPath(path.join(root, "data", "products.seed.json"));
   }
 
   parse(csvText) {

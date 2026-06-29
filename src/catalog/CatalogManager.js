@@ -1,5 +1,6 @@
 import path from "node:path";
 import { projectRoot } from "../runtime/project-root.js";
+import { resolveCatalogSeedPath } from "../runtime/catalog-path.js";
 
 import CatalogRepository from "./CatalogRepository.js";
 import CatalogValidator from "./CatalogValidator.js";
@@ -8,7 +9,7 @@ import CatalogExporter from "./CatalogExporter.js";
 import { loadSeedProducts, normalizeImportedProduct } from "../importers/ProductImporter.js";
 
 const root = projectRoot;
-const seedPath = path.join(root, "data", "products.seed.json");
+const seedPath = resolveCatalogSeedPath(path.join(root, "data", "products.seed.json"));
 
 export default class CatalogManager {
   constructor(options = {}) {

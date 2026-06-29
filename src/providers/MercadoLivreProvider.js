@@ -3,11 +3,12 @@ import path from "node:path";
 import MarketplaceProvider from "./MarketplaceProvider.js";
 import MercadoLivreConnector from "../connectors/MercadoLivreConnector.js";
 import CatalogManager from "../catalog/CatalogManager.js";
+import { resolveCatalogSeedPath } from "../runtime/catalog-path.js";
 import { projectRoot } from "../runtime/project-root.js";
 
 
 const root = projectRoot;
-const seedPath = path.join(root, "data", "products.seed.json");
+const seedPath = resolveCatalogSeedPath(path.join(root, "data", "products.seed.json"));
 const catalogManager = new CatalogManager({ seedPath });
 
 function readJson(filePath, fallback) {
