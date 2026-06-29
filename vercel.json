@@ -7,6 +7,9 @@
   },
   "routes": [
     {
+      "handle": "filesystem"
+    },
+    {
       "src": "/api/(.*)",
       "dest": "api/web.js"
     },
@@ -25,12 +28,6 @@
     {
       "src": "/catalog",
       "dest": "api/web.js"
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/",
-      "destination": "/api/web.js"
     }
   ]
 }

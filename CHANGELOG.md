@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Vercel root-route hotfix
+- Let the Vercel filesystem handle `/` before the function routes so the real static home can be served directly.
+- Kept `/api/*` routed to `api/web.js` and left the catalog, feeds, and engine layers untouched.
+
 ### Frontend restoration hotfix
 - Restored the public homepage assets by letting the Vercel filesystem serve `public/` before the API routes, so `/app.js`, `/styles.css`, and icons are delivered normally again.
 - Added explicit Vercel routes for `/`, `/app.js`, `/styles.css`, and favicon assets so the home shell loads even when static delivery precedence changes.
