@@ -1,20 +1,30 @@
 ﻿# Relatorio Hotfix Home 404 Vercel
 
 ## Problema
-A home da producao estava respondendo 404 enquanto a API e o catalogo continuavam funcionando.
+A home da producao seguia retornando 404 enquanto a API e o catalogo permaneciam funcionando.
 
 ## Correcao aplicada
-- Reestruturei o `vercel.json` para manter apenas as rotas dinamicas e de API apontando para `api/web.js`.
-- Removi a rota coringa que estava prendendo a home num fluxo errado.
-- Mantive `includeFiles` no formato de string aceito pela Vercel.
+- Reescrevi o `vercel.json` com rewrites explicitos para a home e para os assets:
+  - `/` -> `/public/index.html`
+  - `/app.js` -> `/public/app.js`
+  - `/styles.css` -> `/public/styles.css`
+  - `/favicon.svg` -> `/public/favicon.svg`
+  - `/favicon.png` -> `/public/favicon.png`
+  - `/logo-oqc.png` -> `/public/logo-oqc.png`
+  - `/logo-oqc.svg` -> `/public/logo-oqc.svg`
+- Mantive `/api/(.*)` indo para `api/web.js`.
+- Mantive `includeFiles` como string, no formato aceito pela Vercel.
 
-## O que o novo arquivo faz
-- `/api/(.*)` continua indo para `api/web.js`.
-- `/teste-produtos`, `/teste-viagens`, `/mercadolivre-manual` e `/catalog` continuam indo para `api/web.js`.
-- `/` volta a ser servido como home estatica do projeto.
-- `/app.js`, `/styles.css` e os icones seguem como arquivos estaticos do deploy.
+## O que nao foi alterado
+- CatalogManager
+- FeedProvider
+- BudgetEngine
+- ScoreEngine
+- RankingEngine
+- API de busca
+- Catálogo real
 
 ## Como evitar regressao
-- Nao usar rota coringa para tudo quando a home for estatica.
-- Manter a API separada das rotas do frontend.
-- Conferir sempre se `/` responde 200 depois de qualquer alteracao em `vercel.json`.
+- Manter a home e os assets com rewrites explicitos quando a Vercel nao servir os arquivos automaticamente.
+- Validar `/`, `/app.js` e `/styles.css` apos qualquer alteracao em `vercel.json`.
+- Nao mexer no catálogo/motor para tentar corrigir 404 de frontend.

@@ -1,11 +1,5 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/web.js",
-      "use": "@vercel/node"
-    }
-  ],
   "functions": {
     "api/web.js": {
       "includeFiles": "api/static/**"
@@ -17,20 +11,32 @@
       "destination": "/api/web.js"
     },
     {
-      "source": "/teste-produtos",
-      "destination": "/api/web.js"
+      "source": "/",
+      "destination": "/public/index.html"
     },
     {
-      "source": "/teste-viagens",
-      "destination": "/api/web.js"
+      "source": "/app.js",
+      "destination": "/public/app.js"
     },
     {
-      "source": "/mercadolivre-manual",
-      "destination": "/api/web.js"
+      "source": "/styles.css",
+      "destination": "/public/styles.css"
     },
     {
-      "source": "/catalog",
-      "destination": "/api/web.js"
+      "source": "/favicon.svg",
+      "destination": "/public/favicon.svg"
+    },
+    {
+      "source": "/favicon.png",
+      "destination": "/public/favicon.png"
+    },
+    {
+      "source": "/logo-oqc.png",
+      "destination": "/public/logo-oqc.png"
+    },
+    {
+      "source": "/logo-oqc.svg",
+      "destination": "/public/logo-oqc.svg"
     }
   ]
 }
