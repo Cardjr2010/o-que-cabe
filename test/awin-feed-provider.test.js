@@ -158,25 +158,38 @@ test("AwinFeedProvider normaliza, rejeita e deduplica via CatalogManager", async
     },
   });
 
-  const first = await provider.importToCatalog({ feedPath, format: "jsonl" });
-  assert.equal(first.configured, true);
-  assert.equal(first.downloaded, 3);
-  assert.equal(first.imported, 2);
-  assert.equal(first.rejected, 1);
-  assert.ok(first.errors.some((item) => /Link ausente/i.test(item)));
+  await withEnv({
+    AWIN_ADVERTISERS_JSON: JSON.stringify([
+      { name: "Stanley BR", feedPath, categoryGroup: "House & Kitchen" },
+    ]),
+    AWIN_CATEGORY_MAP_JSON: JSON.stringify({
+      "House & Kitchen": ["Stanley"],
+      Fashion: ["Posthaus", "Tjama"],
+      Shoes: ["Clóvis Calçados"],
+    }),
+  }, async () => {
+    const first = await provider.importToCatalog();
+    assert.equal(first.configured, true);
+    assert.equal(first.downloaded, 3);
+    assert.equal(first.imported, 2);
+    assert.equal(first.rejected, 1);
+    assert.ok(first.errors.some((item) => /Link ausente/i.test(item)));
 
-  const stored = catalogManager.list().filter((item) => String(item.marketplace).toLowerCase() === "awin");
-  assert.equal(stored.length, 2);
-  assert.equal(stored[0].marketplace, "awin");
-  assert.equal(stored[0].sourceType, "awin_feed");
-  assert.equal(stored[0].dataMode, "real");
-  assert.equal(stored[1].affiliateUrl, "https://tracking.example/ideapad-3");
-  assert.equal(stored[1].productUrl, "https://tracking.example/ideapad-3");
+    const stored = catalogManager.list().filter((item) => String(item.marketplace).toLowerCase() === "awin");
+    assert.equal(stored.length, 2);
+    assert.equal(stored[0].marketplace, "awin");
+    assert.equal(stored[0].sourceType, "awin_feed");
+    assert.equal(stored[0].dataMode, "real");
+    assert.equal(stored[0].seller, "Loja Parceira");
+    assert.equal(stored[0].category, "celular");
+    assert.equal(stored[1].affiliateUrl, "https://tracking.example/ideapad-3");
+    assert.equal(stored[1].productUrl, "https://tracking.example/ideapad-3");
 
-  const second = await provider.importToCatalog({ feedPath, format: "jsonl" });
-  const storedAgain = catalogManager.list().filter((item) => String(item.marketplace).toLowerCase() === "awin");
-  assert.equal(storedAgain.length, 2);
-  assert.ok(second.updated >= 2 || second.imported >= 2);
+    const second = await provider.importToCatalog();
+    const storedAgain = catalogManager.list().filter((item) => String(item.marketplace).toLowerCase() === "awin");
+    assert.equal(storedAgain.length, 2);
+    assert.ok(second.updated >= 2 || second.imported >= 2);
+  });
 });
 
 test("API /api/awin/status nao expõe segredo", async () => {
@@ -186,6 +199,10 @@ test("API /api/awin/status nao expõe segredo", async () => {
     AWIN_ACCESS_TOKEN: "",
     AWIN_PUBLISHER_ID: "",
     AWIN_ADVERTISER_ID: "",
+    AWIN_ADVERTISERS_JSON: JSON.stringify([
+      { name: "Stanley BR", categoryGroup: "House & Kitchen" },
+      { name: "Posthaus BR", categoryGroup: "Fashion" },
+    ]),
   }, async () => {
     const url = new URL("../api/web.js", import.meta.url);
     url.searchParams.set("t", String(Date.now()));
@@ -195,7 +212,8 @@ test("API /api/awin/status nao expõe segredo", async () => {
     const body = JSON.parse(res.body);
 
     assert.equal(res.statusCode, 200);
-    assert.deepEqual(Object.keys(body).sort(), ["configured", "feedAvailable", "lastImport", "productCount"]);
+    assert.deepEqual(Object.keys(body).sort(), ["advertisers", "configured", "feedAvailable", "lastImport", "totalProducts"]);
+    assert.equal(body.advertisers.length, 2);
     assert.ok(!JSON.stringify(body).includes("token"));
   });
 });
@@ -227,6 +245,9 @@ test("API /api/awin/import usa feed local e escreve no catálogo de teste", asyn
     AWIN_ACCESS_TOKEN: "token-teste",
     AWIN_PUBLISHER_ID: "publisher-teste",
     AWIN_ADVERTISER_ID: "advertiser-teste",
+    AWIN_ADVERTISERS_JSON: JSON.stringify([
+      { name: "AOC", feedPath, categoryGroup: "House & Kitchen" },
+    ]),
   }, async () => {
     const url = new URL("../api/web.js", import.meta.url);
     url.searchParams.set("t", String(Date.now()));

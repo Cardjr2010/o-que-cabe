@@ -984,8 +984,9 @@ export default async function handler(req, res) {
     sendJson(res, 200, {
       configured: diagnostics.configured,
       feedAvailable: diagnostics.feedAvailable,
+      advertisers: diagnostics.advertisers || [],
       lastImport: diagnostics.lastImport,
-      productCount: diagnostics.productCount,
+      totalProducts: diagnostics.totalProducts ?? diagnostics.productCount ?? 0,
     });
     return;
   }

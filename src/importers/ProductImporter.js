@@ -76,6 +76,7 @@ export function normalizeImportedProduct(raw = {}) {
     category,
     brand: raw.brand || null,
     model: raw.model || null,
+    seller: raw.seller || raw.merchant || raw.advertiser || null,
     price,
     currency: raw.currency || "BRL",
     image: raw.image || raw.thumbnail || "",

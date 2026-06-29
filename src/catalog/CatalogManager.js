@@ -48,7 +48,14 @@ export default class CatalogManager {
         rejected.push({ product: raw, reasons: ["produto inválido após normalização"], reason: "produto inválido após normalização" });
         continue;
       }
-      accepted.push(normalized);
+      accepted.push({
+        ...normalized,
+        status: normalized.status || this.validator.detectStatus(normalized),
+        availability: normalized.availability || "available",
+        updatedAt: normalized.updatedAt || new Date().toISOString(),
+        importedAt: normalized.importedAt || new Date().toISOString(),
+        priceHistory: Array.isArray(normalized.priceHistory) ? normalized.priceHistory : [],
+      });
     }
 
     const current = this.list();
@@ -61,6 +68,10 @@ export default class CatalogManager {
       total: merged.length,
       products: merged,
     };
+  }
+
+  importProducts(products = [], mode = "merge") {
+    return this.import(products, mode);
   }
 
   remove(id) {

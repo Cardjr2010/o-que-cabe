@@ -5,6 +5,23 @@ import MarketplaceProvider from "./MarketplaceProvider.js";
 
 const root = process.cwd();
 const defaultStatePath = path.join(root, "data", "awin-import-state.json");
+const defaultAdvertisersPath = path.join(root, "data", "awin-advertisers.json");
+const defaultCategoryMapPath = path.join(root, "data", "awin-category-map.json");
+
+const DEFAULT_APPROVED_ADVERTISERS = [
+  { name: "Stanley BR", categoryGroup: "House & Kitchen" },
+  { name: "Shark-Ninja BR", categoryGroup: "House & Kitchen" },
+  { name: "Via Inox Tramontina BR", categoryGroup: "House & Kitchen" },
+  { name: "Clóvis Calçados BR", categoryGroup: "Shoes" },
+  { name: "Posthaus BR", categoryGroup: "Fashion" },
+  { name: "Tjama BR", categoryGroup: "Fashion" },
+];
+
+const DEFAULT_CATEGORY_MAP = {
+  "House & Kitchen": ["Shark-Ninja", "Stanley", "Via Inox Tramontina"],
+  Fashion: ["Posthaus", "Tjama"],
+  Shoes: ["Clóvis Calçados"],
+};
 
 function envValue(...keys) {
   for (const key of keys) {
@@ -50,6 +67,15 @@ function readJson(filePath, fallback) {
 function writeJson(filePath, data) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, `${JSON.stringify(data, null, 2)}\n`);
+}
+
+function loadJsonFromText(text, fallback) {
+  try {
+    const parsed = JSON.parse(String(text || ""));
+    return parsed ?? fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 function getValue(raw, ...paths) {
@@ -229,11 +255,45 @@ function validUrlOrEmpty(value = "") {
   return isHttpUrl(text) ? text : "";
 }
 
+function arrayify(value) {
+  if (Array.isArray(value)) return value;
+  if (!value) return [];
+  return [value];
+}
+
+function normalizeAdvertiserItem(item = {}, fallback = {}) {
+  if (typeof item === "string") {
+    return normalizeAdvertiserItem({ name: item }, fallback);
+  }
+  const name = cleanText(item.name || fallback.name || "");
+  return {
+    name,
+    advertiserId: cleanText(item.advertiserId || item.advertiser_id || fallback.advertiserId || ""),
+    publisherId: cleanText(item.publisherId || item.publisher_id || fallback.publisherId || ""),
+    feedUrl: cleanText(item.feedUrl || item.feed_url || fallback.feedUrl || ""),
+    feedPath: cleanText(item.feedPath || item.feed_path || fallback.feedPath || ""),
+    feedText: cleanText(item.feedText || item.feed_text || fallback.feedText || ""),
+    feedFormat: cleanText(item.feedFormat || item.feed_format || fallback.feedFormat || ""),
+    vertical: cleanText(item.vertical || fallback.vertical || "retail") || "retail",
+    locale: cleanText(item.locale || fallback.locale || "en_GB") || "en_GB",
+    categoryGroup: cleanText(item.categoryGroup || item.category_group || fallback.categoryGroup || ""),
+    enabled: item.enabled !== false && fallback.enabled !== false,
+  };
+}
+
+function normalizeCategoryMapping(value = {}) {
+  const mapping = {};
+  const source = value && typeof value === "object" ? value : {};
+  for (const [group, labels] of Object.entries(source)) {
+    mapping[cleanText(group)] = arrayify(labels).map((label) => cleanText(label)).filter(Boolean);
+  }
+  return mapping;
+}
+
 export class AwinFeedProvider extends MarketplaceProvider {
   constructor(options = {}) {
     super();
     this.catalogManager = options.catalogManager || null;
-    this.catalogSeedPath = options.catalogManager ? "" : cleanText(options.catalogSeedPath || envValue("AWIN_CATALOG_SEED_PATH"));
     this.fetchImpl = options.fetchImpl || globalThis.fetch;
     this.statePath = cleanText(options.statePath || "");
     this.statePathFromEnv = !this.statePath;
@@ -241,9 +301,7 @@ export class AwinFeedProvider extends MarketplaceProvider {
   }
 
   getCatalogManager() {
-    if (this.catalogManager) {
-      return this.catalogManager;
-    }
+    if (this.catalogManager) return this.catalogManager;
     const envSeedPath = cleanText(envValue("AWIN_CATALOG_SEED_PATH"));
     if (!this._runtimeCatalogManager || this._runtimeCatalogSeedPath !== envSeedPath) {
       this._runtimeCatalogSeedPath = envSeedPath;
@@ -253,10 +311,43 @@ export class AwinFeedProvider extends MarketplaceProvider {
   }
 
   getStatePath() {
-    if (!this.statePathFromEnv) {
-      return this.statePath || defaultStatePath;
-    }
+    if (!this.statePathFromEnv) return this.statePath || defaultStatePath;
     return cleanText(envValue("AWIN_STATE_PATH")) || defaultStatePath;
+  }
+
+  getAdvertisers() {
+    const explicit = cleanText(envValue("AWIN_ADVERTISERS_JSON", "AWIN_ADVERTISERS"));
+    let configured = [];
+    if (explicit) {
+      configured = loadJsonFromText(explicit, []);
+    } else {
+      const advertisersPath = cleanText(envValue("AWIN_ADVERTISERS_PATH")) || defaultAdvertisersPath;
+      if (fs.existsSync(advertisersPath)) configured = readJson(advertisersPath, []);
+    }
+
+    const advertisers = arrayify(configured).map((item) => normalizeAdvertiserItem(item)).filter((item) => item.name);
+    if (advertisers.length) return advertisers;
+    return DEFAULT_APPROVED_ADVERTISERS.map((item) => normalizeAdvertiserItem(item));
+  }
+
+  getCategoryMapping() {
+    const explicit = cleanText(envValue("AWIN_CATEGORY_MAP_JSON", "AWIN_CATEGORY_MAP"));
+    if (explicit) return normalizeCategoryMapping(loadJsonFromText(explicit, DEFAULT_CATEGORY_MAP));
+    const categoryMapPath = cleanText(envValue("AWIN_CATEGORY_MAP_PATH")) || defaultCategoryMapPath;
+    if (fs.existsSync(categoryMapPath)) return normalizeCategoryMapping(readJson(categoryMapPath, DEFAULT_CATEGORY_MAP));
+    return normalizeCategoryMapping(DEFAULT_CATEGORY_MAP);
+  }
+
+  resolveAdvertiserCategoryGroup(advertiser = {}) {
+    const categoryGroup = cleanText(advertiser.categoryGroup || "");
+    if (categoryGroup) return categoryGroup;
+    const mapping = this.getCategoryMapping();
+    const advertiserName = cleanText(advertiser.name || "");
+    const normalizedName = advertiserName.toLowerCase();
+    for (const [group, terms] of Object.entries(mapping)) {
+      if (terms.some((term) => normalizedName.includes(term.toLowerCase()))) return group;
+    }
+    return "";
   }
 
   getConfig() {
@@ -275,25 +366,17 @@ export class AwinFeedProvider extends MarketplaceProvider {
 
   configured() {
     const config = this.getConfig();
-    return Boolean(
-      config.feedText ||
-        config.feedPath ||
-        config.feedUrl ||
-        (config.publisherId && config.advertiserId && config.accessToken),
-    );
+    const advertisers = this.getAdvertisers();
+    const hasGlobal = Boolean(config.feedText || config.feedPath || config.feedUrl || (config.publisherId && config.advertiserId && config.accessToken));
+    const hasAdvertiserSource = advertisers.some((item) => Boolean(this.getAdvertiserFeedSource(item).source));
+    return Boolean(hasGlobal || hasAdvertiserSource);
   }
 
   getFeedSource() {
     const config = this.getConfig();
-    if (config.feedText) {
-      return { type: "inline", source: "inline-feed", format: config.feedFormat || "jsonl", text: config.feedText };
-    }
-    if (config.feedPath) {
-      return { type: "file", source: path.resolve(config.feedPath), format: config.feedFormat || path.extname(config.feedPath).slice(1) || "jsonl" };
-    }
-    if (config.feedUrl) {
-      return { type: "url", source: config.feedUrl, format: config.feedFormat || detectFeedFormatFromSource(config.feedUrl) };
-    }
+    if (config.feedText) return { type: "inline", source: "inline-feed", format: config.feedFormat || "jsonl", text: config.feedText };
+    if (config.feedPath) return { type: "file", source: path.resolve(config.feedPath), format: config.feedFormat || path.extname(config.feedPath).slice(1) || "jsonl" };
+    if (config.feedUrl) return { type: "url", source: config.feedUrl, format: config.feedFormat || detectFeedFormatFromSource(config.feedUrl) };
     if (config.publisherId && config.advertiserId && config.accessToken) {
       const format = config.feedFormat || "jsonl";
       const url = `https://api.awin.com/publishers/${encodeURIComponent(config.publisherId)}/awinfeeds/download/${encodeURIComponent(config.advertiserId)}-${encodeURIComponent(config.vertical)}-${encodeURIComponent(config.locale)}.${format}`;
@@ -302,20 +385,27 @@ export class AwinFeedProvider extends MarketplaceProvider {
     return { type: "unconfigured", source: "", format: "jsonl" };
   }
 
-  getDiagnostics() {
+  buildOfficialFeedUrl(advertiser = {}) {
     const config = this.getConfig();
-    const state = readJson(this.getStatePath(), {});
-    return {
-      configured: this.configured(),
-      feedAvailable: Boolean(this.getFeedSource().source),
-      lastImport: state.lastImport || null,
-      productCount: this.getCatalogManager().list().filter((item) => String(item.marketplace || "").toLowerCase() === "awin").length,
-      feedSource: this.getFeedSource().type,
-      feedFormat: this.getFeedSource().format,
-      hasPublisherId: Boolean(config.publisherId),
-      hasAdvertiserId: Boolean(config.advertiserId),
-      hasAccessToken: Boolean(config.accessToken),
-    };
+    const publisherId = cleanText(advertiser.publisherId || config.publisherId || envValue("AWIN_PUBLISHER_ID", "AWIN_ACCOUNT_ID"));
+    const advertiserId = cleanText(advertiser.advertiserId || envValue("AWIN_ADVERTISER_ID"));
+    const vertical = cleanText(advertiser.vertical || config.vertical || "retail") || "retail";
+    const locale = cleanText(advertiser.locale || config.locale || "en_GB") || "en_GB";
+    const format = cleanText(advertiser.feedFormat || config.feedFormat || "jsonl") || "jsonl";
+    if (!publisherId || !advertiserId) return "";
+    return `https://api.awin.com/publishers/${encodeURIComponent(publisherId)}/awinfeeds/download/${encodeURIComponent(advertiserId)}-${encodeURIComponent(vertical)}-${encodeURIComponent(locale)}.${format}`;
+  }
+
+  getAdvertiserFeedSource(advertiser = {}) {
+    const item = normalizeAdvertiserItem(advertiser);
+    if (item.feedText) return { type: "inline", source: item.name || "inline-feed", format: item.feedFormat || "jsonl", text: item.feedText };
+    if (item.feedPath) return { type: "file", source: path.resolve(item.feedPath), format: item.feedFormat || path.extname(item.feedPath).slice(1) || "jsonl" };
+    if (item.feedUrl) return { type: "url", source: item.feedUrl, format: item.feedFormat || detectFeedFormatFromSource(item.feedUrl) };
+    const officialUrl = this.buildOfficialFeedUrl(item);
+    if (officialUrl) return { type: "api", source: officialUrl, format: item.feedFormat || "jsonl" };
+    const globalFeed = this.getFeedSource();
+    if (globalFeed.type !== "unconfigured") return globalFeed;
+    return { type: "unconfigured", source: "", format: "jsonl" };
   }
 
   async downloadFeed(options = {}) {
@@ -325,35 +415,21 @@ export class AwinFeedProvider extends MarketplaceProvider {
     const feedUrl = cleanText(options.feedUrl || "");
     const format = cleanText(options.format || feedSource.format || "jsonl").toLowerCase();
 
-    if (feedText) {
-      return { ok: true, source: "inline", format, text: feedText };
-    }
+    if (feedText) return { ok: true, source: "inline", format, text: feedText };
 
     if (feedPath || feedSource.type === "file") {
       const resolvedPath = path.resolve(feedPath || feedSource.source);
       const text = fs.readFileSync(resolvedPath, "utf8");
-      return {
-        ok: true,
-        source: resolvedPath,
-        format: detectFeedFormatFromSource(resolvedPath, text),
-        text,
-      };
+      return { ok: true, source: resolvedPath, format: detectFeedFormatFromSource(resolvedPath, text), text };
     }
 
     const targetUrl = feedUrl || feedSource.source;
-    if (!targetUrl) {
-      return { ok: false, source: "", format, error: "AWIN_FEED_NOT_CONFIGURED" };
-    }
-
-    if (!this.fetchImpl) {
-      return { ok: false, source: targetUrl, format, error: "FETCH_NOT_AVAILABLE" };
-    }
+    if (!targetUrl) return { ok: false, source: "", format, error: "AWIN_FEED_NOT_CONFIGURED" };
+    if (!this.fetchImpl) return { ok: false, source: targetUrl, format, error: "FETCH_NOT_AVAILABLE" };
 
     const config = this.getConfig();
     const headers = { Accept: "application/json,text/plain,text/csv,*/*" };
-    if (config.accessToken) {
-      headers.Authorization = `Bearer ${config.accessToken}`;
-    }
+    if (config.accessToken) headers.Authorization = `Bearer ${config.accessToken}`;
 
     const response = await this.fetchImpl(targetUrl, { headers });
     const text = await response.text();
@@ -364,12 +440,65 @@ export class AwinFeedProvider extends MarketplaceProvider {
       throw error;
     }
 
+    return { ok: true, source: targetUrl, format: detectFeedFormatFromSource(targetUrl, text), text, status: response.status };
+  }
+
+  async downloadFeedForAdvertiser(advertiser = {}, options = {}) {
+    const manualOverride = cleanText(options.feedText || options.feedPath || options.feedUrl || "");
+    if (manualOverride) {
+      const source = options.feedText
+        ? { type: "inline", source: "inline-feed", format: options.format || "jsonl", text: options.feedText }
+        : options.feedPath
+          ? { type: "file", source: path.resolve(options.feedPath), format: options.format || path.extname(options.feedPath).slice(1) || "jsonl" }
+          : options.feedUrl
+            ? { type: "url", source: options.feedUrl, format: options.format || detectFeedFormatFromSource(options.feedUrl) }
+            : { type: "unconfigured", source: "", format: options.format || "jsonl" };
+      const download = await this.downloadFeed({
+        ...options,
+        feedSource: source,
+        feedPath: source.type === "file" ? source.source : "",
+        feedUrl: source.type === "url" ? source.source : "",
+        feedText: source.type === "inline" ? source.text : "",
+        format: source.format,
+      });
+      return { ...download, advertiser: normalizeAdvertiserItem(advertiser) };
+    }
+
+    const source = this.getAdvertiserFeedSource(advertiser);
+    const download = await this.downloadFeed({
+      ...options,
+      feedSource: source,
+      feedPath: source.type === "file" ? source.source : "",
+      feedUrl: source.type === "url" || source.type === "api" ? source.source : "",
+      feedText: source.type === "inline" ? source.text : "",
+      format: source.format,
+    });
+    return { ...download, advertiser: normalizeAdvertiserItem(advertiser) };
+  }
+
+  getDiagnostics() {
+    const config = this.getConfig();
+    const state = readJson(this.getStatePath(), {});
+    const advertisers = this.getAdvertisers();
+    const feedAvailable = advertisers.some((item) => Boolean(this.getAdvertiserFeedSource(item).source)) || Boolean(this.getFeedSource().source);
     return {
-      ok: true,
-      source: targetUrl,
-      format: detectFeedFormatFromSource(targetUrl, text),
-      text,
-      status: response.status,
+      configured: this.configured(),
+      feedAvailable,
+      lastImport: state.lastImport || null,
+      totalProducts: this.getCatalogManager().list().filter((item) => String(item.marketplace || "").toLowerCase() === "awin").length,
+      advertisers: advertisers.map((item) => ({
+        name: item.name,
+        enabled: item.enabled,
+        categoryGroup: this.resolveAdvertiserCategoryGroup(item) || item.categoryGroup || "",
+        hasFeedUrl: Boolean(item.feedUrl),
+        hasFeedPath: Boolean(item.feedPath),
+        hasAdvertiserId: Boolean(item.advertiserId),
+      })),
+      feedSource: this.getFeedSource().type,
+      feedFormat: this.getFeedSource().format,
+      hasPublisherId: Boolean(config.publisherId),
+      hasAdvertiserId: Boolean(config.advertiserId),
+      hasAccessToken: Boolean(config.accessToken),
     };
   }
 
@@ -402,9 +531,9 @@ export class AwinFeedProvider extends MarketplaceProvider {
     return { rows, errors, format };
   }
 
-  normalizeProduct(raw = {}) {
+  normalizeProduct(raw = {}, context = {}) {
     const title = cleanText(getValue(raw, "title", "name", "product_name", "productName", "offerTitle", "offer_title"));
-    const category = cleanText(getValue(raw, "category", "googleProductCategory", "google_product_category", "product_type", "productType"));
+    const category = cleanText(getValue(raw, "category", "googleProductCategory", "google_product_category", "product_type", "productType")) || cleanText(context.categoryGroup || context.category || "");
     const brand = cleanText(getValue(raw, "brand", "product_brand", "manufacturer", "merchantBrand"));
     const model = cleanText(getValue(raw, "model", "mpn", "product_model", "productModel"));
     const priceValue = getValue(raw, "price.value", "price", "salePrice", "regularPrice", "amount", "priceValue", "offerPrice");
@@ -420,7 +549,7 @@ export class AwinFeedProvider extends MarketplaceProvider {
     const image = validUrlOrEmpty(
       getValue(raw, "image", "image_link", "imageLink", "thumbnail", "picture", "pictureUrl", "picture_url", "imageUrl"),
     );
-    const seller = cleanText(getValue(raw, "seller", "merchant", "merchantName", "merchant_name", "advertiser", "advertiserName", "store")) || null;
+    const seller = cleanText(getValue(raw, "seller", "merchant", "merchantName", "merchant_name", "advertiser", "advertiserName", "store")) || cleanText(context.advertiser?.name || "") || null;
     const availability = cleanText(getValue(raw, "availability", "stock", "productAvailability", "product_availability")) || "available";
     const condition = cleanText(getValue(raw, "condition", "productCondition", "product_condition")) || "new";
     const importedAt = cleanText(getValue(raw, "importedAt", "lastCheckedAt")) || this.now();
@@ -430,18 +559,13 @@ export class AwinFeedProvider extends MarketplaceProvider {
     const id = cleanText(getValue(raw, "id")) || `awin-${slugify(externalId || title || `${Date.now()}`)}`;
     const reasons = [];
 
-    if (!title) reasons.push("Título ausente");
-    if (!Number.isFinite(price) || price <= 0) reasons.push("Preço ausente");
+    if (!title) reasons.push("Titulo ausente");
+    if (!Number.isFinite(price) || price <= 0) reasons.push("Preco ausente");
     if (!affiliateUrl && !productUrl) reasons.push("Link ausente");
     if (!category) reasons.push("Categoria ausente");
 
     if (reasons.length) {
-      return {
-        ok: false,
-        reason: reasons.join("; "),
-        reasons,
-        product: null,
-      };
+      return { ok: false, reason: reasons.join("; "), reasons, product: null };
     }
 
     const resolvedProductUrl = productUrl || affiliateUrl;
@@ -473,42 +597,56 @@ export class AwinFeedProvider extends MarketplaceProvider {
         status: "ACTIVE",
         dataMode: "real",
         description: cleanText(getValue(raw, "description", "summary", "shortDescription", "short_description")),
+        advertiser: context.advertiser || null,
         raw,
       },
     };
   }
 
   async importToCatalog(options = {}) {
-    const download = await this.downloadFeed(options);
-    if (!download.ok) {
-      const result = {
-        configured: this.configured(),
-        downloaded: 0,
-        imported: 0,
-        updated: 0,
-        rejected: 0,
-        errors: [download.error || "AWIN_FEED_NOT_CONFIGURED"],
-      };
-      this.persistState({ ...result, lastImport: this.now(), feedSource: download.source || "", feedAvailable: false });
-      return result;
-    }
-
-    const parsed = this.parseFeedText(download.text, { format: download.format, source: download.source });
-    const normalized = [];
+    const advertisers = this.getAdvertisers().filter((item) => item.enabled !== false);
+    const activeAdvertisers = advertisers.length ? advertisers : [{ name: "Awin Feed", enabled: true }];
+    const allProducts = [];
     const rejectedItems = [];
+    const importErrors = [];
+    let downloaded = 0;
 
-    for (const raw of parsed.rows) {
-      const candidate = this.normalizeProduct(raw);
-      if (!candidate.ok) {
-        rejectedItems.push({ raw, reason: candidate.reason, reasons: candidate.reasons });
+    for (const advertiser of activeAdvertisers) {
+      const download = await this.downloadFeedForAdvertiser(advertiser, options);
+      if (!download.ok) {
+        importErrors.push(`${advertiser.name || "Awin"}: ${download.error || "AWIN_FEED_NOT_CONFIGURED"}`);
         continue;
       }
-      normalized.push(candidate.product);
+
+      const parsed = this.parseFeedText(download.text, { format: download.format, source: download.source });
+      downloaded += parsed.rows.length;
+
+      for (const raw of parsed.rows) {
+        const candidate = this.normalizeProduct(raw, {
+          advertiser: download.advertiser,
+          advertiserName: download.advertiser?.name || advertiser.name || "Awin",
+          categoryGroup: this.resolveAdvertiserCategoryGroup(download.advertiser || advertiser),
+        });
+        if (!candidate.ok) {
+          rejectedItems.push({
+            advertiser: download.advertiser?.name || advertiser.name || "Awin",
+            raw,
+            reason: candidate.reason,
+            reasons: candidate.reasons,
+          });
+          continue;
+        }
+        allProducts.push(candidate.product);
+      }
+
+      for (const error of parsed.errors || []) {
+        importErrors.push(`${advertiser.name || "Awin"}: ${error.reason || "Erro ao interpretar feed"}`);
+      }
     }
 
     const catalogManager = this.getCatalogManager();
     const existing = catalogManager.list();
-    const updated = normalized.filter((product) =>
+    const updated = allProducts.filter((product) =>
       existing.some((item) =>
         String(item.id || "") === String(product.id || "") ||
         String(item.externalId || "") === String(product.externalId || "") ||
@@ -522,23 +660,30 @@ export class AwinFeedProvider extends MarketplaceProvider {
       ),
     ).length;
 
-    const importResult = catalogManager.import(normalized, "merge");
+    const importResult = typeof catalogManager.importProducts === "function"
+      ? catalogManager.importProducts(allProducts, "merge")
+      : catalogManager.import(allProducts, "merge");
+
     const result = {
-      configured: true,
-      downloaded: parsed.rows.length,
+      configured: this.configured(),
+      downloaded,
       imported: importResult.imported,
       updated,
       rejected: rejectedItems.length + (importResult.rejected || 0),
       errors: [
-        ...(parsed.errors || []).map((item) => item.reason || "Erro ao interpretar feed"),
-        ...rejectedItems.map((item) => item.reason),
+        ...importErrors,
+        ...rejectedItems.map((item) => `${item.advertiser || "Awin"}: ${item.reason}`),
         ...((importResult.rejectedItems || []).map((item) => item.reason || item.reasons?.join(", ") || "Produto rejeitado")),
       ],
-      feedSource: download.source,
-      feedFormat: download.format,
+      advertisers: activeAdvertisers.map((item) => ({
+        name: item.name,
+        categoryGroup: this.resolveAdvertiserCategoryGroup(item) || item.categoryGroup || "",
+      })),
+      feedSource: activeAdvertisers.map((item) => item.name).join(", "),
+      feedFormat: "mixed",
       productCount: importResult.total || importResult.products?.length || 0,
       products: importResult.products || [],
-      rejectedItems: [...(parsed.errors || []).map((item) => ({ reason: item.reason, raw: item.raw })), ...rejectedItems, ...(importResult.rejectedItems || [])],
+      rejectedItems: rejectedItems.concat((importResult.rejectedItems || []).map((item) => ({ reason: item.reason, reasons: item.reasons, raw: item.product || item.raw }))),
       lastImport: this.now(),
     };
 

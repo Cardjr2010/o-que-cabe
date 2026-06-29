@@ -58,6 +58,11 @@
 - Wired the connector to prefer authenticated Mercado Livre, then catalog, then a public shopping result path before demo.
 - Added test coverage for the public shopping path so a query like `shampoo` can resolve to real-public results instead of falling back to demo.
 
+### Sprint 12
+- Added a real Awin feed provider for approved advertisers with JSONL/CSV/JSON/XML parsing and manual feed support.
+- Connected the Awin import flow to the CatalogManager so real feed products become part of the official product database.
+- Added Awin status/import endpoints and regression tests for parsing, normalization, deduplication, and safe import behavior.
+
 ### Sprint 10
 - Reworked the home pechinchas into practical budget shortcuts for R$ 50, R$ 100, R$ 250, and R$ 500.
 - Expanded the Mercado Livre demo base with more realistic low-budget examples so the MVP has useful results in demo mode.
