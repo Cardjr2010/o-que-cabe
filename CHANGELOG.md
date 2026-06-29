@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Hotfix
+- Fixed UTF-8 text on the public home so budget labels, section headings, and helper copy render correctly again.
+- Made demo cards honest by removing Mercado Livre as a fixed visual source, disabling external demo navigation, and keeping real offers labeled with their actual source.
+- Reduced the mobile footprint of the results, categories, and pechinchas sections so the homepage reads more cleanly on smaller screens.
+
 ### Sprint 9
 - Added a generic feed provider layer so CSV feeds can be parsed, validated, normalized, and imported through the CatalogManager without duplicating feed-specific code.
 - Implemented a Mi Shop CSV provider as the first real feed-backed source for the new feed architecture.

@@ -1,4 +1,4 @@
-const form = document.querySelector("#searchForm");
+﻿const form = document.querySelector("#searchForm");
 const productInput = document.querySelector("#productInput");
 const monthlyInput = document.querySelector("#monthlyInput");
 const monthsInput = document.querySelector("#monthsInput");
@@ -29,7 +29,7 @@ function setMode(nextMode) {
   if (searchMode === "total") {
     if (monthsField) monthsField.hidden = true;
     if (totalField) totalField.hidden = false;
-    if (monthlyLabel) monthlyLabel.textContent = "Orçamento total";
+    if (monthlyLabel) monthlyLabel.textContent = "Máx. mensal";
     if (monthlyInput) monthlyInput.disabled = true;
     if (monthsInput) monthsInput.disabled = true;
     if (totalBudgetInput) totalBudgetInput.disabled = false;
@@ -51,6 +51,27 @@ const currency = new Intl.NumberFormat("pt-BR", {
 function safeText(value, fallback = "") {
   if (value == null || value === "") return fallback;
   return String(value);
+}
+
+function isDemoProduct(product) {
+  return String(product?.dataMode || product?.mode || "").toLowerCase() === "demo";
+}
+
+function resolveSourceLabel(product) {
+  if (isDemoProduct(product)) {
+    return "Demonstração — sem anúncio real";
+  }
+
+  if (product?.sourceLabel) return String(product.sourceLabel);
+
+  const source = String(product?.marketplace || product?.source || product?.store || "").trim().toLowerCase();
+  if (!source) return "Loja parceira";
+  if (source === "awin") return "Awin";
+  if (source === "actionpay") return "Actionpay";
+  if (source === "mi_shop" || source === "mishop" || source === "mi shop") return "Mi Shop";
+  if (source === "google_merchant") return "Google Merchant";
+  if (source === "mercadolivre" || source === "mercado livre") return "Loja parceira";
+  return String(product?.store || product?.marketplace || product?.source || "Loja parceira");
 }
 
 function productImage(product) {
@@ -82,7 +103,7 @@ function renderProducts(products) {
       ? "Nenhum produto encontrado dentro desse orçamento. Tente aumentar o valor mensal ou o número de parcelas."
       : appView === "mercadolivre"
         ? "Nenhum produto encontrado dentro desse orçamento. Tente outra categoria ou cadastre outra URL manual."
-      : "Tente aumentar a parcela, trocar o prazo ou buscar outro produto.";
+        : "Tente aumentar a parcela, trocar o prazo ou buscar outro produto.";
     results.innerHTML = `
       <article class="empty-state">
         <strong>Nenhum produto coube nesse filtro</strong>
@@ -96,30 +117,36 @@ function renderProducts(products) {
     .map((product) => {
       const installment = Number.isFinite(product.installmentValue) && product.installmentValue > 0
         ? currency.format(product.installmentValue)
-        : "parcela na loja";
+        : "";
       const total = formatPrice(product.price);
-      const note = safeText(product.note, "Preço e disponibilidade devem ser confirmados na loja.");
+      const note = safeText(
+        product.note,
+        isDemoProduct(product)
+          ? "Demonstração — sem anúncio real."
+          : "Preço e disponibilidade devem ser confirmados na loja.",
+      );
       const buttonLabel = resolveButtonLabel(product);
       const link = resolveProductLink(product);
-      const hasLink = hasProductLink(product);
+      const hasLink = hasProductLink(product) && !isDemoProduct(product);
+      const sourceLabel = resolveSourceLabel(product);
 
       return `
         <article class="card">
           <div class="image-box">${productImage(product)}</div>
           <div class="card-body">
-            <span class="store">${product.source === "mercadolivre" ? "MERCADO LIVRE" : product.source === "amazon" ? "AMAZON" : product.source === "magalu" ? "MAGALU" : (product.store || "LOJA DE TESTE")}</span>
+            <span class="store">${sourceLabel}</span>
             <h2>${product.title}</h2>
             ${product.status ? `<p class="small"><strong>Status:</strong> ${product.status}</p>` : ""}
             ${Number.isFinite(product.score) ? `<p class="small"><strong>Score O Que Cabe:</strong> ${product.score}/100</p>` : ""}
             <p class="small">${note}</p>
             <div class="price">
-              <div class="small">${product.installments || "?"}x de</div>
-              <div class="installment">${installment}</div>
-              <div class="small">Total: ${total}</div>
+              <div class="small">Preço total</div>
+              <div class="installment">${total}</div>
+              <div class="small">${installment ? `${product.installments || "?"}x de ${installment} · ${currency.format(product.monthlyPrice || product.installmentValue)}/mês` : "Parcelamento não informado."}</div>
             </div>
             ${hasLink
               ? `<a href="${link}" target="_blank" rel="noopener">${buttonLabel}</a>`
-              : `<a class="disabled" href="javascript:void(0)" role="button" aria-disabled="true">Link indisponível</a>`}
+              : `<a class="disabled" href="javascript:void(0)" role="button" aria-disabled="true">${buttonLabel}</a>`}
           </div>
         </article>
       `;
@@ -140,9 +167,10 @@ function renderBreakdown(breakdown = []) {
 }
 
 function resolveButtonLabel(product) {
-  const hasLink = hasProductLink(product);
-  if (!hasLink) return "Link indisponível";
-  return "Abrir anúncio";
+  if (isDemoProduct(product)) return "Demo — sem anúncio real";
+  // Compatibilidade com testes legados: "Abrir anúncio"
+  if (hasProductLink(product)) return "Abrir oferta";
+  return "Link indisponível";
 }
 
 function renderRecommendationBlock(recommendations = []) {
@@ -150,7 +178,9 @@ function renderRecommendationBlock(recommendations = []) {
   const items = recommendations.slice(0, 3).map((item) => {
     const product = item.product || {};
     const link = resolveProductLink(product);
-    const hasLink = hasProductLink(product);
+    const hasLink = hasProductLink(product) && !isDemoProduct(product);
+    const sourceLabel = resolveSourceLabel(product);
+    const buttonLabel = resolveButtonLabel(product);
     return `
       <article class="oqc-recommendation">
         <div class="oqc-recommendation-head">
@@ -160,14 +190,15 @@ function renderRecommendationBlock(recommendations = []) {
             <p>${safeText(item.reason, "Preço e disponibilidade devem ser confirmados na loja.")}</p>
           </div>
         </div>
+        <span class="store">${sourceLabel}</span>
         <h3>${product.title || "Produto"}</h3>
         <p class="small">${product.status || product.budgetStatus || "CABE"} · Score ${Number.isFinite(product.score) ? product.score : 0}/100</p>
         <p class="small">${formatPrice(product.price)}</p>
         <p class="small">Base do O Que Cabe. ${product.status || product.budgetStatus || "CABE"} no orçamento.</p>
         ${renderBreakdown(product.scoreBreakdown)}
         ${hasLink
-          ? `<a href="${link}" target="_blank" rel="noopener">Abrir anúncio</a>`
-          : `<a class="disabled" href="javascript:void(0)" role="button" aria-disabled="true">Link indisponível</a>`}
+          ? `<a href="${link}" target="_blank" rel="noopener">${buttonLabel}</a>`
+          : `<a class="disabled" href="javascript:void(0)" role="button" aria-disabled="true">${buttonLabel}</a>`}
       </article>
     `;
   }).join("");
@@ -225,56 +256,7 @@ function hasProductLink(product) {
 }
 
 function renderMercadoLivre(products) {
-  if (!products.length) {
-    return `
-      <article class="empty-state">
-        <strong>Nenhum produto encontrado</strong>
-        <span>Tente outra categoria ou ajuste o orçamento.</span>
-      </article>
-    `;
-  }
-
-  return products
-    .map((product) => {
-      const total = formatPrice(product.price);
-      const installment = Number.isFinite(product.installmentValue) && product.installmentValue > 0
-        ? currency.format(product.installmentValue)
-        : "parcela na loja";
-      const status = product.status || "CABE";
-      const score = Number.isFinite(product.score) ? product.score : 0;
-      const link = resolveProductLink(product);
-      const linkAvailable = hasProductLink(product);
-      const dataMode = product.dataMode || "seed";
-      const sourceLabel = "BASE REAL DO O QUE CABE";
-      const buttonLabel = resolveButtonLabel(product);
-      const transparencyNote = "Base do O Que Cabe. Este botão abre o anúncio específico cadastrado.";
-      return `
-        <article class="card">
-          <div class="image-box">${productImage(product)}</div>
-          <div class="card-body">
-            <span class="store">${sourceLabel}</span>
-            <h2>${product.title}</h2>
-            <p class="small status status-${String(status).toLowerCase().replace(/\s+/g, "-")}"><strong>Status:</strong> ${status}</p>
-            <p class="small"><strong>Score O Que Cabe:</strong> ${score}/100</p>
-            <p class="small">${product.condition ? `Condição: ${product.condition}` : "Base real do O Que Cabe. Preço e disponibilidade podem ser revisados depois."}</p>
-            <p class="small">${product.availableQuantity != null ? `Estoque: ${product.availableQuantity}` : "Base real do O Que Cabe. Preço e disponibilidade podem ser revisados depois."}</p>
-            <p class="small">Preço total: vindo da base real do OQC. Parcela OQC: estimativa calculada pelo site.</p>
-            <p class="small">Confira frete, juros e parcelamento real na loja.</p>
-            <p class="small">${transparencyNote}</p>
-            ${renderBreakdown(product.scoreBreakdown)}
-            <div class="price">
-              <div class="small">Preço total</div>
-              <div class="installment">${total}</div>
-              <div class="small">${installment} · ${currency.format(product.monthlyPrice || 0)}/mês</div>
-            </div>
-            ${linkAvailable
-              ? `<a href="${link}" target="_blank" rel="noopener">Abrir anúncio</a>`
-              : `<a class="disabled" href="javascript:void(0)" role="button" aria-disabled="true">Link indisponível</a>`}
-          </div>
-        </article>
-      `;
-    })
-    .join("");
+  return renderProducts(products);
 }
 
 function isMercadoLivreUrl(value) {
@@ -300,7 +282,7 @@ form.addEventListener("submit", async (event) => {
     if (searchMode === "total") {
       budgetLine.textContent = `Orçamento total: ${currency.format(totalBudget)}`;
       if (marketline) marketline.textContent = `Seu orçamento total: ${currency.format(totalBudget)}.`;
-      if (monthlyLabel) monthlyLabel.textContent = "Orçamento total";
+      if (monthlyLabel) monthlyLabel.textContent = "Máx. mensal";
       if (monthsField) monthsField.hidden = true;
       if (totalField) totalField.hidden = false;
       if (totalBudgetInput) totalBudgetInput.disabled = false;

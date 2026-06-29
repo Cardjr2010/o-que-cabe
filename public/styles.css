@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   color-scheme: light;
   --ink: #0f172a;
   --muted: #6b7a90;
@@ -1021,9 +1021,9 @@ footer strong {
   }
 
   .search-card {
-    padding: 24px;
+    padding: 20px 18px;
     border-radius: 28px;
-    gap: 18px;
+    gap: 16px;
   }
 
   .mode-tabs {
@@ -1059,8 +1059,8 @@ footer strong {
   }
 
   .how {
-    padding: 42px 24px;
-    border-radius: 34px;
+    padding: 30px 18px 34px;
+    border-radius: 30px;
   }
 
   .pechincha-grid {
@@ -1073,13 +1073,97 @@ footer strong {
   }
 
   .how-grid {
-    gap: 34px;
-    margin-top: 42px;
+    gap: 22px;
+    margin-top: 26px;
   }
 
   footer {
     align-items: flex-start;
     flex-direction: column;
-    padding: 28px 0;
+    padding: 24px 0;
+  }
+
+  .results-area {
+    padding: 16px;
+    border-radius: 22px;
+  }
+
+  .oqc-recommendations {
+    padding: 14px;
+  }
+
+  .oqc-recommendation-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .oqc-recommendation {
+    padding: 14px;
+  }
+
+  .grid {
+    gap: 14px;
+  }
+
+  .card {
+    min-height: auto;
+  }
+
+  .image-box {
+    height: 180px;
+    padding: 12px;
+  }
+
+  .card-body {
+    padding: 16px;
+  }
+
+  .installment {
+    font-size: 24px;
+  }
+
+  .category-grid article {
+    min-height: 160px;
+    padding: 24px;
+    border-radius: 24px;
+  }
+
+  .category-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 20px;
+    font-size: 30px;
+  }
+
+  .category-grid h3 {
+    margin-top: 22px;
+    margin-bottom: 8px;
+    font-size: 18px;
+  }
+
+  .category-grid p {
+    font-size: 14px;
+  }
+
+  .pechincha-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pechincha-card {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 10px 12px;
+    min-height: 48px;
+  }
+
+  .pechincha-card strong {
+    min-width: 62px;
+    height: 26px;
+    font-size: 12px;
+  }
+
+  .pechincha-card span {
+    font-size: 13px;
   }
 }
+
+

@@ -1,4 +1,4 @@
-import fs from "node:fs";
+﻿import fs from "node:fs";
 import path from "node:path";
 import BudgetEngine from "../src/engines/BudgetEngine.js";
 import ScoreEngine from "../src/engines/ScoreEngine.js";
@@ -328,7 +328,7 @@ function normalizeDemoProducts(products, monthlyBudget, months, query, source) {
         id: product.id,
         title: product.title,
         category: product.category,
-        store: source === "mercadolivre" ? "Mercado Livre" : source === "amazon" ? "Amazon" : source === "magalu" ? "Magalu" : "Loja de Teste",
+        store: source === "amazon" ? "Amazon" : source === "magalu" ? "Magalu" : "Loja parceira",
         price: price_brl,
         image: product.image || "",
         rating: product.rating ?? null,
@@ -511,7 +511,7 @@ function renderProductPage() {
   return renderExplorerPage({
     title: "Teste Produtos | O Que Cabe",
     heading: "Teste produtos com DummyJSON.",
-    description: "Busca de produtos de teste sem depender de Amazon ou Mercado Livre.",
+    description: "Busca de produtos de teste sem depender de marketplaces ao vivo.",
     view: "products",
     badge: "DummyJSON",
     endpoint: "/api/teste-produtos",
@@ -605,7 +605,7 @@ function normalizeMercadoLivreSearchItem(item, monthly, months) {
   const normalized = normalizeMercadoLivreItem(item);
   const price = Number(normalized.price || 0);
   const monthlyPrice = months > 0 ? price / months : price;
-  const status = monthlyPrice <= monthly ? "CABE" : monthlyPrice <= monthly * 1.2 ? "APERTADO" : "NÃƒO CABE";
+  const status = monthlyPrice <= monthly ? "CABE" : monthlyPrice <= monthly * 1.2 ? "APERTADO" : "NÃO CABE";
   return {
     id: normalized.id,
     title: normalized.title,
@@ -730,7 +730,7 @@ function relevanceScore(query, product) {
   const text = `${product.title || ""} ${product.category || ""}`.toLowerCase();
   const termsByQuery = {
     celular: ["celular", "smartphone", "galaxy", "moto", "redmi", "iphone"],
-    relógio: ["relógio", "relogio", "smartwatch", "watch", "pulseira inteligente"],
+    relogio: ["relógio", "relogio", "smartwatch", "watch", "pulseira inteligente"],
     notebook: ["notebook", "laptop", "ideapad", "vivobook", "aspire"],
     tablet: ["tablet", "ipad", "galaxy tab", "tab"],
     casa: ["casa", "air fryer", "fritadeira", "aspirador", "cozinha"],
@@ -834,7 +834,7 @@ export default async function handler(req, res) {
       sendJson(res, 200, {
         ok: true,
         ...response,
-        warning: `${error.message || "Falha na integração Mercado Livre"}. Mostrando demonstração por enquanto.`,
+        warning: `${error.message || "Falha na integração com a base parceira"}. Mostrando demonstração por enquanto.`,
       });
     }
     return;
@@ -1377,6 +1377,7 @@ export default async function handler(req, res) {
 
   sendJson(res, 404, { status: "not_found" });
 }
+
 
 
 
