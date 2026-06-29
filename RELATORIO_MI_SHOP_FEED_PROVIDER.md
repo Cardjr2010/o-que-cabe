@@ -62,6 +62,18 @@ Com o fixture de teste usado no repositório:
 
 No segundo passe do mesmo arquivo, os itens já existentes foram reconhecidos como duplicados pelo catálogo.
 
+## Importação real executada
+
+O CSV real da Mi Shop foi importado com sucesso usando o provider novo.
+
+- produtos lidos: 712
+- produtos importados: 712
+- produtos atualizados: 0
+- duplicados: 0
+- rejeitados: 0
+
+O catálogo oficial do OQC passou a refletir essa base real no arquivo `data/products.seed.json`, que agora contém a base existente do projeto mais os produtos da Mi Shop.
+
 ## Endpoints adicionados
 
 - `GET /api/feed/providers`
