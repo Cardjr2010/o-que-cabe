@@ -13,43 +13,7 @@
   },
   "routes": [
     {
-      "src": "/",
-      "dest": "api/web.js"
-    },
-    {
-      "src": "/app.js",
-      "dest": "api/web.js"
-    },
-    {
-      "src": "/styles.css",
-      "dest": "api/web.js"
-    },
-    {
-      "src": "/favicon.svg",
-      "dest": "api/web.js"
-    },
-    {
-      "src": "/favicon.png",
-      "dest": "api/web.js"
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "api/web.js"
-    },
-    {
-      "src": "/teste-produtos",
-      "dest": "api/web.js"
-    },
-    {
-      "src": "/teste-viagens",
-      "dest": "api/web.js"
-    },
-    {
-      "src": "/mercadolivre-manual",
-      "dest": "api/web.js"
-    },
-    {
-      "src": "/catalog",
+      "src": "/(.*)",
       "dest": "api/web.js"
     }
   ]
