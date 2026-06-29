@@ -102,6 +102,7 @@
 # Changelog
 
 ### Hotfix Vercel Production
+- Added the missing `ValueEngine` module to the production commit so `RankingEngine` can load on Vercel without `ERR_MODULE_NOT_FOUND`.
 - Fixed the serverless root-path resolution so the Vercel function no longer looks for `public/index.html` and seed files inside the `api/` directory when the runtime working directory differs.
 - Added safe `/api/health` and `/api/catalog/health` diagnostics so production can report catalog state without taking the function down.
 - Wrapped the Vercel handler in a global try/catch and added a safe fallback home page to prevent `FUNCTION_INVOCATION_FAILED` from uncaught file-path errors.

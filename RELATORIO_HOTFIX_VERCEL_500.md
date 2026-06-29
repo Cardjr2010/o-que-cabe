@@ -9,27 +9,24 @@ Produção retornando `500 FUNCTION_INVOCATION_FAILED` em:
 - `/api/search?q=tv&mode=total&totalBudget=500`
 
 ## Causa raiz identificada
-O runtime da Vercel estava resolvendo `process.cwd()` em um diretório diferente do diretório esperado do projeto.
+O log real da Vercel mostrou:
 
-Isso fazia a home procurar:
+`Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/var/task/src/engines/ValueEngine.js' imported from /var/task/src/engines/RankingEngine.js`
 
-`api/public/index.html`
+Ou seja, o deploy estava falhando porque `src/engines/ValueEngine.js` existia na máquina local, mas não tinha sido incluído no commit/push anterior para a branch de produção.
 
-em vez de:
-
-`public/index.html`
-
-No teste local simulando o cwd da função, a falha foi reproduzida com erro `ENOENT` ao abrir o arquivo da home.
+Além disso, a função também dependia de caminhos resolvidos por `process.cwd()`, o que podia quebrar a home em runtimes serverless com cwd diferente. Isso foi endurecido no mesmo hotfix para evitar um segundo ponto de falha.
 
 ## Correção aplicada
 
-1. Criei uma raiz de projeto estável baseada em `import.meta.url`.
-2. Troquei os caminhos críticos da função para usar essa raiz estável.
-3. Protegi a leitura da home com fallback seguro quando o arquivo principal não estiver disponível.
-4. Adicionei:
+1. Entreguei `src/engines/ValueEngine.js` na base do projeto para satisfazer o import exigido por `RankingEngine.js`.
+2. Criei uma raiz de projeto estável baseada em `import.meta.url`.
+3. Troquei os caminhos críticos da função para usar essa raiz estável.
+4. Protegi a leitura da home com fallback seguro quando o arquivo principal não estiver disponível.
+5. Adicionei:
    - `GET /api/health`
    - `GET /api/catalog/health`
-5. Envolvi o handler principal em `try/catch` global para impedir que erros de bootstrap virem `FUNCTION_INVOCATION_FAILED`.
+6. Envolvi o handler principal em `try/catch` global para impedir que erros de bootstrap virem `FUNCTION_INVOCATION_FAILED`.
 
 ## Arquivos alterados
 
@@ -64,4 +61,3 @@ No teste local simulando o cwd da função, a falha foi reproduzida com erro `EN
 
 ## Observação
 O hotfix é focado em impedir que a função quebre por caminho de arquivo incorreto e em manter respostas controladas para produção.
-
