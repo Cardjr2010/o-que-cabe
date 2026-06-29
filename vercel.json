@@ -1,22 +1,3 @@
 {
-  "version": 2,
-  "functions": {
-    "api/web.js": {
-      "includeFiles": "{api/static/**,data/**,public/**}"
-    }
-  },
-  "rewrites": [
-    {
-      "source": "/api/ping",
-      "destination": "/api/ping.js"
-    },
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/web.js"
-    },
-    {
-      "source": "/",
-      "destination": "/index.html"
-    }
-  ]
+  "version": 2
 }
