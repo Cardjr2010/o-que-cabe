@@ -98,11 +98,10 @@ function renderProducts(products) {
         ? currency.format(product.installmentValue)
         : "parcela na loja";
       const total = formatPrice(product.price);
-      const note = safeText(product.note, "Exemplo demonstrativo. Preço e disponibilidade devem ser confirmados no Mercado Livre.");
+      const note = safeText(product.note, "Preço e disponibilidade devem ser confirmados na loja.");
       const buttonLabel = resolveButtonLabel(product);
       const link = resolveProductLink(product);
       const hasLink = hasProductLink(product);
-      const isDemo = (product.dataMode || "demo") === "demo";
 
       return `
         <article class="card">
@@ -120,7 +119,7 @@ function renderProducts(products) {
             </div>
             ${hasLink
               ? `<a href="${link}" target="_blank" rel="noopener">${buttonLabel}</a>`
-              : `<a class="disabled" href="javascript:void(0)" role="button" aria-disabled="true">${isDemo ? "Demo — sem anúncio real" : "Link indisponível"}</a>`}
+              : `<a class="disabled" href="javascript:void(0)" role="button" aria-disabled="true">Link indisponível</a>`}
           </div>
         </article>
       `;
@@ -134,15 +133,13 @@ function renderBreakdown(breakdown = []) {
     <details class="oqc-breakdown">
       <summary>Por que o OQC escolheu?</summary>
       <ul>
-        ${breakdown.map((item) => `<li><strong>${safeText(item.factor, "Fator")}:</strong> ${safeText(item.earned, 0)}/${safeText(item.weight, 0)} - ${safeText(item.reason, "Exemplo demonstrativo. Preço e disponibilidade devem ser confirmados no Mercado Livre.")}</li>`).join("")}
+        ${breakdown.map((item) => `<li><strong>${safeText(item.factor, "Fator")}:</strong> ${safeText(item.earned, 0)}/${safeText(item.weight, 0)} - ${safeText(item.reason, "Preço e disponibilidade devem ser confirmados na loja.")}</li>`).join("")}
       </ul>
     </details>
   `;
 }
 
 function resolveButtonLabel(product) {
-  const dataMode = product.dataMode || "demo";
-  if (dataMode === "demo") return "Demo — sem anúncio real";
   const hasLink = hasProductLink(product);
   if (!hasLink) return "Link indisponível";
   return "Abrir anúncio";
@@ -152,7 +149,6 @@ function renderRecommendationBlock(recommendations = []) {
   if (!Array.isArray(recommendations) || !recommendations.length) return "";
   const items = recommendations.slice(0, 3).map((item) => {
     const product = item.product || {};
-    const dataMode = product.dataMode || "demo";
     const link = resolveProductLink(product);
     const hasLink = hasProductLink(product);
     return `
@@ -161,19 +157,17 @@ function renderRecommendationBlock(recommendations = []) {
           <span class="oqc-rank">${item.rank}º</span>
           <div>
             <strong>${item.label}</strong>
-            <p>${safeText(item.reason, "Exemplo demonstrativo. Preço e disponibilidade devem ser confirmados no Mercado Livre.")}</p>
+            <p>${safeText(item.reason, "Preço e disponibilidade devem ser confirmados na loja.")}</p>
           </div>
         </div>
         <h3>${product.title || "Produto"}</h3>
         <p class="small">${product.status || product.budgetStatus || "CABE"} · Score ${Number.isFinite(product.score) ? product.score : 0}/100</p>
         <p class="small">${formatPrice(product.price)}</p>
-        <p class="small">${product.dataMode === "demo" ? "Modo demonstração." : "Base real do O Que Cabe."} ${product.status || product.budgetStatus || "CABE"} no orçamento.</p>
+        <p class="small">Base do O Que Cabe. ${product.status || product.budgetStatus || "CABE"} no orçamento.</p>
         ${renderBreakdown(product.scoreBreakdown)}
-        ${dataMode === "demo"
-          ? `<a class="disabled" href="javascript:void(0)" role="button" aria-disabled="true">Demo — sem anúncio real</a>`
-          : hasLink
-            ? `<a href="${link}" target="_blank" rel="noopener">Abrir anúncio</a>`
-            : `<a class="disabled" href="javascript:void(0)" role="button" aria-disabled="true">Link indisponível</a>`}
+        ${hasLink
+          ? `<a href="${link}" target="_blank" rel="noopener">Abrir anúncio</a>`
+          : `<a class="disabled" href="javascript:void(0)" role="button" aria-disabled="true">Link indisponível</a>`}
       </article>
     `;
   }).join("");
@@ -220,9 +214,6 @@ function renderTrips(trips) {
 }
 
 function resolveProductLink(product) {
-  if ((product.dataMode || "demo") === "demo") {
-    return "";
-  }
   if (product.affiliateUrl || product.productUrl || product.permalink || product.url) {
     return product.affiliateUrl || product.productUrl || product.permalink || product.url;
   }
@@ -253,12 +244,10 @@ function renderMercadoLivre(products) {
       const score = Number.isFinite(product.score) ? product.score : 0;
       const link = resolveProductLink(product);
       const linkAvailable = hasProductLink(product);
-      const dataMode = product.dataMode || "demo";
-      const sourceLabel = dataMode === "demo" ? "DEMONSTRAÇÃO MERCADO LIVRE" : "BASE REAL DO O QUE CABE";
+      const dataMode = product.dataMode || "seed";
+      const sourceLabel = "BASE REAL DO O QUE CABE";
       const buttonLabel = resolveButtonLabel(product);
-      const transparencyNote = dataMode === "real"
-        ? "Dados reais do Mercado Livre. Este botão abre o anúncio retornado pela API."
-        : "Base real do O Que Cabe. Este botão abre o anúncio específico cadastrado.";
+      const transparencyNote = "Base do O Que Cabe. Este botão abre o anúncio específico cadastrado.";
       return `
         <article class="card">
           <div class="image-box">${productImage(product)}</div>
@@ -270,7 +259,7 @@ function renderMercadoLivre(products) {
             <p class="small">${product.condition ? `Condição: ${product.condition}` : "Base real do O Que Cabe. Preço e disponibilidade podem ser revisados depois."}</p>
             <p class="small">${product.availableQuantity != null ? `Estoque: ${product.availableQuantity}` : "Base real do O Que Cabe. Preço e disponibilidade podem ser revisados depois."}</p>
             <p class="small">Preço total: vindo da base real do OQC. Parcela OQC: estimativa calculada pelo site.</p>
-            <p class="small">Parcela estimada pelo O Que Cabe. Confira frete, juros e parcelamento real na loja.</p>
+            <p class="small">Confira frete, juros e parcelamento real na loja.</p>
             <p class="small">${transparencyNote}</p>
             ${renderBreakdown(product.scoreBreakdown)}
             <div class="price">
@@ -278,11 +267,9 @@ function renderMercadoLivre(products) {
               <div class="installment">${total}</div>
               <div class="small">${installment} · ${currency.format(product.monthlyPrice || 0)}/mês</div>
             </div>
-            ${dataMode === "demo"
-              ? `<a class="disabled" href="javascript:void(0)" role="button" aria-disabled="true">Demo — sem anúncio real</a>`
-              : linkAvailable
-                ? `<a href="${link}" target="_blank" rel="noopener">Abrir anúncio</a>`
-                : `<a class="disabled" href="javascript:void(0)" role="button" aria-disabled="true">Link indisponível</a>`}
+            ${linkAvailable
+              ? `<a href="${link}" target="_blank" rel="noopener">Abrir anúncio</a>`
+              : `<a class="disabled" href="javascript:void(0)" role="button" aria-disabled="true">Link indisponível</a>`}
           </div>
         </article>
       `;
@@ -340,18 +327,16 @@ form.addEventListener("submit", async (event) => {
     const data = await response.json();
 
     if (apiStatus) {
-      apiStatus.textContent = data.dataMode === "demo" ? "Demonstração Mercado Livre" : "Base real do O Que Cabe";
-      apiStatus.style.color = data.dataMode === "demo" ? "#a15c00" : "#12805c";
+      apiStatus.textContent = "Base do O Que Cabe";
+      apiStatus.style.color = "#12805c";
     }
     if (appView === "home") {
       if (sourceBadge) {
-        sourceBadge.textContent = data.dataMode === "demo" ? "DEMONSTRAÇÃO MERCADO LIVRE" : "BASE REAL DO O QUE CABE";
+        sourceBadge.textContent = "BASE DO O QUE CABE";
       }
       if (notice) {
         notice.hidden = false;
-        notice.textContent = data.dataMode === "demo"
-          ? "Estamos em modo demonstração porque a busca real do Mercado Livre ainda não está autorizada."
-          : "Base real inicial do O Que Cabe. Os produtos vêm da seed local e o botão abre o anúncio específico.";
+        notice.textContent = "Resultados carregados a partir da base atual do O Que Cabe.";
       }
     } else if (appView === "products") {
       if (sourceBadge) sourceBadge.textContent = "DummyJSON";

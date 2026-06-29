@@ -241,7 +241,7 @@ function buildButtonLabel(product) {
 }
 
 function buildOqcRecommendationText(product) {
-  const mode = String(product.dataMode || "demo").toLowerCase();
+  const mode = String(product.dataMode || "seed").toLowerCase();
   const status = product.status || product.budgetStatus || "CABE";
   const statusText = status === "CABE" ? "cabe no orçamento" : status === "APERTADO" ? "cabe, mas está apertado" : "fica acima do orçamento";
   if (mode === "real") {
@@ -254,7 +254,7 @@ function buildSearchBudgetContext({ mode, monthly, months, totalBudget }) {
   return BudgetEngine.buildBudgetContext({ mode, monthly, months, totalBudget });
 }
 
-function normalizeSearchProduct(product = {}, dataMode = "demo", query = "") {
+function normalizeSearchProduct(product = {}, dataMode = "seed", query = "") {
   const title = product.title || product.name || "Produto";
   const price = Number(product.price || product.totalPrice || 0);
   const productUrl = product.productUrl || product.permalink || product.url || "";
@@ -583,7 +583,7 @@ async function searchAmazon({ query, maxMonthly, maxInstallments }) {
     });
 }
 
-function searchDemo({ query, maxMonthly, maxInstallments }) {
+function searchFallback({ query, maxMonthly, maxInstallments }) {
   const normalized = query.toLowerCase();
   return manualProducts()
     .filter((product) => {
@@ -1149,11 +1149,8 @@ export async function requestHandler(req, res) {
         totalBudget,
         dataMode,
       });
-
       if (!sourceProducts.length) {
-        response.warning = "Não encontramos exemplo demonstrativo confiável para este orçamento.";
-      } else if (dataMode === "demo") {
-        response.warning = "Modo demonstração: estes exemplos mostram como o OQC classifica produtos. Preços e disponibilidade devem ser confirmados no Mercado Livre.";
+        response.warning = "N?o encontramos produtos com an?ncio dispon?vel para este or?amento.";
       }
 
       sendJson(res, 200, response);
@@ -1166,9 +1163,9 @@ export async function requestHandler(req, res) {
         dataMode: "demo",
         recommendations: [],
         groups: { "CABE": [], "APERTADO": [], "NÃO CABE": [] },
-        summary: "Modo demonstração temporário.",
+        summary: "Nenhum an?ncio dispon?vel no momento.",
         products: [],
-        warning: "Não encontramos exemplo demonstrativo confiável para este orçamento.",
+        warning: "N?o encontramos produtos com an?ncio dispon?vel para este or?amento.",
         error: error.message,
       });
     }

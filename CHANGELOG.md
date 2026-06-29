@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Sprint 18
+- Simplified the homepage shortcuts so the lower section reads cleaner on mobile and desktop.
+- Improved the product card presentation with clearer image fallbacks and more consistent button treatment.
+- Removed demo-facing button text from the public UI so the site only shows actionable announcement links or unavailable states.
+
 ### Sprint 17
 - Connected the CSV importer to the official `CatalogManager` so CSV imports now flow through the managed product database.
 - Removed the parallel seed-writing path from the importer script and made the catalog handle merge and deduplication.
