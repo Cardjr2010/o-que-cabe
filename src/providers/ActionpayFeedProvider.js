@@ -190,6 +190,4 @@ export class ActionpayFeedProvider extends FeedProvider {
   }
 }
 
-const actionpayFeedProvider = new ActionpayFeedProvider();
-
-export default actionpayFeedProvider;
+export default ActionpayFeedProvider;

@@ -776,6 +776,4 @@ export class AwinFeedProvider extends FeedProvider {
   }
 }
 
-const awinFeedProvider = new AwinFeedProvider();
-
-export default awinFeedProvider;
+export default AwinFeedProvider;

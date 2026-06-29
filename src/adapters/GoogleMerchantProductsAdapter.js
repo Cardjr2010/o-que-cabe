@@ -481,6 +481,4 @@ export class GoogleMerchantProductsAdapter {
   }
 }
 
-const googleMerchantProductsAdapter = new GoogleMerchantProductsAdapter();
-
-export default googleMerchantProductsAdapter;
+export default GoogleMerchantProductsAdapter;

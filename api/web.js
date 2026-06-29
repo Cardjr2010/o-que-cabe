@@ -5,13 +5,13 @@ import ScoreEngine from "../src/engines/ScoreEngine.js";
 import RankingEngine from "../src/engines/RankingEngine.js";
 import CsvFeedProvider from "../src/feed/providers/CsvFeedProvider.js";
 import MiShopFeedProvider from "../src/feed/providers/MiShopFeedProvider.js";
-import MercadoLivreProvider from "../src/providers/MercadoLivreProvider.js";
-import AwinFeedProvider from "../src/providers/AwinFeedProvider.js";
-import ActionpayFeedProvider from "../src/providers/ActionpayFeedProvider.js";
-import actionpayProviderDefault, { ActionpayProvider } from "../src/providers/ActionpayProvider.js";
-import actionpayYmlImporterDefault, { ActionpayYmlImporter } from "../src/importers/ActionpayYmlImporter.js";
+import { MercadoLivreProvider } from "../src/providers/MercadoLivreProvider.js";
+import { AwinFeedProvider } from "../src/providers/AwinFeedProvider.js";
+import { ActionpayFeedProvider } from "../src/providers/ActionpayFeedProvider.js";
+import { ActionpayProvider } from "../src/providers/ActionpayProvider.js";
+import { ActionpayYmlImporter } from "../src/importers/ActionpayYmlImporter.js";
 import CatalogManager from "../src/catalog/CatalogManager.js";
-import googleMerchantProductsAdapter from "../src/adapters/GoogleMerchantProductsAdapter.js";
+import { GoogleMerchantProductsAdapter } from "../src/adapters/GoogleMerchantProductsAdapter.js";
 import { projectRoot, resolveProjectPath } from "../src/runtime/project-root.js";
 import { resolveCatalogSeedPath, getCatalogSeedCandidates } from "../src/runtime/catalog-path.js";
 
@@ -25,9 +25,23 @@ const mlLinksPath = resolveProjectPath("data", "mercadolivre-links.json");
 const catalogManager = new CatalogManager({
   seedPath: process.env.ACTIONPAY_CATALOG_SEED_PATH || resolveCatalogSeedPath(resolveProjectPath("data", "products.seed.json")),
 });
-const googleMerchantAdapter = googleMerchantProductsAdapter;
-const awinFeedProvider = AwinFeedProvider;
-const actionpayFeedProvider = ActionpayFeedProvider;
+let googleMerchantAdapter = null;
+function getGoogleMerchantAdapter() {
+  if (!googleMerchantAdapter) {
+    googleMerchantAdapter = new GoogleMerchantProductsAdapter({ catalogManager });
+  }
+  return googleMerchantAdapter;
+}
+let awinFeedProvider = null;
+function getAwinFeedProvider() {
+  if (!awinFeedProvider) {
+    awinFeedProvider = new AwinFeedProvider({ catalogManager });
+  }
+  return awinFeedProvider;
+}
+let actionpayFeedProvider = null;
+let actionpayProvider = null;
+let actionpayYmlImporter = null;
 function createFeedProvider(providerName = "mi_shop", options = {}) {
   const name = String(providerName || "").trim().toLowerCase();
   const baseOptions = {
@@ -48,10 +62,17 @@ function createFeedProvider(providerName = "mi_shop", options = {}) {
     });
   }
   if (name === "actionpay") {
+    if (!actionpayFeedProvider) {
+      actionpayFeedProvider = new ActionpayFeedProvider({
+        provider: createActionpayProvider(),
+        catalogManager,
+        importer: createActionpayImporter(),
+      });
+    }
     return actionpayFeedProvider;
   }
   if (name === "awin") {
-    return awinFeedProvider;
+    return getAwinFeedProvider();
   }
   return null;
 }
@@ -61,38 +82,28 @@ function getFeedProviderNames() {
 }
 
 function createActionpayProvider() {
-  return actionpayProviderDefault instanceof ActionpayProvider
-    ? new ActionpayProvider({
-      apiKey: process.env.ACTIONPAY_API_KEY || "",
-      sourceId: process.env.ACTIONPAY_SOURCE_ID || "",
-      defaultSubId: process.env.ACTIONPAY_DEFAULT_SUBID || "oqc",
-      saldaoOfferId: process.env.ACTIONPAY_SALDAO_OFFER_ID || "13241",
-    })
-    : new ActionpayProvider({
+  if (!actionpayProvider) {
+    actionpayProvider = new ActionpayProvider({
       apiKey: process.env.ACTIONPAY_API_KEY || "",
       sourceId: process.env.ACTIONPAY_SOURCE_ID || "",
       defaultSubId: process.env.ACTIONPAY_DEFAULT_SUBID || "oqc",
       saldaoOfferId: process.env.ACTIONPAY_SALDAO_OFFER_ID || "13241",
     });
+  }
+  return actionpayProvider;
 }
 
 function createActionpayImporter() {
-  const provider = createActionpayProvider();
-  return actionpayYmlImporterDefault instanceof ActionpayYmlImporter
-    ? new ActionpayYmlImporter({
-      provider,
-      catalogManager,
-      catalogSeedPath: process.env.ACTIONPAY_CATALOG_SEED_PATH || resolveCatalogSeedPath(resolveProjectPath("data", "products.seed.json")),
-      sourceOfferId: process.env.ACTIONPAY_SALDAO_OFFER_ID || "13241",
-      sourceOfferName: "Saldão da Informática - Notebooks, iPhones e TVs.",
-    })
-    : new ActionpayYmlImporter({
-      provider,
+  if (!actionpayYmlImporter) {
+    actionpayYmlImporter = new ActionpayYmlImporter({
+      provider: createActionpayProvider(),
       catalogManager,
       catalogSeedPath: process.env.ACTIONPAY_CATALOG_SEED_PATH || resolveCatalogSeedPath(resolveProjectPath("data", "products.seed.json")),
       sourceOfferId: process.env.ACTIONPAY_SALDAO_OFFER_ID || "13241",
       sourceOfferName: "Saldão da Informática - Notebooks, iPhones e TVs.",
     });
+  }
+  return actionpayYmlImporter;
 }
 
 function getFeedProviderInstance(providerName = "mi_shop", options = {}) {
@@ -109,10 +120,17 @@ function getFeedProviderInstance(providerName = "mi_shop", options = {}) {
     return new CsvFeedProvider({ ...baseOptions, ...options });
   }
   if (name === "actionpay") {
+    if (!actionpayFeedProvider) {
+      actionpayFeedProvider = new ActionpayFeedProvider({
+        provider: createActionpayProvider(),
+        catalogManager,
+        importer: createActionpayImporter(),
+      });
+    }
     return actionpayFeedProvider;
   }
   if (name === "awin") {
-    return awinFeedProvider;
+    return getAwinFeedProvider();
   }
   return null;
 }
@@ -1423,7 +1441,7 @@ export default async function handler(req, res) {
   }
 
   if (pathname === "/api/google-merchant/status") {
-    const diagnostics = googleMerchantAdapter.getDiagnostics();
+    const diagnostics = getGoogleMerchantAdapter().getDiagnostics();
     sendJson(res, 200, {
       hasAccountId: diagnostics.hasAccountId,
       hasAccessToken: diagnostics.hasAccessToken,
@@ -1437,17 +1455,17 @@ export default async function handler(req, res) {
       sendJson(res, 405, { ok: false, message: "Use POST para importar produtos do Google Merchant." });
       return;
     }
-    if (!googleMerchantAdapter.configured()) {
+    if (!getGoogleMerchantAdapter().configured()) {
       sendJson(res, 400, {
         ok: false,
         message: "Google Merchant não configurado.",
         configured: false,
-        hasAccountId: googleMerchantAdapter.getDiagnostics().hasAccountId,
-        hasAccessToken: googleMerchantAdapter.getDiagnostics().hasAccessToken,
+        hasAccountId: getGoogleMerchantAdapter().getDiagnostics().hasAccountId,
+        hasAccessToken: getGoogleMerchantAdapter().getDiagnostics().hasAccessToken,
       });
       return;
     }
-    const result = await googleMerchantAdapter.importToCatalog({
+    const result = await getGoogleMerchantAdapter().importToCatalog({
       pageSize: Number(url.searchParams.get("pageSize") || "250"),
       pageToken: url.searchParams.get("pageToken") || "",
       mode: url.searchParams.get("mode") || "merge",
@@ -1460,7 +1478,7 @@ export default async function handler(req, res) {
   }
 
   if (pathname === "/api/awin/status") {
-    const diagnostics = awinFeedProvider.getDiagnostics();
+    const diagnostics = getAwinFeedProvider().getDiagnostics();
     sendJson(res, 200, {
       configured: diagnostics.configured,
       feedAvailable: diagnostics.feedAvailable,
@@ -1476,7 +1494,7 @@ export default async function handler(req, res) {
       sendJson(res, 405, { ok: false, message: "Use POST para importar o feed da Awin." });
       return;
     }
-    if (!awinFeedProvider.configured()) {
+    if (!getAwinFeedProvider().configured()) {
       sendJson(res, 400, {
         ok: false,
         message: "Awin não configurada.",
@@ -1484,7 +1502,7 @@ export default async function handler(req, res) {
       });
       return;
     }
-    const result = await awinFeedProvider.importToCatalog({
+    const result = await getAwinFeedProvider().importToCatalog({
       feedPath: url.searchParams.get("feedPath") || "",
       feedUrl: url.searchParams.get("feedUrl") || "",
       feedText: url.searchParams.get("feedText") || "",
@@ -1771,6 +1789,8 @@ export default async function handler(req, res) {
     }
   }
 }
+
+
 
 
 

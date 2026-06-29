@@ -253,7 +253,5 @@ class MercadoLivreProvider extends MarketplaceProvider {
   }
 }
 
-const mercadoLivreProvider = new MercadoLivreProvider();
-
 export { MercadoLivreProvider };
-export default mercadoLivreProvider;
+export default MercadoLivreProvider;

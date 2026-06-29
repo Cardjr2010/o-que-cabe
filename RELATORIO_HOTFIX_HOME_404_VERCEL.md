@@ -9,6 +9,7 @@ A home da producao seguia retornando 404 enquanto a API e o catalogo permaneciam
 - Mantive `includeFiles` como string, no formato aceito pela Vercel.
 - Mantive os assets do frontend disponiveis em `public/` e `api/static/` para a home e os arquivos auxiliares.
 - Removi o carregamento top-level do seed JS grande no importador de catalogo para reduzir o bundle da funcao e favorecer o seed JSON leve.
+- Atrasei a criacao dos providers pesados no `api/web.js` para evitar boot caro no serverless.
 
 ## O que nao foi alterado
 - CatalogManager

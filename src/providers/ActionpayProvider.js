@@ -377,6 +377,4 @@ export class ActionpayProvider {
   }
 }
 
-const actionpayProvider = new ActionpayProvider();
-
-export default actionpayProvider;
+export default ActionpayProvider;
