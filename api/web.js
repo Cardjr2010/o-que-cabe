@@ -4,6 +4,7 @@ import BudgetEngine from "../src/engines/BudgetEngine.js";
 import ScoreEngine from "../src/engines/ScoreEngine.js";
 import RankingEngine from "../src/engines/RankingEngine.js";
 import MercadoLivreProvider from "../src/providers/MercadoLivreProvider.js";
+import AwinFeedProvider from "../src/providers/AwinFeedProvider.js";
 import CatalogManager from "../src/catalog/CatalogManager.js";
 import googleMerchantProductsAdapter from "../src/adapters/GoogleMerchantProductsAdapter.js";
 
@@ -15,6 +16,7 @@ const mercadolivreDemoPath = path.join(root, "data", "mercadolivre-demo-products
 const mlLinksPath = path.join(root, "data", "mercadolivre-links.json");
 const catalogManager = new CatalogManager({ seedPath: path.join(root, "data", "products.seed.json") });
 const googleMerchantAdapter = googleMerchantProductsAdapter;
+const awinFeedProvider = AwinFeedProvider;
 
 function readJson(filePath, fallback) {
   try {
@@ -971,6 +973,43 @@ export default async function handler(req, res) {
       mode: url.searchParams.get("mode") || "merge",
     });
     sendJson(res, result.statusHttp || 200, {
+      ok: true,
+      ...result,
+    });
+    return;
+  }
+
+  if (pathname === "/api/awin/status") {
+    const diagnostics = awinFeedProvider.getDiagnostics();
+    sendJson(res, 200, {
+      configured: diagnostics.configured,
+      feedAvailable: diagnostics.feedAvailable,
+      lastImport: diagnostics.lastImport,
+      productCount: diagnostics.productCount,
+    });
+    return;
+  }
+
+  if (pathname === "/api/awin/import") {
+    if (method !== "POST") {
+      sendJson(res, 405, { ok: false, message: "Use POST para importar o feed da Awin." });
+      return;
+    }
+    if (!awinFeedProvider.configured()) {
+      sendJson(res, 400, {
+        ok: false,
+        message: "Awin não configurada.",
+        configured: false,
+      });
+      return;
+    }
+    const result = await awinFeedProvider.importToCatalog({
+      feedPath: url.searchParams.get("feedPath") || "",
+      feedUrl: url.searchParams.get("feedUrl") || "",
+      feedText: url.searchParams.get("feedText") || "",
+      format: url.searchParams.get("format") || "",
+    });
+    sendJson(res, result.configured ? 200 : 400, {
       ok: true,
       ...result,
     });

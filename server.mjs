@@ -7,6 +7,7 @@ import dummyJsonAdapter from "./src/adapters/products.dummyjson.js";
 import mercadolivreAdapter from "./src/adapters/products.mercadolivre.js";
 import googleMerchantProductsAdapter from "./src/adapters/GoogleMerchantProductsAdapter.js";
 import MercadoLivreProvider from "./src/providers/MercadoLivreProvider.js";
+import AwinFeedProvider from "./src/providers/AwinFeedProvider.js";
 import travelMockAdapter from "./src/adapters/travel.mock.js";
 import BudgetEngine from "./src/engines/BudgetEngine.js";
 import ScoreEngine from "./src/engines/ScoreEngine.js";
@@ -23,6 +24,7 @@ const mlOAuthPath = path.join(root, "data", "mercadolivre-oauth.json");
 const httpsPfxPath = path.join(root, ".certs", "localhost.pfx");
 const httpsPfxPassword = "codex-local";
 const googleMerchantAdapter = googleMerchantProductsAdapter;
+const awinFeedProvider = AwinFeedProvider;
 
 if (fs.existsSync(envPath)) {
   for (const line of fs.readFileSync(envPath, "utf8").split(/\r?\n/)) {
@@ -1306,6 +1308,38 @@ export async function requestHandler(req, res) {
       mode: requestUrl.searchParams.get("mode") || "merge",
     });
     sendJson(res, result.statusHttp || 200, { ok: true, ...result });
+    return;
+  }
+  if (requestUrl.pathname === "/api/awin/status") {
+    const diagnostics = awinFeedProvider.getDiagnostics();
+    sendJson(res, 200, {
+      configured: diagnostics.configured,
+      feedAvailable: diagnostics.feedAvailable,
+      lastImport: diagnostics.lastImport,
+      productCount: diagnostics.productCount,
+    });
+    return;
+  }
+  if (requestUrl.pathname === "/api/awin/import") {
+    if (method !== "POST") {
+      sendJson(res, 405, { ok: false, message: "Use POST para importar o feed da Awin." });
+      return;
+    }
+    if (!awinFeedProvider.configured()) {
+      sendJson(res, 400, {
+        ok: false,
+        message: "Awin não configurada.",
+        configured: false,
+      });
+      return;
+    }
+    const result = await awinFeedProvider.importToCatalog({
+      feedPath: requestUrl.searchParams.get("feedPath") || "",
+      feedUrl: requestUrl.searchParams.get("feedUrl") || "",
+      feedText: requestUrl.searchParams.get("feedText") || "",
+      format: requestUrl.searchParams.get("format") || "",
+    });
+    sendJson(res, result.configured ? 200 : 400, { ok: true, ...result });
     return;
   }
   if (requestUrl.pathname === "/api/ml-test-item") {

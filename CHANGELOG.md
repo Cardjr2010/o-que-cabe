@@ -63,6 +63,11 @@
 - Expanded the Mercado Livre demo base with more realistic low-budget examples so the MVP has useful results in demo mode.
 - Replaced the cold `Link indisponível` fallback on demo cards with the clearer `Demo — sem anúncio real` label.
 
+### Sprint 10
+- Added a real Awin feed provider that can download, parse, normalize, and import products into the CatalogManager.
+- Added Awin import and status endpoints plus local/manual feed support so the OQC can start from approved real products without changing the engine stack.
+- Added tests for Awin feed parsing, normalization, import deduplication, and endpoint diagnostics.
+
 ### Sprint 9
 - Added a new "Pechinchas em foco" entry point on the home with budget shortcuts for R$ 50, R$ 100, R$ 250, and R$ 500.
 - Wired the pechincha cards to reuse the existing monthly and total search flows without changing the MVP rules or reintroducing marketplace redirects.
