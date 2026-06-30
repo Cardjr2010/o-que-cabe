@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Inventory de fontes e categorias
+- Mapeamos as fontes reais e legadas já presentes no projeto, separando Mi Shop, Mercado Livre, Actionpay, Awin, Google Merchant, CSV manual e artefatos demo/legado.
+- Consolidamos a leitura do catálogo atual: 829 produtos no seed principal, com 709 itens Mi Shop e 120 itens Mercado Livre.
+- Registramos os principais pontos de normalização ainda abertos, como títulos em cirílico, categorias genéricas e acessórios que entram como produto principal.
+
 ### Hotfix api/web.js runtime failure
 - Fixed the serverless runtime crash caused by calling `MercadoLivreProvider.searchProducts(...)` on the class instead of on an instance.
 - Introduced a lazy singleton for the Mercado Livre provider inside `api/web.js` so the search and diagnostic routes can execute safely in Vercel.
