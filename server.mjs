@@ -1770,3 +1770,5 @@ if (isMainModule) {
     console.log(`Cabe no Bolso rodando em ${useHttps ? "https" : "http"}://localhost:${port}`);
   });
 }
+
+export default requestHandler;
