@@ -2,6 +2,7 @@
   "name": "o-que-cabe",
   "private": true,
   "type": "module",
+  "main": "api/web.js",
   "scripts": {
     "dev": "node server.mjs",
     "start": "node server.mjs",
