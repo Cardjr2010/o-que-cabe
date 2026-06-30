@@ -204,3 +204,7 @@
 - Added `BudgetEngine` as the shared budget classification module.
 - Centralized monthly and total budget decisions in the engine.
 - Added automated tests for budget context, classification, and ranking priority.
+
+### Hotfix home-data production
+- Publicamos a função dedicada `api/home-data.js` para garantir que a produção responda com categorias reais, pechinchas dinâmicas e resumo do catálogo.
+- Centralizamos a lógica de home data em `src/runtime/home-data.js` para ser compartilhada entre o handler principal e a nova rota dedicada.
