@@ -79,6 +79,10 @@ O frontend continua definido em `public/app.js`, que e o arquivo que o navegador
 O `app.mjs` da raiz foi removido do repositorio para impedir que a Vercel tente tratá-lo como ponto de entrada serverless.
 O frontend continua exclusivamente em `public/app.js`, carregado pelo navegador via `index.html`.
 
+## Trava de deploy
+
+Foi adicionada uma `.vercelignore` contendo `app.mjs` para garantir que esse arquivo não volte a entrar no bundle da Vercel caso seja recriado por engano no futuro.
+
 ## Validacao final desta rodada
 
 - `/api/ping` -> `200 OK`
