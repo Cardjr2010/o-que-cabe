@@ -2,7 +2,7 @@
   "version": 2,
   "functions": {
     "api/web.js": {
-      "includeFiles": "data/products.seed.json"
+      "includeFiles": "{api/static/**,data/products.seed.json}"
     }
   }
 }
