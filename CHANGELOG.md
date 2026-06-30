@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+
+### Sprint 22 - Experiencia real da home
+- A home passou a buscar categorias e pechinchas reais diretamente do catalogo, removendo os atalhos fixos de Apple, Notebook e TV.
+- Os cards de produto agora mostram um placeholder discreto quando a imagem real nao existe, em vez de um bloco azul dominante.
+- O botao de oferta só fica ativo quando o produto real tem link valido; caso contrario, a UI mostra `Link indisponível`.
+- Os resultados do Mercado Livre agora aparecem separados por `Melhores dentro do orçamento`, `Cabem apertado` e `Fora do orçamento`.
+- A origem dos cards foi refinada para exibir Mi Shop, Actionpay, Awin, Mercado Livre seed ou `Origem não informada` quando necessario.
+- Adicionamos o endpoint `/api/home-data` para alimentar a home com dados derivados do catalogo real.
+
+### Sprint 21 - Normalizacao do catalogo real
+- Introduzimos o ProductNormalizer para separar titulo original, titulo exibido, marca, modelo, categoria por tipo e sinais de idioma.
+- Passamos a tratar Xiaomi, Redmi e POCO como marca, mantendo categorias por tipo de produto (celulares, tablets, TVs, fones, etc.).
+- Ajustamos a busca para priorizar o produto principal quando houver correspondencia real e para rebaixar acessorios quando a consulta nao indicar acessorio.
+- Adicionamos o CategoryBuilder para sugerir categorias e botoes de home a partir do catalogo real, sem incluir marcas como categoria.
+- Atualizamos os testes de normalizacao e de categoria para cobrir transliteracao, acessorios e classificacao de tablets.
+
 ### Inventory de fontes e categorias
 - Mapeamos as fontes reais e legadas já presentes no projeto, separando Mi Shop, Mercado Livre, Actionpay, Awin, Google Merchant, CSV manual e artefatos demo/legado.
 - Consolidamos a leitura do catálogo atual: 829 produtos no seed principal, com 709 itens Mi Shop e 120 itens Mercado Livre.
