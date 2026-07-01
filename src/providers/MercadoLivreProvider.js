@@ -112,13 +112,9 @@ function mapSeedProduct(raw = {}) {
 
 function catalogSourceLabel(item = {}) {
   const source = String(item.marketplace || item.source || item.store || "").trim().toLowerCase();
-  if (source === "saldao_informatica" || source === "saldao" || source === "actionpay_saldao" || String(item.seller || "").toLowerCase().includes("saldão da informática") || String(item.seller || "").toLowerCase().includes("saldao da informatica")) return "Saldão da Informática";
-  if (source === "mi_shop" || source === "mishop" || source === "mi shop") return "Mi Shop";
-  if (source === "actionpay") return "Actionpay";
-  if (source === "awin") return "Awin";
-  if (source === "google_merchant") return "Google Merchant";
-  if (source === "mercadolivre" || source === "mercado livre") return "Loja parceira";
-  return String(item.store || item.marketplace || item.source || "Loja parceira");
+  const seller = String(item.seller || "").toLowerCase();
+  if (source.includes("saldao") || seller.includes("saldao")) return "Saldão da Informática";
+  return "Origem não informada";
 }
 
 function buildCatalogSearchText(item = {}) {
@@ -199,14 +195,15 @@ function looksLikeAccessory(item = {}) {
 
 function isRealCatalogItem(item = {}) {
   const source = String(item.dataMode || item.mode || item.marketplace || item.source || "").toLowerCase();
-  return source === "real" || source === "real-authenticated" || source === "real-public" || source === "seed" || String(item.marketplace || "").toLowerCase() === "mi_shop" || String(item.marketplace || "").toLowerCase() === "awin" || String(item.marketplace || "").toLowerCase() === "actionpay" || String(item.marketplace || "").toLowerCase() === "google_merchant" || String(item.marketplace || "").toLowerCase() === "saldao_informatica" || String(item.marketplace || "").toLowerCase() === "actionpay_saldao";
+  const marketplace = String(item.marketplace || "").toLowerCase();
+  const seller = String(item.seller || "").toLowerCase();
+  return (source === "real" || source === "real-authenticated" || source === "real-public" || source === "seed")
+    && (marketplace.includes("saldao") || seller.includes("saldao") || String(item.sourceType || "").toLowerCase().includes("saldao"));
 }
 
 function sourceSearchPriority(item = {}) {
   const source = String(item.marketplace || item.source || item.store || item.seller || "").toLowerCase();
-  if (source.includes("saldao_informatica") || source.includes("actionpay_saldao") || source.includes("saldão da informática") || source.includes("saldao da informatica")) return 3;
-  if (source.includes("mi_shop") || source.includes("mi shop")) return 2;
-  if (source.includes("awin") || source.includes("actionpay") || source.includes("google_merchant")) return 1;
+  if (source.includes("saldao_informatica") || source.includes("actionpay_saldao") || source.includes("saldao")) return 3;
   return 0;
 }
 
@@ -268,12 +265,16 @@ class MercadoLivreProvider extends MarketplaceProvider {
     const q = String(query || "").trim();
     const accessoryIntent = /\b(capa|case|pelicula|pel[íi]cula|carregador|cabo|fone|headphone|airpods|earbud|strap|pulseira|acessorio|acess[óo]rio)\b/i.test(q);
     const catalog = catalogManager.list().filter((item) => item && Number(item.price || 0) > 0 && (item.productUrl || item.affiliateUrl || item.permalink || item.url));
-    const realItems = catalog.filter((item) => {
+    const catalogPrimaryOnly = catalog.filter((item) => {
+      const source = String(item.marketplace || item.source || item.store || item.seller || "").toLowerCase();
+      return source.includes("saldao_informatica") || source.includes("actionpay_saldao") || source.includes("saldão da informática") || source.includes("saldao da informatica");
+    });
+    const realItems = catalogPrimaryOnly.filter((item) => {
       const itemAccessory = Boolean(item.isAccessory || looksLikeAccessory(item) || ["accessory", "piece", "compatible"].includes(String(item.productType || "").toLowerCase()));
       if (!accessoryIntent && itemAccessory) return false;
       return isRealCatalogItem(item) && matchCatalogQuery(item, q);
     });
-    const seedItems = catalog.filter((item) => {
+    const seedItems = catalogPrimaryOnly.filter((item) => {
       const itemAccessory = Boolean(item.isAccessory || looksLikeAccessory(item) || ["accessory", "piece", "compatible"].includes(String(item.productType || "").toLowerCase()));
       if (!accessoryIntent && itemAccessory) return false;
       return !isRealCatalogItem(item) && matchCatalogQuery(item, q);

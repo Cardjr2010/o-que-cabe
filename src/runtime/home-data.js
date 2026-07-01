@@ -230,9 +230,7 @@ function buildHomePechinchas(items = [], categories = []) {
 function getRealHomeCatalog(items = []) {
   const primaryItems = items.filter((item) => isPrimaryHomeProduct(item) && isHomeTechProduct(item));
   if (primaryItems.length) return primaryItems;
-  const realItems = items.filter(isHomeTechProduct);
-  if (realItems.length) return realItems;
-  return items.filter((item) => String(item?.dataMode || "").toLowerCase() === "real");
+  return items.filter((item) => isPrimaryHomeProduct(item));
 }
 
 function labelHomeSource(value = "") {

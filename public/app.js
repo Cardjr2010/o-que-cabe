@@ -1,4 +1,4 @@
-﻿const form = document.querySelector("#searchForm");
+const form = document.querySelector("#searchForm");
 const productInput = document.querySelector("#productInput");
 const monthlyInput = document.querySelector("#monthlyInput");
 const monthsInput = document.querySelector("#monthsInput");
@@ -90,23 +90,13 @@ function resolveSourceLabel(product) {
     return "Demonstração — sem anúncio real";
   }
 
-  if (product?.sourceLabel) return String(product.sourceLabel);
-
   const source = String(product?.marketplace || product?.source || product?.store || "").trim().toLowerCase();
-  if (source === "awin") return "Awin";
-  if (source === "actionpay") return "Actionpay";
-  if (source === "mi_shop" || source === "mishop" || source === "mi shop") return "Mi Shop";
-  if (source === "google_merchant") return "Google Merchant";
-  if (source === "mercadolivre" || source === "mercado livre") {
-    const sourceType = String(product?.sourceType || "").trim().toLowerCase();
-    if (sourceType === "seed" || sourceType === "catalog_seed") return "Mercado Livre seed";
-    return "Mercado Livre";
-  }
-  const seller = String(product?.seller?.name || product?.seller || "").trim();
-  if (seller) return seller;
-  const store = String(product?.store || "").trim();
-  if (store && store.toLowerCase() !== "loja parceira") return store;
-  return String(product?.marketplace || product?.source || "Origem não informada");
+  const seller = String(product?.seller?.name || product?.seller || "").trim().toLowerCase();
+  const sourceType = String(product?.sourceType || "").trim().toLowerCase();
+  const sourceText = `${source} ${seller} ${sourceType}`;
+  if (sourceText.includes("saldao")) return "Saldão da Informática";
+  if (String(product?.sourceLabel || "").toLowerCase().includes("saldao")) return "Saldão da Informática";
+  return "Origem não informada";
 }
 
 function productImage(product) {

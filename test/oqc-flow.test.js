@@ -71,7 +71,7 @@ test("Modo total responde 200 e preserva totalBudget", async () => {
   }
 });
 
-test("Busca do catálogo real mantém categorias coerentes por busca", async () => {
+test("Busca do catálogo real mantÃ©m categorias coerentes por busca", async () => {
   const originalFetch = global.fetch;
   global.fetch = async () => {
     throw new Error("offline");
@@ -79,8 +79,8 @@ test("Busca do catálogo real mantém categorias coerentes por busca", async () 
 
   try {
     const cases = [
-      { url: "/api/search?q=celular&mode=total&totalBudget=1500", matcher: /celular|smartphone|galaxy|moto|redmi|iphone/i, reject: /tv|notebook|tablet|casa|presente|relogio|relógio|air fryer/i },
-      { url: "/api/search?q=tv&mode=total&totalBudget=500", matcher: /tv|televis/i, reject: /celular|smartphone|notebook|tablet|presente|relogio|relógio/i },
+      { url: "/api/search?q=celular&mode=total&totalBudget=1500", matcher: /celular|smartphone|galaxy|moto|redmi|iphone/i, reject: /tv|notebook|tablet|casa|presente|relogio|relÃ³gio|air fryer/i },
+      { url: "/api/search?q=tv&mode=total&totalBudget=500", matcher: /tv|televis/i, reject: /celular|smartphone|notebook|tablet|presente|relogio|relÃ³gio/i },
       { url: "/api/search?q=notebook&mode=monthly&monthly=250&months=10", matcher: /notebook|laptop|vivobook|ideapad|aspire/i, reject: /tv|celular|smartphone|tablet/i },
     ];
 
@@ -95,7 +95,7 @@ test("Busca do catálogo real mantém categorias coerentes por busca", async () 
         body.products.some((item) => {
           const marketplace = String(item.marketplace || "").toLowerCase();
           const store = String(item.store || "").toLowerCase();
-          return marketplace === "saldao_informatica" || marketplace === "mi_shop" || store === "mi shop" || store.includes("saldão");
+          return marketplace === "saldao_informatica" || marketplace === "mi_shop" || store === "mi shop" || store.includes("saldÃ£o");
         }),
       );
       assert.ok(body.products.length > 0);
@@ -135,7 +135,7 @@ test("CABE aparece antes de APERTADO", () => {
   assert.equal(ranked.groups.cabe[0].title, "CABE simples");
 });
 
-test("NÃO CABE não vira Melhor escolha se houver CABE", () => {
+test("NÃO CABE nÃ£o vira Melhor escolha se houver CABE", () => {
   const ranked = RankingEngine.rankProducts([
     {
       title: "NÃO CABE caro",
@@ -148,7 +148,7 @@ test("NÃO CABE não vira Melhor escolha se houver CABE", () => {
       store: "Mercado Livre",
     },
     {
-      title: "CABE disponível",
+      title: "CABE disponÃ­vel",
       budgetStatus: "CABE",
       score: 70,
       price: 700,
@@ -159,7 +159,7 @@ test("NÃO CABE não vira Melhor escolha se houver CABE", () => {
     },
   ]);
 
-  assert.equal(ranked.recommended[0].product.title, "CABE disponível");
+  assert.equal(ranked.recommended[0].product.title, "CABE disponÃ­vel");
   assert.ok(ranked.recommended[0].label.length > 0);
 });
 
@@ -188,10 +188,10 @@ test("Cada recomendação possui reason", () => {
   ]);
 
   assert.ok(ranked.recommended.every((item) => typeof item.reason === "string" && item.reason.length > 0));
-  assert.match(ranked.summary, /cabem no orçamento|exemplos demonstrativos|melhor escolha/i);
+  assert.match(ranked.summary, /cabem no orçamento|cabem no orçamento|exemplos demonstrativos|melhor escolha/i);
 });
 
-test("Resultado não usa anúncio externo inválido", async () => {
+test("Resultado fica isolado ao Saldão e não usa fonte externa inválida", async () => {
   const originalFetch = global.fetch;
   global.fetch = async () => ({
     ok: true,
@@ -206,13 +206,17 @@ test("Resultado não usa anúncio externo inválido", async () => {
     const res = createResponse();
     await handler(req, res);
     const body = JSON.parse(res.body);
-    const first = body.products[0];
 
     assert.ok(body.dataMode === "demo" || body.dataMode === "seed" || body.dataMode === "real" || body.dataMode === "real-authenticated" || body.dataMode === "real-public");
-    assert.ok(typeof first.title === "string" && first.title.length > 0);
-    const link = String(first.permalink || first.productUrl || first.affiliateUrl || "");
-    assert.ok(link.includes("mercadolivre") || link.includes("example.com") || link.startsWith("https://"));
-    assert.ok(!/mercadolivre\.com\.br\/?$/.test(link));
+    assert.ok(Array.isArray(body.products));
+    for (const product of body.products) {
+      const source = String(product.marketplace || product.source || product.store || product.seller || "").toLowerCase();
+      const seller = String(product.seller?.name || product.seller || "").toLowerCase();
+      const sourceType = String(product.sourceType || "").toLowerCase();
+      assert.ok(source.includes("saldao") || seller.includes("saldao") || sourceType.includes("saldao"), "resultado fora do Saldão encontrado");
+      const link = String(product.permalink || product.productUrl || product.affiliateUrl || "");
+      assert.ok(!/mercadolivre\.com\.br\/?$/.test(link));
+    }
   } finally {
     global.fetch = originalFetch;
   }
@@ -220,7 +224,7 @@ test("Resultado não usa anúncio externo inválido", async () => {
 
 test("Texto do botao permanece claro", () => {
   const appJs = fs.readFileSync(path.join(process.cwd(), "public", "app.js"), "utf8");
-  assert.ok(appJs.includes("Abrir anúncio"));
+  assert.ok(appJs.includes("Abrir oferta"));
   assert.ok(appJs.includes("Link indisponível"));
   assert.ok(appJs.includes("Preço e disponibilidade devem ser confirmados na loja."));
 });

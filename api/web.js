@@ -136,6 +136,17 @@ function getMercadoLivreProvider() {
   return mercadoLivreProviderInstance;
 }
 
+function isSaldaoCatalogProduct(item = {}) {
+  const source = String(item?.marketplace || item?.source || item?.store || "").toLowerCase();
+  const seller = String(item?.seller?.name || item?.seller || item?.store || "").toLowerCase();
+  const sourceType = String(item?.sourceType || "").toLowerCase();
+  return source.includes("saldao") || seller.includes("saldao") || sourceType.includes("saldao");
+}
+
+function filterSaldaoCatalogProducts(products = []) {
+  return Array.isArray(products) ? products.filter((item) => isSaldaoCatalogProduct(item)) : [];
+}
+
 function getFeedProviderInstance(providerName = "mi_shop", options = {}) {
   const name = String(providerName || "").trim().toLowerCase();
   const baseOptions = {
@@ -1188,7 +1199,7 @@ export default async function handler(req, res) {
         months,
         totalBudget,
       });
-      const selectedProducts = Array.isArray(providerResult.products) ? providerResult.products : [];
+      const selectedProducts = filterSaldaoCatalogProducts(providerResult.products);
       const dataMode = providerResult.dataMode || (providerResult.strategyUsed === "demo" ? "demo" : "real-authenticated");
       const response = buildOqcResponse({
         products: selectedProducts,
@@ -1212,7 +1223,7 @@ export default async function handler(req, res) {
       });
     } catch (error) {
       let response = null;
-      const providerProducts = Array.isArray(providerResult?.products) ? providerResult.products : [];
+      const providerProducts = filterSaldaoCatalogProducts(providerResult?.products);
       if (providerProducts.length) {
         try {
           response = buildFallbackRealResponse({
@@ -1229,12 +1240,8 @@ export default async function handler(req, res) {
         }
       }
       if (!response) {
-        const demoProducts = normalizeDemoProducts(readMercadoLivreDemoProducts(), monthly, months, q, "mercadolivre").map((item) => ({
-          ...item,
-          dataMode: "demo",
-        }));
         response = buildOqcResponse({
-          products: demoProducts,
+          products: [],
           query: q,
           mode,
           monthly,
@@ -1247,7 +1254,7 @@ export default async function handler(req, res) {
         ok: true,
         ...response,
         warning: providerProducts.length
-          ? `${error.message || "Falha na integração com a base parceira"}. Mostrando resultados reais com fallback de ranking por enquanto.`
+          ? `${error.message || "Falha na integração com a base parceira"}. Mostrando apenas produtos do Saldão por enquanto.`
           : `${error.message || "Falha na integração com a base parceira"}. Mostrando demonstração por enquanto.`,
       });
     }
