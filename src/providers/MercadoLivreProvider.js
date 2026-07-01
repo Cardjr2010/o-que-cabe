@@ -112,6 +112,7 @@ function mapSeedProduct(raw = {}) {
 
 function catalogSourceLabel(item = {}) {
   const source = String(item.marketplace || item.source || item.store || "").trim().toLowerCase();
+  if (source === "saldao_informatica" || source === "saldao" || source === "actionpay_saldao" || String(item.seller || "").toLowerCase().includes("saldão da informática") || String(item.seller || "").toLowerCase().includes("saldao da informatica")) return "Saldão da Informática";
   if (source === "mi_shop" || source === "mishop" || source === "mi shop") return "Mi Shop";
   if (source === "actionpay") return "Actionpay";
   if (source === "awin") return "Awin";
@@ -198,7 +199,15 @@ function looksLikeAccessory(item = {}) {
 
 function isRealCatalogItem(item = {}) {
   const source = String(item.dataMode || item.mode || item.marketplace || item.source || "").toLowerCase();
-  return source === "real" || source === "real-authenticated" || source === "real-public" || source === "seed" || String(item.marketplace || "").toLowerCase() === "mi_shop" || String(item.marketplace || "").toLowerCase() === "awin" || String(item.marketplace || "").toLowerCase() === "actionpay" || String(item.marketplace || "").toLowerCase() === "google_merchant";
+  return source === "real" || source === "real-authenticated" || source === "real-public" || source === "seed" || String(item.marketplace || "").toLowerCase() === "mi_shop" || String(item.marketplace || "").toLowerCase() === "awin" || String(item.marketplace || "").toLowerCase() === "actionpay" || String(item.marketplace || "").toLowerCase() === "google_merchant" || String(item.marketplace || "").toLowerCase() === "saldao_informatica" || String(item.marketplace || "").toLowerCase() === "actionpay_saldao";
+}
+
+function sourceSearchPriority(item = {}) {
+  const source = String(item.marketplace || item.source || item.store || item.seller || "").toLowerCase();
+  if (source.includes("saldao_informatica") || source.includes("actionpay_saldao") || source.includes("saldão da informática") || source.includes("saldao da informatica")) return 3;
+  if (source.includes("mi_shop") || source.includes("mi shop")) return 2;
+  if (source.includes("awin") || source.includes("actionpay") || source.includes("google_merchant")) return 1;
+  return 0;
 }
 
 function normalizeCatalogProduct(item = {}) {
@@ -273,15 +282,15 @@ class MercadoLivreProvider extends MarketplaceProvider {
       const aReal = isRealCatalogItem(a) ? 1 : 0;
       const bReal = isRealCatalogItem(b) ? 1 : 0;
       if (bReal !== aReal) return bReal - aReal;
+      const aPriority = sourceSearchPriority(a);
+      const bPriority = sourceSearchPriority(b);
+      if (bPriority !== aPriority) return bPriority - aPriority;
       const aScore = scoreProductMatch(a, q);
       const bScore = scoreProductMatch(b, q);
       if (bScore !== aScore) return bScore - aScore;
       const aAccessory = Boolean(a.isAccessory || looksLikeAccessory(a) || ["accessory", "piece", "compatible"].includes(String(a.productType || "").toLowerCase()));
       const bAccessory = Boolean(b.isAccessory || looksLikeAccessory(b) || ["accessory", "piece", "compatible"].includes(String(b.productType || "").toLowerCase()));
       if (aAccessory !== bAccessory) return aAccessory ? 1 : -1;
-      const aSource = String(a.marketplace || a.source || "").toLowerCase() === "mi_shop" ? 1 : 0;
-      const bSource = String(b.marketplace || b.source || "").toLowerCase() === "mi_shop" ? 1 : 0;
-      if (bSource !== aSource) return bSource - aSource;
       const byPrice = Number(a.price || 0) - Number(b.price || 0);
       if (byPrice !== 0) return byPrice;
       return String(a.displayTitle || a.title || "").localeCompare(String(b.displayTitle || b.title || ""), "pt-BR");

@@ -149,7 +149,7 @@ test("/api/search encontra produto importado no catálogo real", async () => {
     assert.ok(body.products.length > 0);
     assert.equal(body.dataMode, "real");
     assert.equal(body.recommendations[0].product.dataMode, "real");
-    assert.equal(body.recommendations[0].product.marketplace, "mi_shop");
+    assert.equal(body.recommendations[0].product.marketplace, "saldao_informatica");
   } finally {
     global.fetch = originalFetch;
   }

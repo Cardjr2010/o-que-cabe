@@ -106,6 +106,7 @@ test("GET /api/feed/status resume providers e contagens", async () => {
   const body = JSON.parse(Buffer.concat(res.chunks).toString("utf8"));
   assert.equal(body.ok, true);
   assert.ok(Array.isArray(body.providers));
+  assert.ok(body.providers.some((item) => item.provider === "saldao_informatica"));
   assert.ok(body.providers.some((item) => item.provider === "mi_shop"));
   assert.ok(body.providers.some((item) => item.provider === "csv"));
   assert.ok(body.providers.some((item) => item.provider === "actionpay"));

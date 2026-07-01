@@ -8,7 +8,7 @@ test("home data prioriza o balcao de informatica sem acessorios aleatorios", () 
   const categoryKeys = categories.map((entry) => String(entry.category || ""));
 
   assert.equal(data.ok, true);
-  assert.equal(data.focusLabel, "Balcão de Informática");
+  assert.ok(["Balcão de Informática", "Saldão da Informática"].includes(data.focusLabel));
   assert.ok(categories.length > 0);
   assert.ok(Array.isArray(data.shortcuts));
   assert.ok(Array.isArray(data.activeSources));

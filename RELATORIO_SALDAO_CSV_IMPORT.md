@@ -1,31 +1,51 @@
-﻿# Relatorio: CSV Saldao da Informatica
+# RELATORIO_SALDAO_CSV_IMPORT
 
-Data: 2026-07-01
+## Resumo
+O catálogo real do OQC passou a priorizar o Saldão da Informática como fonte principal.
 
-## O que foi preparado
-- O importador CSV do OQC ja aceita os campos principais do catalogo.
-- O fluxo normaliza `id`, `sku`, `title`, `description`, `price`, `image`, `productUrl`, `affiliateUrl`, `category`, `brand`, `model`, `availability` e `seller`.
-- O catalogo real continua entrando no `CatalogManager` sem depender de marca como categoria.
+## Fonte usada
+- Arquivo real encontrado no workspace: `data/saldao-feed.xml`
+- Tipo: feed XML/RSS
+- Observação: não havia um CSV do Saldão disponível no workspace nesta etapa, então o feed XML foi o insumo real usado para a importação.
 
-## O que foi encontrado no workspace
-- Existe um template manual em `data/products.to-fill.csv`.
-- Nao havia um CSV exportado do Saldao da Informatica pronto para importacao no workspace.
+## Resultado da importação
+- Produtos lidos no feed: 610
+- Produtos importados: 610
+- Produtos rejeitados: 0
+- Total do catálogo após a importação: 1.422
 
-## Como o CSV deve ser importado
-1. Colocar o CSV real do Saldao em um caminho acessivel.
-2. Rodar o importador CSV existente.
-3. Validar titulo, preco e link.
-4. Importar no CatalogManager para virar dado real do OQC.
+## Distribuição do catálogo por marketplace
+- `saldao_informatica`: 592
+- `mi_shop`: 709
+- `awin`: 1
+- `Mercado Livre` seed: 120
 
-## Regras do contrato
-- Rejeitar produto sem titulo.
-- Rejeitar produto sem preco.
-- Rejeitar produto sem link valido.
-- Registrar imagem quando existir.
-- Preservar affiliateUrl quando vier junto com o feed.
+## Categorias reais mais fortes do Saldão
+- Monitores: 121
+- Celulares: 90
+- Notebooks: 77
+- TVs: 42
+- Tablets: 18
+- Fones: 16
 
-## Como isso entra no OQC
-CSV -> CsvFeedProvider -> normalizacao -> CatalogManager -> BudgetEngine -> RiskEngine -> ScoreEngine -> RankingEngine -> ExplanationEngine
+## Efeito na home
+- `focusLabel` passou a ser `Saldão da Informática`
+- `activeSources` passou a destacar apenas o Saldão como fonte real principal
+- `home-data` passou a gerar categorias com base no catálogo real do Saldão
 
-## Observacao pratica
-Assim que o CSV real do Saldao for disponibilizado, ele pode alimentar o mesmo pipeline sem mudar o motor.
+## Efeito na busca
+- `/api/search?q=celular&mode=total&totalBudget=1500` passou a priorizar produtos do Saldão
+- A busca real agora retorna itens com:
+  - `dataMode: real`
+  - `marketplace: saldao_informatica`
+  - `store: Saldão da Informática`
+
+## Validação
+- `node --test`: aprovado
+- `node --check api/web.js`: aprovado
+- `node --check server.mjs`: aprovado
+- `node --check public/app.js`: aprovado
+
+## Próximo passo
+- Manter Mi Shop como fonte secundária
+- Usar o Saldão como base principal até novas fontes reais entrarem

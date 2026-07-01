@@ -7,6 +7,7 @@ import RiskEngine from "../src/engines/RiskEngine.js";
 import ExplanationEngine from "../src/engines/ExplanationEngine.js";
 import CsvFeedProvider from "../src/feed/providers/CsvFeedProvider.js";
 import MiShopFeedProvider from "../src/feed/providers/MiShopFeedProvider.js";
+import { SaldaoInformaticaFeedProvider } from "../src/providers/SaldaoInformaticaFeedProvider.js";
 import { MercadoLivreProvider } from "../src/providers/MercadoLivreProvider.js";
 import { AwinFeedProvider } from "../src/providers/AwinFeedProvider.js";
 import { ActionpayFeedProvider } from "../src/providers/ActionpayFeedProvider.js";
@@ -88,11 +89,19 @@ function createFeedProvider(providerName = "mi_shop", options = {}) {
   if (name === "awin") {
     return getAwinFeedProvider();
   }
+  if (name === "saldao_informatica" || name === "saldao") {
+    return new SaldaoInformaticaFeedProvider({
+      ...baseOptions,
+      networkName: "saldao_informatica",
+      feedPath: options.feedPath || process.env.SALDAO_FEED_PATH || resolveProjectPath("data", "saldao-feed.xml"),
+      sourceName: options.sourceName || "Saldão da Informática",
+    });
+  }
   return null;
 }
 
 function getFeedProviderNames() {
-  return ["mi_shop", "csv", "actionpay", "awin"];
+  return ["saldao_informatica", "mi_shop", "csv", "actionpay", "awin"];
 }
 
 function createActionpayProvider() {
@@ -153,6 +162,14 @@ function getFeedProviderInstance(providerName = "mi_shop", options = {}) {
   if (name === "awin") {
     return getAwinFeedProvider();
   }
+  if (name === "saldao_informatica" || name === "saldao") {
+    return new SaldaoInformaticaFeedProvider({
+      ...baseOptions,
+      networkName: "saldao_informatica",
+      feedPath: options.feedPath || process.env.SALDAO_FEED_PATH || resolveProjectPath("data", "saldao-feed.xml"),
+      sourceName: options.sourceName || "Saldão da Informática",
+    });
+  }
   return null;
 }
 
@@ -185,10 +202,14 @@ function getFeedProviderStatus(providerName = "") {
   const catalogCount = provider?.getCatalogManager?.()
     ? provider.getCatalogManager().list().filter((item) => {
       const marketplace = String(item.marketplace || item.sourceType || item.source || "").toLowerCase();
+      const seller = String(item.seller || item.store || "").toLowerCase();
       if (name === "mi_shop") return marketplace === "mi_shop";
       if (name === "csv") return marketplace === "csv" || marketplace === "csv_feed";
       if (name === "actionpay") return marketplace === "actionpay";
       if (name === "awin") return marketplace === "awin";
+      if (name === "saldao_informatica" || name === "saldao") {
+        return marketplace === "saldao_informatica" || marketplace === "actionpay_saldao" || seller.includes("saldao");
+      }
       return false;
     }).length
     : 0;

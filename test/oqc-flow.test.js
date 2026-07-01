@@ -38,7 +38,7 @@ test("Busca do catálogo real retorna recommendations e scoreBreakdown", async (
     assert.equal(res.statusCode, 200);
     assert.equal(body.ok, true);
     assert.equal(body.dataMode, "real");
-    assert.equal(body.recommendations[0].product.marketplace, "mi_shop");
+    assert.equal(body.recommendations[0].product.marketplace, "saldao_informatica");
     assert.ok(Array.isArray(body.recommendations));
     assert.ok(body.recommendations.length > 0);
     assert.ok(Array.isArray(body.products));
@@ -92,7 +92,11 @@ test("Busca do catálogo real mantém categorias coerentes por busca", async () 
       assert.equal(res.statusCode, 200);
       assert.equal(body.dataMode, "real");
       assert.ok(
-        body.products.some((item) => String(item.marketplace || "").toLowerCase() === "mi_shop" || String(item.store || "").toLowerCase() === "mi shop"),
+        body.products.some((item) => {
+          const marketplace = String(item.marketplace || "").toLowerCase();
+          const store = String(item.store || "").toLowerCase();
+          return marketplace === "saldao_informatica" || marketplace === "mi_shop" || store === "mi shop" || store.includes("saldão");
+        }),
       );
       assert.ok(body.products.length > 0);
       assert.ok(body.products.every((product) => testCase.matcher.test(`${product.title} ${product.category || ""}`)));

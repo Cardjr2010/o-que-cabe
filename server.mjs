@@ -8,6 +8,7 @@ import mercadolivreAdapter from "./src/adapters/products.mercadolivre.js";
 import googleMerchantProductsAdapter from "./src/adapters/GoogleMerchantProductsAdapter.js";
 import CsvFeedProvider from "./src/feed/providers/CsvFeedProvider.js";
 import MiShopFeedProvider from "./src/feed/providers/MiShopFeedProvider.js";
+import { SaldaoInformaticaFeedProvider } from "./src/providers/SaldaoInformaticaFeedProvider.js";
 import MercadoLivreProvider from "./src/providers/MercadoLivreProvider.js";
 import AwinFeedProvider from "./src/providers/AwinFeedProvider.js";
 import actionpayProviderDefault, { ActionpayProvider } from "./src/providers/ActionpayProvider.js";
@@ -37,7 +38,7 @@ const actionpayProvider = actionpayProviderDefault instanceof ActionpayProvider 
 const actionpayCatalogSeedPath = process.env.ACTIONPAY_CATALOG_SEED_PATH || resolveCatalogSeedPath(path.join(root, "data", "products.seed.json"));
 const feedCatalogSeedPath = process.env.FEED_CATALOG_SEED_PATH || resolveCatalogSeedPath(path.join(root, "data", "products.seed.json"));
 function getFeedProviderNames() {
-  return ["mi_shop", "csv", "actionpay", "awin"];
+  return ["saldao_informatica", "mi_shop", "csv", "actionpay", "awin"];
 }
 
 function createFeedProvider(providerName = "mi_shop", options = {}) {
@@ -57,6 +58,15 @@ function createFeedProvider(providerName = "mi_shop", options = {}) {
     return new CsvFeedProvider({
       ...baseOptions,
       ...options,
+    });
+  }
+  if (name === "saldao_informatica" || name === "saldao") {
+    return new SaldaoInformaticaFeedProvider({
+      ...baseOptions,
+      ...options,
+      networkName: "saldao_informatica",
+      feedPath: options.feedPath || process.env.SALDAO_FEED_PATH || path.join(root, "data", "saldao-feed.xml"),
+      sourceName: options.sourceName || "Saldão da Informática",
     });
   }
   return null;

@@ -72,11 +72,18 @@ const HOME_ACCESSORY_CATEGORIES = new Set([
   "compativel",
 ]);
 
+const HOME_PRIMARY_SOURCE_MARKETPLACES = new Set([
+  "saldao_informatica",
+  "actionpay_saldao",
+]);
+
 const REAL_HOME_MARKETPLACES = new Set([
   "mi_shop",
   "mi shop",
   "awin",
   "actionpay",
+  "saldao_informatica",
+  "actionpay_saldao",
   "google_merchant",
   "csv_feed",
   "feed",
@@ -93,6 +100,18 @@ const REAL_HOME_SOURCE_TYPES = new Set([
 
 function normalizeProductType(value = "") {
   return normalizedCatalogCategoryKey(value || "");
+}
+
+function isPrimaryHomeProduct(item = {}) {
+  const source = normalizedCatalogCategoryKey(item?.marketplace || item?.source || "");
+  const seller = normalizedCatalogCategoryKey(item?.seller || item?.store || "");
+  const sourceType = normalizedCatalogCategoryKey(item?.sourceType || "");
+  return HOME_PRIMARY_SOURCE_MARKETPLACES.has(source)
+    || HOME_PRIMARY_SOURCE_MARKETPLACES.has(seller)
+    || HOME_PRIMARY_SOURCE_MARKETPLACES.has(sourceType)
+    || seller.includes("saldao")
+    || source.includes("saldao")
+    || sourceType.includes("saldao");
 }
 
 function isHomeTechProduct(item = {}) {
@@ -209,9 +228,25 @@ function buildHomePechinchas(items = [], categories = []) {
 }
 
 function getRealHomeCatalog(items = []) {
+  const primaryItems = items.filter((item) => isPrimaryHomeProduct(item) && isHomeTechProduct(item));
+  if (primaryItems.length) return primaryItems;
   const realItems = items.filter(isHomeTechProduct);
   if (realItems.length) return realItems;
   return items.filter((item) => String(item?.dataMode || "").toLowerCase() === "real");
+}
+
+function labelHomeSource(value = "") {
+  const source = normalizedCatalogCategoryKey(value);
+  if (source === "saldao_informatica" || source === "actionpay_saldao" || source.includes("saldao")) return "Saldão da Informática";
+  if (source === "mi_shop" || source === "mi shop" || source === "mishop") return "Mi Shop";
+  if (source === "actionpay") return "Actionpay";
+  if (source === "awin") return "Awin";
+  if (source === "google_merchant") return "Google Merchant";
+  return cleanLabel(value);
+}
+
+function cleanLabel(value = "") {
+  return String(value || "").replace(/\s+/g, " ").trim();
 }
 
 export function buildHomeCatalogData() {
@@ -226,13 +261,13 @@ export function buildHomeCatalogData() {
       .filter((entry) => HOME_ALLOWED_CATEGORY_LABELS.has(String(entry.category || "").toLowerCase()));
     const activeSources = builder.buildMarketplaceSummary(catalogForHome)
       .map((item) => ({
-        source: item.marketplace,
+        source: labelHomeSource(item.marketplace),
         count: item.count,
       }));
     return {
       ok: true,
       totalProducts: items.length,
-      focusLabel: "Balcão de Informática",
+      focusLabel: primarySourceLabel(catalogForHome) || "Balcão de Informática",
       categories,
       pechinchas: shortcuts,
       shortcuts,
@@ -256,4 +291,13 @@ export function buildHomeCatalogData() {
       error: error?.message || "HOME_CATALOG_ERROR",
     };
   }
+}
+
+function primarySourceLabel(items = []) {
+  for (const item of Array.isArray(items) ? items : []) {
+    const source = normalizedCatalogCategoryKey(item?.marketplace || item?.source || "");
+    const seller = normalizedCatalogCategoryKey(item?.seller || item?.store || "");
+    if (source.includes("saldao") || seller.includes("saldao")) return "Saldão da Informática";
+  }
+  return "";
 }

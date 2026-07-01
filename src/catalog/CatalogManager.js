@@ -12,6 +12,23 @@ import { normalizeText, scoreProductMatch } from "./ProductNormalizer.js";
 const root = projectRoot;
 const seedPath = resolveCatalogSeedPath(path.join(root, "data", "products.seed.json"));
 
+function sourcePriorityForItem(item = {}) {
+  const source = normalizeText([
+    item.marketplace,
+    item.source,
+    item.sourceType,
+    item.seller,
+    item.store,
+  ].filter(Boolean).join(" "));
+
+  if (source.includes("saldao") || source.includes("saldão")) return 0;
+  if (source.includes("actionpay")) return 1;
+  if (source.includes("awin")) return 2;
+  if (source.includes("mi_shop") || source.includes("mi shop") || source.includes("mishop")) return 3;
+  if (source.includes("mercadolivre") || source.includes("mercado livre")) return 4;
+  return 5;
+}
+
 function looksLikeAccessory(item = {}) {
   const text = normalizeText([
     item.displayTitle,
@@ -177,6 +194,8 @@ export default class CatalogManager {
     });
     if (needle) {
       return results.sort((a, b) => {
+        const sourceDiff = sourcePriorityForItem(a) - sourcePriorityForItem(b);
+        if (sourceDiff !== 0) return sourceDiff;
         const scoreDiff = scoreProductMatch(b, needle) - scoreProductMatch(a, needle);
         if (scoreDiff !== 0) return scoreDiff;
         const aAccessory = Boolean(a.isAccessory || ["accessory", "piece", "compatible"].includes(String(a.productType || "").toLowerCase()) || looksLikeAccessory(a));

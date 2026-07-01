@@ -90,7 +90,7 @@ test("/api/search usa catálogo real antes de demo", async () => {
     assert.equal(body.dataMode, "real");
     assert.ok(Array.isArray(body.products));
     assert.ok(body.products.length > 0);
-    assert.equal(body.recommendations[0].product.marketplace, "mi_shop");
+    assert.equal(body.recommendations[0].product.marketplace, "saldao_informatica");
   } finally {
     global.fetch = originalFetch;
   }

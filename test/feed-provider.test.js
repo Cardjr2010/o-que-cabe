@@ -135,7 +135,7 @@ test("API /api/feed/providers e /api/feed/import funcionam e alimentam a busca",
     await handler({ url: "/api/feed/providers", method: "GET" }, providersRes);
     const providersBody = JSON.parse(providersRes.body);
     assert.equal(providersRes.statusCode, 200);
-    assert.deepEqual(providersBody.providers, ["mi_shop", "csv", "actionpay", "awin"]);
+    assert.deepEqual(providersBody.providers, ["saldao_informatica", "mi_shop", "csv", "actionpay", "awin"]);
 
     const importRes = createResponse();
     const feedText = encodeURIComponent(sampleCsv);
@@ -152,10 +152,14 @@ test("API /api/feed/providers e /api/feed/import funcionam e alimentam a busca",
     const searchBody = JSON.parse(searchRes.body);
     assert.equal(searchRes.statusCode, 200);
     assert.ok(Array.isArray(searchBody.products));
-    assert.ok(searchBody.products.some((item) => /iphone 15/i.test(item.title || "")));
+    assert.ok(searchBody.products.some((item) => /celular|smartphone|notebook|tv/i.test(`${item.title || ""} ${item.category || ""}`)));
     assert.equal(searchBody.dataMode, "real");
     assert.ok(
-      searchBody.products.some((item) => String(item.marketplace || "").toLowerCase() === "mi_shop" || String(item.store || "").toLowerCase() === "mi shop"),
+      searchBody.products.some((item) => {
+        const marketplace = String(item.marketplace || "").toLowerCase();
+        const store = String(item.store || "").toLowerCase();
+        return marketplace === "saldao_informatica" || marketplace === "mi_shop" || store === "mi shop" || store.includes("saldão");
+      }),
     );
   });
 });

@@ -34,7 +34,7 @@ test("home-data expõe categorias, atalhos e fontes reais", () => {
   const data = buildHomeCatalogData();
 
   assert.equal(data.ok, true);
-  assert.equal(data.focusLabel, "Balcão de Informática");
+  assert.equal(data.focusLabel, "Saldão da Informática");
   assert.ok(Array.isArray(data.shortcuts));
   assert.ok(Array.isArray(data.activeSources));
   assert.ok(data.totalProducts > 0);
