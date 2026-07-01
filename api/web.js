@@ -3,6 +3,8 @@ import path from "node:path";
 import BudgetEngine from "../src/engines/BudgetEngine.js";
 import ScoreEngine from "../src/engines/ScoreEngine.js";
 import RankingEngine from "../src/engines/RankingEngine.js";
+import RiskEngine from "../src/engines/RiskEngine.js";
+import ExplanationEngine from "../src/engines/ExplanationEngine.js";
 import CsvFeedProvider from "../src/feed/providers/CsvFeedProvider.js";
 import MiShopFeedProvider from "../src/feed/providers/MiShopFeedProvider.js";
 import { MercadoLivreProvider } from "../src/providers/MercadoLivreProvider.js";
@@ -607,19 +609,61 @@ function enrichWithOqc(product, context, query) {
   };
 }
 
+function attachFinancialInsights(product, context, query, rank = 0, siblings = []) {
+  const risk = RiskEngine.evaluateRisk(product, context);
+  const explanation = ExplanationEngine.buildExplanation(product, {
+    budget: context,
+    risk,
+    rank,
+    query,
+    siblings,
+    status: product.status || product.budgetStatus,
+  });
+
+  return {
+    ...product,
+    risk,
+    explanation: explanation.text,
+    explanationShort: explanation.shortText,
+    explanationBullets: explanation.bullets,
+    oqc: {
+      ...(product.oqc || {}),
+      riskLevel: risk.riskLevel,
+      riskScore: risk.riskScore,
+      riskReasons: risk.reasons,
+      riskWarnings: risk.warnings,
+      waitSimulation: risk.waitSimulation,
+      explanation: explanation.text,
+      explanationShort: explanation.shortText,
+      explanationBullets: explanation.bullets,
+    },
+  };
+}
+
 function buildOqcResponse({ products, query, mode, monthly, months, totalBudget, dataMode }) {
   const budget = buildOqcBudgetContext({ mode, monthly, months, totalBudget });
   const enriched = products.map((product) => enrichWithOqc(product, budget, query));
   const ranked = RankingEngine.rankProducts(enriched, query);
+  const productsWithInsights = (ranked.products || enriched).map((product, index, list) => attachFinancialInsights(product, budget, query, index, list));
+  const recommendations = (ranked.recommended || []).map((item) => ({
+    ...item,
+    product: attachFinancialInsights(item.product || {}, budget, query, item.rank - 1, productsWithInsights),
+  }));
+  const groups = {
+    ...ranked.groups,
+    cabe: (ranked.groups?.cabe || []).map((item, index, list) => attachFinancialInsights(item, budget, query, index, list)),
+    apertado: (ranked.groups?.apertado || []).map((item, index, list) => attachFinancialInsights(item, budget, query, index, list)),
+    naoCabe: (ranked.groups?.naoCabe || []).map((item, index, list) => attachFinancialInsights(item, budget, query, index, list)),
+  };
   return {
     query,
     mode,
     budget,
     dataMode,
-    recommendations: ranked.recommended,
-    groups: ranked.groups,
+    recommendations,
+    groups,
     summary: ranked.summary,
-    products: ranked.products || enriched,
+    products: productsWithInsights,
   };
 }
 
@@ -678,14 +722,18 @@ function buildFallbackRealResponse({ products, query, mode, monthly, months, tot
   });
   const ordered = BudgetEngine.sortByBudgetPriority(enriched);
   const groups = BudgetEngine.groupBudgetPriority(enriched);
+  const productsWithInsights = ordered.map((product, index, list) => attachFinancialInsights(product, budget, query, index, list));
   const recommended = ordered.slice(0, 3).map((product, index) => ({
     rank: index + 1,
-    label: index === 0 ? (product.status === "CABE" ? "Melhor escolha" : "Melhor alternativa dentro do possível") : index === 1 ? "Boa alternativa" : "Opção econômica",
-    reason: `${product.status === "CABE" ? "Cabe no orçamento." : product.status === "APERTADO" ? "Cabe, mas está apertado." : "Fica acima do orçamento."} Produto real do catálogo disponível.`,
+    label: index === 0 ? (product.status === "CABE" ? "Melhor escolha" : "Melhor alternativa dentro do possivel") : index === 1 ? "Boa alternativa" : "Opcao economica",
+    reason: `${product.status === "CABE" ? "Cabe no orcamento." : product.status === "APERTADO" ? "Cabe, mas esta apertado." : "Fica acima do orcamento."} Produto real do catalogo disponivel.`,
     product: {
       ...product,
-      reason: `${product.status === "CABE" ? "Cabe no orçamento." : product.status === "APERTADO" ? "Cabe, mas está apertado." : "Fica acima do orçamento."} Produto real do catálogo disponível.`,
+      reason: `${product.status === "CABE" ? "Cabe no orcamento." : product.status === "APERTADO" ? "Cabe, mas esta apertado." : "Fica acima do orcamento."} Produto real do catalogo disponivel.`,
     },
+  })).map((item, index) => ({
+    ...item,
+    product: attachFinancialInsights(item.product, budget, query, index, productsWithInsights),
   }));
   return {
     query,
@@ -694,10 +742,11 @@ function buildFallbackRealResponse({ products, query, mode, monthly, months, tot
     dataMode,
     recommendations: recommended,
     groups,
-    summary: "Os resultados priorizam produtos reais do catálogo quando a pontuação completa precisa de fallback.",
-    products: ordered,
+    summary: "Os resultados priorizam produtos reais do catalogo quando a pontuacao completa precisa de fallback.",
+    products: productsWithInsights,
   };
 }
+
 function renderExplorerPage({ title, heading, description, view, badge, endpoint, inputLabel, inputPlaceholder, quickLabel, quickButtons }) {
   const buttons = quickButtons
     .map((item) => `<button type="button" data-query="${escapeHtml(item.query)}" data-monthly="${item.monthly || 100}" data-months="${item.months || 12}">${escapeHtml(item.label)}</button>`)
@@ -1105,9 +1154,11 @@ export default async function handler(req, res) {
   if (pathname === "/api/search") {
     const q = url.searchParams.get("q") || "";
     const mode = (url.searchParams.get("mode") || "monthly").toLowerCase();
-    const monthly = Number(url.searchParams.get("monthly") || "50");
+    const monthly = mode === "total" ? Number(url.searchParams.get("monthly") || "0") : Number(url.searchParams.get("monthly") || "50");
     const months = Number(url.searchParams.get("months") || "12");
-    const totalBudget = Number(url.searchParams.get("totalBudget") || (monthly * months));
+    const totalBudget = mode === "total"
+      ? Number(url.searchParams.get("totalBudget") || "0")
+      : Number(url.searchParams.get("totalBudget") || (monthly * months));
     let providerResult = null;
     try {
       providerResult = await getMercadoLivreProvider().searchProducts(q, {
@@ -1311,9 +1362,11 @@ export default async function handler(req, res) {
   if (pathname === "/api/ml-connector-test") {
     const q = url.searchParams.get("q") || "";
     const mode = (url.searchParams.get("mode") || "monthly").toLowerCase();
-    const monthly = Number(url.searchParams.get("monthly") || "50");
+    const monthly = mode === "total" ? Number(url.searchParams.get("monthly") || "0") : Number(url.searchParams.get("monthly") || "50");
     const months = Number(url.searchParams.get("months") || "12");
-    const totalBudget = Number(url.searchParams.get("totalBudget") || (monthly * months));
+    const totalBudget = mode === "total"
+      ? Number(url.searchParams.get("totalBudget") || "0")
+      : Number(url.searchParams.get("totalBudget") || (monthly * months));
     const result = await getMercadoLivreProvider().searchProducts(q, { limit: 20, mode, monthly, months, totalBudget });
     sendJson(res, result.statusHttp || 200, {
       configured: getMercadoLivreProvider().getDiagnostics ? getMercadoLivreProvider().getDiagnostics().configured : true,
@@ -1330,9 +1383,11 @@ export default async function handler(req, res) {
   if (pathname === "/api/teste-produtos") {
     const q = url.searchParams.get("q") || "";
     const mode = (url.searchParams.get("mode") || "monthly").toLowerCase();
-    const monthly = Number(url.searchParams.get("monthly") || "50");
+    const monthly = mode === "total" ? Number(url.searchParams.get("monthly") || "0") : Number(url.searchParams.get("monthly") || "50");
     const months = Number(url.searchParams.get("months") || "12");
-    const totalBudget = Number(url.searchParams.get("totalBudget") || (monthly * months));
+    const totalBudget = mode === "total"
+      ? Number(url.searchParams.get("totalBudget") || "0")
+      : Number(url.searchParams.get("totalBudget") || (monthly * months));
     const classifyByMode = mode === "total"
       ? (price) => {
         if (price <= totalBudget) return "CABE";

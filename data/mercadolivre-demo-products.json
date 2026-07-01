@@ -117,16 +117,42 @@
     "riskNote": "Exemplo demonstrativo. Preço e disponibilidade devem ser confirmados no Mercado Livre."
   },
   {
+    "id": "ml-presente-caneca-simples",
+    "title": "Caneca presente simples",
+    "category": "presente",
+    "store": "Mercado Livre",
+    "source": "mercadolivre",
+    "price": 39,
+    "installments": 12,
+    "installmentValue": 3.25,
+    "image": "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=900&q=80",
+    "url": "https://lista.mercadolivre.com.br/caneca-presente-simples",
+    "riskNote": "Exemplo demonstrativo. Preço e disponibilidade devem ser confirmados no Mercado Livre."
+  },
+  {
+    "id": "ml-casa-kit-organizacao",
+    "title": "Kit organização para casa",
+    "category": "casa",
+    "store": "Mercado Livre",
+    "source": "mercadolivre",
+    "price": 89,
+    "installments": 12,
+    "installmentValue": 7.42,
+    "image": "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=900&q=80",
+    "url": "https://lista.mercadolivre.com.br/kit-organizacao-casa",
+    "riskNote": "Exemplo demonstrativo. Preço e disponibilidade devem ser confirmados no Mercado Livre."
+  },
+  {
     "id": "ml-tv-32-basica",
-    "title": "TV 32 polegadas de entrada",
+    "title": "TV usada/recondicionada 32 polegadas",
     "category": "tv",
     "store": "Mercado Livre",
     "source": "mercadolivre",
-    "price": 1199,
+    "price": 499,
     "installments": 12,
-    "installmentValue": 99.92,
-    "image": "",
-    "url": "https://lista.mercadolivre.com.br/tv-32-polegadas-de-entrada",
+    "installmentValue": 41.58,
+    "image": "https://images.unsplash.com/photo-1559720598-2f4d0a18d0f7?auto=format&fit=crop&w=900&q=80",
+    "url": "https://lista.mercadolivre.com.br/tv-usada-recondicionada-32-polegadas",
     "riskNote": "Exemplo demonstrativo. Preço e disponibilidade devem ser confirmados no Mercado Livre."
   },
   {
@@ -153,6 +179,19 @@
     "installmentValue": 19.9,
     "image": "",
     "url": "https://lista.mercadolivre.com.br/smartwatch-basico",
+    "riskNote": "Exemplo demonstrativo. Preço e disponibilidade devem ser confirmados no Mercado Livre."
+  },
+  {
+    "id": "ml-celular-usado-compacto",
+    "title": "Celular usado/compacto",
+    "category": "celular",
+    "store": "Mercado Livre",
+    "source": "mercadolivre",
+    "price": 499,
+    "installments": 12,
+    "installmentValue": 41.58,
+    "image": "https://images.unsplash.com/photo-1598327105666-5b89351aff97?auto=format&fit=crop&w=900&q=80",
+    "url": "https://lista.mercadolivre.com.br/celular-usado-compacto",
     "riskNote": "Exemplo demonstrativo. Preço e disponibilidade devem ser confirmados no Mercado Livre."
   },
   {

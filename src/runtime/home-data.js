@@ -38,6 +38,78 @@ function normalizedCatalogCategoryKey(value = "") {
     .toLowerCase();
 }
 
+const HOME_TECH_CATEGORIES = new Set([
+  "celular",
+  "notebook",
+  "tablet",
+  "tv",
+  "relogio",
+  "fone",
+  "monitor",
+]);
+
+const HOME_ACCESSORY_CATEGORIES = new Set([
+  "carregador",
+  "cabo",
+  "pelicula",
+  "capa",
+  "acessorio",
+  "peca",
+  "compativel",
+]);
+
+function normalizeProductType(value = "") {
+  return normalizedCatalogCategoryKey(value || "");
+}
+
+function isHomeTechProduct(item = {}) {
+  const category = normalizedCatalogCategoryKey(item?.normalizedCategory || item?.category || "");
+  const productType = normalizeProductType(item?.productType || "");
+  const text = normalizedCatalogCategoryKey([
+    item?.displayTitle,
+    item?.originalTitle,
+    item?.title,
+    item?.description,
+    item?.compatibility,
+  ].filter(Boolean).join(" "));
+  const isAccessory = Boolean(item?.isAccessory)
+    || HOME_ACCESSORY_CATEGORIES.has(category)
+    || ["accessory", "piece", "compatible"].includes(productType)
+    || [
+      "capa",
+      "case",
+      "cover",
+      "pelicula",
+      "screen protector",
+      "carregador",
+      "charger",
+      "cabo",
+      "cable",
+      "fonte",
+      "adapter",
+      "adaptador",
+      "strap",
+      "pulseira",
+      "holder",
+      "power bank",
+      "powerbank",
+      "audio glasses",
+      "smart audio glasses",
+      "bamper",
+      "bumper",
+      "watch band",
+      "smart band",
+      "suporte",
+      "acessorio",
+      "accessory",
+      "peca",
+      "piece",
+      "compatible",
+    ].some((term) => text.includes(term));
+  if (isAccessory) return false;
+  return HOME_TECH_CATEGORIES.has(category);
+}
+
 function buildCatalogCategoryStats(items = []) {
   const stats = new Map();
   for (const item of Array.isArray(items) ? items : []) {
@@ -102,23 +174,37 @@ function buildHomePechinchas(items = [], categories = []) {
 export function buildHomeCatalogData() {
   try {
     const items = getCatalogManager().list();
+    const homeItems = items.filter(isHomeTechProduct);
     const builder = getCategoryBuilder();
-    const categories = builder.build(items).filter((entry) => entry.category !== "outros");
+    const catalogForHome = homeItems.length ? homeItems : items;
+    const categories = builder.build(catalogForHome).filter((entry) => entry.category !== "outros");
+    const shortcuts = buildHomePechinchas(catalogForHome, categories);
+    const activeSources = builder.buildMarketplaceSummary(catalogForHome)
+      .map((item) => ({
+        source: item.marketplace,
+        count: item.count,
+      }));
     return {
       ok: true,
       totalProducts: items.length,
+      focusLabel: "Balcão de Informática",
       categories,
-      pechinchas: buildHomePechinchas(items, categories),
-      marketplaceSummary: builder.buildMarketplaceSummary(items).slice(0, 8),
-      sellerSummary: builder.buildSellerSummary(items).slice(0, 8),
-      brandSummary: builder.buildBrandSummary(items).slice(0, 8),
+      pechinchas: shortcuts,
+      shortcuts,
+      activeSources,
+      marketplaceSummary: builder.buildMarketplaceSummary(catalogForHome).slice(0, 8),
+      sellerSummary: builder.buildSellerSummary(catalogForHome).slice(0, 8),
+      brandSummary: builder.buildBrandSummary(catalogForHome).slice(0, 8),
     };
   } catch (error) {
     return {
       ok: false,
       totalProducts: 0,
+      focusLabel: "Balcão de Informática",
       categories: [],
       pechinchas: [],
+      shortcuts: [],
+      activeSources: [],
       marketplaceSummary: [],
       sellerSummary: [],
       brandSummary: [],

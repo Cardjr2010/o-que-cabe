@@ -1,31 +1,31 @@
 id,externalId,title,category,brand,model,price,currency,image,productUrl,affiliateUrl,marketplace,sourceType,condition,lastCheckedAt
-fill-celular-01,,Samsung Galaxy A15,celular,Samsung,A15,,BRL,,,,Mercado Livre,manual,new,2026-06-25T09:42:44-03:00
-fill-celular-02,,Samsung Galaxy A05,celular,Samsung,A05,,BRL,,,,Mercado Livre,manual,new,2026-06-25T09:42:44-03:00
-fill-celular-03,,Motorola Moto G24,celular,Motorola,Moto G24,,BRL,,,,Mercado Livre,manual,new,2026-06-25T09:42:44-03:00
-fill-celular-04,,Motorola Moto G34,celular,Motorola,Moto G34,,BRL,,,,Mercado Livre,manual,new,2026-06-25T09:42:44-03:00
-fill-celular-05,,Xiaomi Redmi 13C,celular,Xiaomi,Redmi 13C,,BRL,,,,Mercado Livre,manual,new,2026-06-25T09:42:44-03:00
-fill-celular-06,,Xiaomi Redmi Note 13,celular,Xiaomi,Redmi Note 13,,BRL,,,,Mercado Livre,manual,new,2026-06-25T09:42:44-03:00
-fill-celular-07,,Samsung Galaxy M15,celular,Samsung,Galaxy M15,,BRL,,,,Mercado Livre,manual,new,2026-06-25T09:42:44-03:00
-fill-celular-08,,Motorola Edge 50 Neo,celular,Motorola,Edge 50 Neo,,BRL,,,,Mercado Livre,manual,new,2026-06-25T09:42:44-03:00
-fill-celular-09,,iPhone 13,celular,Apple,iPhone 13,,BRL,,,,Mercado Livre,manual,new,2026-06-25T09:42:44-03:00
-fill-celular-10,,iPhone 14,celular,Apple,iPhone 14,,BRL,,,,Mercado Livre,manual,new,2026-06-25T09:42:44-03:00
-fill-tv-01,,Samsung Smart TV 32,tv,Samsung,Smart TV 32,,BRL,,,,Mercado Livre,manual,new,2026-06-25T09:42:44-03:00
-fill-tv-02,,Samsung Crystal UHD 43,tv,Samsung,Crystal UHD 43,,BRL,,,,Mercado Livre,manual,new,2026-06-25T09:42:44-03:00
-fill-tv-03,,Samsung Crystal UHD 50,tv,Samsung,Crystal UHD 50,,BRL,,,,Mercado Livre,manual,new,2026-06-25T09:42:44-03:00
-fill-tv-04,,LG UHD AI ThinQ 43,tv,LG,UHD AI ThinQ 43,,BRL,,,,Mercado Livre,manual,new,2026-06-25T09:42:44-03:00
-fill-tv-05,,LG UHD AI ThinQ 50,tv,LG,UHD AI ThinQ 50,,BRL,,,,Mercado Livre,manual,new,2026-06-25T09:42:44-03:00
-fill-tv-06,,TCL P635 43,tv,TCL,P635 43,,BRL,,,,Mercado Livre,manual,new,2026-06-25T09:42:44-03:00
-fill-tv-07,,TCL P755 50,tv,TCL,P755 50,,BRL,,,,Mercado Livre,manual,new,2026-06-25T09:42:44-03:00
-fill-tv-08,,Philips 50,tv,Philips,50,,BRL,,,,Mercado Livre,manual,new,2026-06-25T09:42:44-03:00
-fill-tv-09,,AOC Roku TV 43,tv,AOC,Roku TV 43,,BRL,,,,Mercado Livre,manual,new,2026-06-25T09:42:44-03:00
-fill-tv-10,,Toshiba 43,tv,Toshiba,43,,BRL,,,,Mercado Livre,manual,new,2026-06-25T09:42:44-03:00
-fill-notebook-01,,Lenovo IdeaPad 1,notebook,Lenovo,IdeaPad 1,,BRL,,,,Mercado Livre,manual,new,2026-06-25T09:42:44-03:00
-fill-notebook-02,,Lenovo IdeaPad 3,notebook,Lenovo,IdeaPad 3,,BRL,,,,Mercado Livre,manual,new,2026-06-25T09:42:44-03:00
-fill-notebook-03,,ASUS Vivobook Go 15,notebook,ASUS,Vivobook Go 15,,BRL,,,,Mercado Livre,manual,new,2026-06-25T09:42:44-03:00
-fill-notebook-04,,ASUS Vivobook 15,notebook,ASUS,Vivobook 15,,BRL,,,,Mercado Livre,manual,new,2026-06-25T09:42:44-03:00
-fill-notebook-05,,Acer Aspire 5,notebook,Acer,Aspire 5,,BRL,,,,Mercado Livre,manual,new,2026-06-25T09:42:44-03:00
-fill-notebook-06,,Dell Inspiron 15,notebook,Dell,Inspiron 15,,BRL,,,,Mercado Livre,manual,new,2026-06-25T09:42:44-03:00
-fill-notebook-07,,Samsung Galaxy Book Go,notebook,Samsung,Galaxy Book Go,,BRL,,,,Mercado Livre,manual,new,2026-06-25T09:42:44-03:00
-fill-notebook-08,,Samsung Galaxy Book4,notebook,Samsung,Galaxy Book4,,BRL,,,,Mercado Livre,manual,new,2026-06-25T09:42:44-03:00
-fill-notebook-09,,HP 256 G9,notebook,HP,256 G9,,BRL,,,,Mercado Livre,manual,new,2026-06-25T09:42:44-03:00
-fill-notebook-10,,Positivo Vision C15,notebook,Positivo,Vision C15,,BRL,,,,Mercado Livre,manual,new,2026-06-25T09:42:44-03:00
+seed-celular-samsung-galaxy-a05,,Samsung Galaxy A05,celular,Samsung,Samsung Galaxy A05,699,BRL,https://placehold.co/600x400/091a35/ffffff?text=Samsung%20Galaxy%20A05,https://lista.mercadolivre.com.br/samsung-galaxy-a05,,Mercado Livre,manual,new,2026-06-26T22:31:14.414Z
+seed-celular-samsung-galaxy-a14,,Samsung Galaxy A14,celular,Samsung,Samsung Galaxy A14,859,BRL,https://placehold.co/600x400/091a35/ffffff?text=Samsung%20Galaxy%20A14,https://lista.mercadolivre.com.br/samsung-galaxy-a14,,Mercado Livre,manual,new,2026-06-26T22:31:14.414Z
+seed-celular-samsung-galaxy-a15,,Samsung Galaxy A15,celular,Samsung,Samsung Galaxy A15,1019,BRL,https://placehold.co/600x400/091a35/ffffff?text=Samsung%20Galaxy%20A15,https://lista.mercadolivre.com.br/samsung-galaxy-a15,,Mercado Livre,manual,new,2026-06-26T22:31:14.414Z
+seed-celular-samsung-galaxy-a25,,Samsung Galaxy A25,celular,Samsung,Samsung Galaxy A25,1179,BRL,https://placehold.co/600x400/091a35/ffffff?text=Samsung%20Galaxy%20A25,https://lista.mercadolivre.com.br/samsung-galaxy-a25,,Mercado Livre,manual,new,2026-06-26T22:31:14.414Z
+seed-celular-samsung-galaxy-m15,,Samsung Galaxy M15,celular,Samsung,Samsung Galaxy M15,1339,BRL,https://placehold.co/600x400/091a35/ffffff?text=Samsung%20Galaxy%20M15,https://lista.mercadolivre.com.br/samsung-galaxy-m15,,Mercado Livre,manual,new,2026-06-26T22:31:14.414Z
+seed-celular-samsung-galaxy-s23-fe,,Samsung Galaxy S23 FE,celular,Samsung,Samsung Galaxy S23 FE,1499,BRL,https://placehold.co/600x400/091a35/ffffff?text=Samsung%20Galaxy%20S23%20FE,https://lista.mercadolivre.com.br/samsung-galaxy-s23-fe,,Mercado Livre,manual,new,2026-06-26T22:31:14.414Z
+seed-celular-motorola-moto-g24,,Motorola Moto G24,celular,Motorola,Motorola Moto G24,1659,BRL,https://placehold.co/600x400/091a35/ffffff?text=Motorola%20Moto%20G24,https://lista.mercadolivre.com.br/motorola-moto-g24,,Mercado Livre,manual,new,2026-06-26T22:31:14.414Z
+seed-celular-motorola-moto-g34,,Motorola Moto G34,celular,Motorola,Motorola Moto G34,1819,BRL,https://placehold.co/600x400/091a35/ffffff?text=Motorola%20Moto%20G34,https://lista.mercadolivre.com.br/motorola-moto-g34,,Mercado Livre,manual,new,2026-06-26T22:31:14.414Z
+seed-celular-motorola-moto-g54,,Motorola Moto G54,celular,Motorola,Motorola Moto G54,1979,BRL,https://placehold.co/600x400/091a35/ffffff?text=Motorola%20Moto%20G54,https://lista.mercadolivre.com.br/motorola-moto-g54,,Mercado Livre,manual,new,2026-06-26T22:31:14.414Z
+seed-celular-motorola-edge-50-neo,,Motorola Edge 50 Neo,celular,Motorola,Motorola Edge 50 Neo,2139,BRL,https://placehold.co/600x400/091a35/ffffff?text=Motorola%20Edge%2050%20Neo,https://lista.mercadolivre.com.br/motorola-edge-50-neo,,Mercado Livre,manual,new,2026-06-26T22:31:14.414Z
+seed-tv-samsung-smart-tv-32,,Samsung Smart TV 32,tv,Samsung,Samsung Smart TV 32,1099,BRL,https://placehold.co/600x400/0b234b/ffffff?text=Samsung%20Smart%20TV%2032,https://lista.mercadolivre.com.br/samsung-smart-tv-32,,Mercado Livre,manual,new,2026-06-26T22:31:14.414Z
+seed-tv-samsung-crystal-uhd-43,,Samsung Crystal UHD 43,tv,Samsung,Samsung Crystal UHD 43,1359,BRL,https://placehold.co/600x400/0b234b/ffffff?text=Samsung%20Crystal%20UHD%2043,https://lista.mercadolivre.com.br/samsung-crystal-uhd-43,,Mercado Livre,manual,new,2026-06-26T22:31:14.414Z
+seed-tv-samsung-crystal-uhd-50,,Samsung Crystal UHD 50,tv,Samsung,Samsung Crystal UHD 50,1619,BRL,https://placehold.co/600x400/0b234b/ffffff?text=Samsung%20Crystal%20UHD%2050,https://lista.mercadolivre.com.br/samsung-crystal-uhd-50,,Mercado Livre,manual,new,2026-06-26T22:31:14.414Z
+seed-tv-samsung-crystal-uhd-55,,Samsung Crystal UHD 55,tv,Samsung,Samsung Crystal UHD 55,1879,BRL,https://placehold.co/600x400/0b234b/ffffff?text=Samsung%20Crystal%20UHD%2055,https://lista.mercadolivre.com.br/samsung-crystal-uhd-55,,Mercado Livre,manual,new,2026-06-26T22:31:14.414Z
+seed-tv-lg-uhd-ai-thinq-43,,LG UHD AI ThinQ 43,tv,LG,LG UHD AI ThinQ 43,2139,BRL,https://placehold.co/600x400/0b234b/ffffff?text=LG%20UHD%20AI%20ThinQ%2043,https://lista.mercadolivre.com.br/lg-uhd-ai-thinq-43,,Mercado Livre,manual,new,2026-06-26T22:31:14.414Z
+seed-tv-lg-uhd-ai-thinq-50,,LG UHD AI ThinQ 50,tv,LG,LG UHD AI ThinQ 50,2399,BRL,https://placehold.co/600x400/0b234b/ffffff?text=LG%20UHD%20AI%20ThinQ%2050,https://lista.mercadolivre.com.br/lg-uhd-ai-thinq-50,,Mercado Livre,manual,new,2026-06-26T22:31:14.414Z
+seed-tv-lg-oled-48,,LG OLED 48,tv,LG,LG OLED 48,2659,BRL,https://placehold.co/600x400/0b234b/ffffff?text=LG%20OLED%2048,https://lista.mercadolivre.com.br/lg-oled-48,,Mercado Livre,manual,new,2026-06-26T22:31:14.414Z
+seed-tv-tcl-p635-43,,TCL P635 43,tv,TCL,TCL P635 43,2919,BRL,https://placehold.co/600x400/0b234b/ffffff?text=TCL%20P635%2043,https://lista.mercadolivre.com.br/tcl-p635-43,,Mercado Livre,manual,new,2026-06-26T22:31:14.414Z
+seed-tv-tcl-p755-50,,TCL P755 50,tv,TCL,TCL P755 50,3179,BRL,https://placehold.co/600x400/0b234b/ffffff?text=TCL%20P755%2050,https://lista.mercadolivre.com.br/tcl-p755-50,,Mercado Livre,manual,new,2026-06-26T22:31:14.414Z
+seed-tv-tcl-c655-55,,TCL C655 55,tv,TCL,TCL C655 55,3439,BRL,https://placehold.co/600x400/0b234b/ffffff?text=TCL%20C655%2055,https://lista.mercadolivre.com.br/tcl-c655-55,,Mercado Livre,manual,new,2026-06-26T22:31:14.414Z
+seed-notebook-lenovo-ideapad-1,,Lenovo IdeaPad 1,notebook,Lenovo,Lenovo IdeaPad 1,1699,BRL,https://placehold.co/600x400/132c54/ffffff?text=Lenovo%20IdeaPad%201,https://lista.mercadolivre.com.br/lenovo-ideapad-1,,Mercado Livre,manual,new,2026-06-26T22:31:14.414Z
+seed-notebook-lenovo-ideapad-3,,Lenovo IdeaPad 3,notebook,Lenovo,Lenovo IdeaPad 3,1979,BRL,https://placehold.co/600x400/132c54/ffffff?text=Lenovo%20IdeaPad%203,https://lista.mercadolivre.com.br/lenovo-ideapad-3,,Mercado Livre,manual,new,2026-06-26T22:31:14.414Z
+seed-notebook-lenovo-ideapad-slim-3,,Lenovo IdeaPad Slim 3,notebook,Lenovo,Lenovo IdeaPad Slim 3,2259,BRL,https://placehold.co/600x400/132c54/ffffff?text=Lenovo%20IdeaPad%20Slim%203,https://lista.mercadolivre.com.br/lenovo-ideapad-slim-3,,Mercado Livre,manual,new,2026-06-26T22:31:14.414Z
+seed-notebook-lenovo-loq-15,,Lenovo LOQ 15,notebook,Lenovo,Lenovo LOQ 15,2539,BRL,https://placehold.co/600x400/132c54/ffffff?text=Lenovo%20LOQ%2015,https://lista.mercadolivre.com.br/lenovo-loq-15,,Mercado Livre,manual,new,2026-06-26T22:31:14.414Z
+seed-notebook-asus-vivobook-go-15,,ASUS Vivobook Go 15,notebook,ASUS,ASUS Vivobook Go 15,2819,BRL,https://placehold.co/600x400/132c54/ffffff?text=ASUS%20Vivobook%20Go%2015,https://lista.mercadolivre.com.br/asus-vivobook-go-15,,Mercado Livre,manual,new,2026-06-26T22:31:14.414Z
+seed-notebook-asus-vivobook-15,,ASUS Vivobook 15,notebook,ASUS,ASUS Vivobook 15,3099,BRL,https://placehold.co/600x400/132c54/ffffff?text=ASUS%20Vivobook%2015,https://lista.mercadolivre.com.br/asus-vivobook-15,,Mercado Livre,manual,new,2026-06-26T22:31:14.414Z
+seed-notebook-asus-vivobook-15x,,ASUS Vivobook 15X,notebook,ASUS,ASUS Vivobook 15X,3379,BRL,https://placehold.co/600x400/132c54/ffffff?text=ASUS%20Vivobook%2015X,https://lista.mercadolivre.com.br/asus-vivobook-15x,,Mercado Livre,manual,new,2026-06-26T22:31:14.414Z
+seed-notebook-asus-tuf-gaming-f15,,ASUS TUF Gaming F15,notebook,ASUS,ASUS TUF Gaming F15,3659,BRL,https://placehold.co/600x400/132c54/ffffff?text=ASUS%20TUF%20Gaming%20F15,https://lista.mercadolivre.com.br/asus-tuf-gaming-f15,,Mercado Livre,manual,new,2026-06-26T22:31:14.414Z
+seed-notebook-acer-aspire-3,,Acer Aspire 3,notebook,Acer,Acer Aspire 3,3939,BRL,https://placehold.co/600x400/132c54/ffffff?text=Acer%20Aspire%203,https://lista.mercadolivre.com.br/acer-aspire-3,,Mercado Livre,manual,new,2026-06-26T22:31:14.414Z
+seed-notebook-acer-aspire-5,,Acer Aspire 5,notebook,Acer,Acer Aspire 5,4219,BRL,https://placehold.co/600x400/132c54/ffffff?text=Acer%20Aspire%205,https://lista.mercadolivre.com.br/acer-aspire-5,,Mercado Livre,manual,new,2026-06-26T22:31:14.414Z

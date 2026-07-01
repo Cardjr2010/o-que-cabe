@@ -4,6 +4,18 @@ import { resolveCatalogSeedPath } from "../runtime/catalog-path.js";
 
 import path from "node:path";
 import CatalogRepository from "../catalog/CatalogRepository.js";
+import {
+  buildDisplayTitle,
+  detectLanguage,
+  extractBrand,
+  extractModel,
+  inferCategoryFromFields,
+  inferProductType,
+  normalizeForAnalysis,
+  resolvePortugueseDisplayTitle,
+  sanitizeCategory,
+  normalizeText,
+} from "../catalog/ProductNormalizer.js";
 
 const root = projectRoot;
 const seedPath = resolveCatalogSeedPath(path.join(root, "data", "products.seed.json"));
@@ -21,14 +33,6 @@ function readJson(filePath, fallback) {
   } catch {
     return fallback;
   }
-}
-
-function normalizeText(value = "") {
-  return String(value || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
 }
 
 function slugify(value = "") {
@@ -51,11 +55,7 @@ function isValidProductUrl(value = "") {
 }
 
 function inferCategory(text = "") {
-  const value = normalizeText(text);
-  if (["celular", "smartphone", "iphone", "galaxy", "moto", "redmi"].some((term) => value.includes(term))) return "celular";
-  if (["tv", "televis", "smart tv", "qled", "oled", "roku"].some((term) => value.includes(term))) return "tv";
-  if (["notebook", "laptop", "vivobook", "ideapad", "aspire", "inspiron"].some((term) => value.includes(term))) return "notebook";
-  return "";
+  return inferCategoryFromFields({ title: text }, text) || "";
 }
 
 export function normalizeImportedProduct(raw = {}) {
@@ -63,7 +63,6 @@ export function normalizeImportedProduct(raw = {}) {
   const productUrl = String(raw.affiliateUrl || raw.productUrl || raw.permalink || raw.url || "").trim();
   if (!title || !isValidProductUrl(productUrl)) return null;
 
-  const category = String(raw.category || inferCategory(`${title} ${raw.description || ""}`) || "").toLowerCase();
   const price = Number(raw.price || raw.salePrice || raw.regularPrice || 0);
   if (!Number.isFinite(price) || price <= 0) return null;
 
@@ -74,6 +73,21 @@ export function normalizeImportedProduct(raw = {}) {
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "");
+  const originalTitle = String(raw.originalTitle || title).trim();
+  const displayTitle = String(resolvePortugueseDisplayTitle(originalTitle, raw.displayTitle || buildDisplayTitle(originalTitle))).trim();
+  const language = String(raw.language || detectLanguage(originalTitle)).trim();
+  const inferredCategory = sanitizeCategory(inferCategory(`${title} ${raw.description || ""}`) || "", originalTitle);
+  const normalizedCategory = inferredCategory !== "outros"
+    ? inferredCategory
+    : sanitizeCategory(raw.normalizedCategory || raw.category || "", originalTitle);
+  const productType = String(raw.productType || inferProductType(normalizedCategory, normalizeForAnalysis(`${displayTitle} ${raw.description || ""}`)) || "product").toLowerCase();
+  const brand = raw.brand || extractBrand(`${displayTitle} ${raw.description || ""}`) || null;
+  const model = raw.model || extractModel(displayTitle || originalTitle, brand || "") || null;
+  const isAccessory = Boolean((raw.isAccessory ?? ["accessory", "piece", "compatible"].includes(productType)) || ["pelicula", "capa", "cabo", "carregador", "acessorio", "peca"].includes(normalizedCategory));
+  const compatibility = String(raw.compatibility || "").trim();
+  const normalizationWarnings = Array.isArray(raw.normalizationWarnings) && raw.normalizationWarnings.length
+    ? [...new Set(raw.normalizationWarnings.filter(Boolean).map((item) => String(item).trim()))]
+    : [];
 
   return {
     id: String(raw.id || raw.externalId || raw.gtin || raw.ean || raw.upc || slugify(title) || `oqc-${Date.now()}`),
@@ -82,9 +96,17 @@ export function normalizeImportedProduct(raw = {}) {
     mpn: String(raw.mpn || "").trim(),
     sku: String(raw.sku || "").trim(),
     title,
-    category,
-    brand: raw.brand || null,
-    model: raw.model || null,
+    originalTitle,
+    displayTitle,
+    category: sanitizeCategory(raw.category || normalizedCategory || inferCategory(`${title} ${raw.description || ""}`) || "", originalTitle),
+    normalizedCategory: normalizedCategory || inferCategory(`${title} ${raw.description || ""}`) || "outros",
+    productType: productType || "product",
+    brand: brand || null,
+    model: model || null,
+    isAccessory: Boolean(isAccessory),
+    compatibility: compatibility || "",
+    language,
+    normalizationWarnings,
     seller: raw.seller || raw.merchant || raw.advertiser || null,
     price,
     currency: raw.currency || "BRL",

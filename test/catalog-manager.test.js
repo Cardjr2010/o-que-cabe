@@ -72,6 +72,53 @@ test("CatalogManager importa, atualiza e evita duplicados", () => {
   assert.equal(duplicate.imported, 1);
   assert.equal(manager.list().length, 1);
   assert.equal(manager.getById("cat-1").price, 999);
+  assert.ok(Array.isArray(manager.getById("cat-1").priceHistory));
+  assert.ok(manager.getById("cat-1").priceHistory.length >= 1);
+});
+
+test("CatalogManager registra histórico quando o preço muda", () => {
+  const temp = createTempSeed([
+    {
+      id: "cat-history",
+      externalId: "ext-history",
+      title: "Produto Historico",
+      category: "tv",
+      brand: "Marca",
+      model: "Modelo",
+      price: 1000,
+      currency: "BRL",
+      productUrl: "https://lista.mercadolivre.com.br/produto-historico",
+      marketplace: "Mercado Livre",
+      dataMode: "seed",
+      priceHistory: [{ date: "2026-06-01", price: 1000 }],
+      importedAt: "2026-06-01T00:00:00-03:00",
+      updatedAt: "2026-06-01T00:00:00-03:00",
+    },
+  ]);
+  const manager = new CatalogManager({ seedPath: temp.filePath });
+
+  const result = manager.import([
+    {
+      id: "cat-history",
+      externalId: "ext-history",
+      title: "Produto Historico",
+      category: "tv",
+      brand: "Marca",
+      model: "Modelo",
+      price: 1200,
+      currency: "BRL",
+      productUrl: "https://lista.mercadolivre.com.br/produto-historico",
+      marketplace: "Mercado Livre",
+      dataMode: "seed",
+    },
+  ]);
+
+  const item = manager.getById("cat-history");
+  assert.equal(result.imported, 1);
+  assert.equal(item.price, 1200);
+  assert.ok(item.priceHistory.length >= 2);
+  assert.equal(item.priceHistory[0].price, 1000);
+  assert.equal(item.priceHistory.at(-1).price, 1200);
 });
 
 test("CatalogManager rejeita produto sem link", () => {

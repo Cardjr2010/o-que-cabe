@@ -10,6 +10,21 @@ function sameString(a, b) {
   return normalizeText(a) && normalizeText(a) === normalizeText(b);
 }
 
+function normalizeHistory(history = []) {
+  return Array.isArray(history)
+    ? history
+        .filter((item) => item && Number.isFinite(Number(item.price)))
+        .map((item) => ({
+          date: String(item.date || item.at || item.updatedAt || new Date().toISOString()),
+          price: Number(item.price),
+        }))
+    : [];
+}
+
+function todayStamp() {
+  return new Date().toISOString();
+}
+
 export default class CatalogUpdater {
   merge(existing = [], incoming = []) {
     const merged = [...existing];
@@ -17,6 +32,7 @@ export default class CatalogUpdater {
       const index = merged.findIndex((item) =>
         sameString(item.id, product.id) ||
         sameString(item.externalId, product.externalId) ||
+        sameString(item.gtin, product.gtin) ||
         sameString(item.productUrl, product.productUrl) ||
         sameString(item.affiliateUrl, product.affiliateUrl) ||
         (normalizeText(item.title) === normalizeText(product.title) &&
@@ -25,15 +41,36 @@ export default class CatalogUpdater {
       );
 
       if (index >= 0) {
+        const current = merged[index];
+        const currentHistory = normalizeHistory(current.priceHistory);
+        const incomingHistory = normalizeHistory(product.priceHistory);
+        const nextPrice = Number(product.price);
+        const previousPrice = Number(current.price);
+        const priceChanged = Number.isFinite(nextPrice) && Number.isFinite(previousPrice) && nextPrice > 0 && nextPrice !== previousPrice;
+        const priceHistory = [...currentHistory];
+        for (const entry of incomingHistory) {
+          if (!priceHistory.some((item) => item.date === entry.date && item.price === entry.price)) {
+            priceHistory.push(entry);
+          }
+        }
+        if (priceChanged) {
+          priceHistory.push({ date: todayStamp(), price: nextPrice });
+        }
         merged[index] = {
-          ...merged[index],
+          ...current,
           ...product,
-          id: merged[index].id,
-          updatedAt: product.updatedAt || new Date().toISOString(),
-          importedAt: merged[index].importedAt || product.importedAt || new Date().toISOString(),
+          id: current.id,
+          priceHistory,
+          updatedAt: product.updatedAt || todayStamp(),
+          importedAt: current.importedAt || product.importedAt || todayStamp(),
         };
       } else {
-        merged.push(product);
+        merged.push({
+          ...product,
+          priceHistory: normalizeHistory(product.priceHistory),
+          importedAt: product.importedAt || todayStamp(),
+          updatedAt: product.updatedAt || todayStamp(),
+        });
       }
     }
     return merged;

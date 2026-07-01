@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Sprint 23 - Motor de decisao financeira com catalogo real
+- Adicionamos o `RiskEngine` para medir risco financeiro, classificar verde/amarelo/vermelho e simular o que acontece se o usuario esperar o prazo do parcelamento.
+- Adicionamos o `ExplanationEngine` para devolver explicacoes humanas sobre cabimento, risco e ordem das recomendacoes.
+- A resposta da API agora carrega risco e explicacao junto com score, ranking e recomendacoes.
+- A home continua focada no Balcao de Informatica e passou a expor atalhos e fontes reais derivados do catalogo.
+- Registramos os caminhos reais da Actionpay e do CSV do Saldao para a proxima etapa de importacao.
+
 
 ### Sprint 22 - Experiencia real da home
 - A home passou a buscar categorias e pechinchas reais diretamente do catalogo, removendo os atalhos fixos de Apple, Notebook e TV.

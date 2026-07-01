@@ -7,9 +7,59 @@ import CatalogValidator from "./CatalogValidator.js";
 import CatalogUpdater from "./CatalogUpdater.js";
 import CatalogExporter from "./CatalogExporter.js";
 import { loadSeedProducts, normalizeImportedProduct } from "../importers/ProductImporter.js";
+import { normalizeText, scoreProductMatch } from "./ProductNormalizer.js";
 
 const root = projectRoot;
 const seedPath = resolveCatalogSeedPath(path.join(root, "data", "products.seed.json"));
+
+function looksLikeAccessory(item = {}) {
+  const text = normalizeText([
+    item.displayTitle,
+    item.originalTitle,
+    item.title,
+    item.normalizedCategory,
+    item.category,
+    item.productType,
+    item.description,
+    item.compatibility,
+  ].filter(Boolean).join(" "));
+  return [
+    "capa",
+    "capinha",
+    "case",
+    "cover",
+    "pelicula",
+    "pel?cula",
+    "vidro",
+    "protetor",
+    "screen protector",
+    "film",
+    "carregador",
+    "charger",
+    "cabo",
+    "cable",
+    "fonte",
+    "adapter",
+    "adaptador",
+    "strap",
+    "pulseira",
+    "holder",
+    "power bank",
+    "powerbank",
+    "audio glasses",
+    "smart audio glasses",
+    "bamper",
+    "bumper",
+    "watch band",
+    "smart band",
+    "suporte",
+    "acessorio",
+    "accessory",
+    "peca",
+    "piece",
+    "compatible",
+  ].some((term) => text.includes(term));
+}
 
 export default class CatalogManager {
   constructor(options = {}) {
@@ -96,8 +146,10 @@ export default class CatalogManager {
 
   search(filters = {}) {
     const { category = "", brand = "", marketplace = "", status = "", minPrice = 0, maxPrice = Infinity, q = "" } = filters;
-    const needle = String(q || "").toLowerCase();
-    return this.list().filter((item) => {
+    const needle = String(q || "").trim();
+    const normalizedNeedle = normalizeText(needle);
+    const accessoryIntent = /\b(capa|case|pelicula|pel[íi]cula|carregador|cabo|fone|headphone|airpods|earbud|strap|pulseira|acessorio|acess[óo]rio)\b/i.test(needle);
+    const results = this.list().filter((item) => {
       if (category && String(item.category || "").toLowerCase() !== String(category).toLowerCase()) return false;
       if (brand && String(item.brand || "").toLowerCase() !== String(brand).toLowerCase()) return false;
       if (marketplace && String(item.marketplace || "").toLowerCase() !== String(marketplace).toLowerCase()) return false;
@@ -105,11 +157,37 @@ export default class CatalogManager {
       const price = Number(item.price || 0);
       if (price < Number(minPrice || 0) || price > Number(maxPrice || Infinity)) return false;
       if (needle) {
-        const text = `${item.title || ""} ${item.category || ""} ${item.brand || ""} ${item.model || ""}`.toLowerCase();
-        return text.includes(needle);
+        const itemAccessory = Boolean(item.isAccessory || ["accessory", "piece", "compatible"].includes(String(item.productType || "").toLowerCase()) || looksLikeAccessory(item));
+        if (!accessoryIntent && itemAccessory) return false;
+        const text = [
+          item.displayTitle,
+          item.originalTitle,
+          item.title,
+          item.normalizedCategory,
+          item.productType,
+          item.category,
+          item.brand,
+          item.model,
+          item.compatibility,
+          item.description,
+        ].filter(Boolean).join(" ");
+        return normalizeText(text).includes(normalizedNeedle) || scoreProductMatch(item, needle) > 0;
       }
       return true;
     });
+    if (needle) {
+      return results.sort((a, b) => {
+        const scoreDiff = scoreProductMatch(b, needle) - scoreProductMatch(a, needle);
+        if (scoreDiff !== 0) return scoreDiff;
+        const aAccessory = Boolean(a.isAccessory || ["accessory", "piece", "compatible"].includes(String(a.productType || "").toLowerCase()) || looksLikeAccessory(a));
+        const bAccessory = Boolean(b.isAccessory || ["accessory", "piece", "compatible"].includes(String(b.productType || "").toLowerCase()) || looksLikeAccessory(b));
+        if (aAccessory !== bAccessory) return aAccessory ? 1 : -1;
+        const byPrice = Number(a.price || 0) - Number(b.price || 0);
+        if (byPrice !== 0) return byPrice;
+        return String(a.displayTitle || a.title || "").localeCompare(String(b.displayTitle || b.title || ""), "pt-BR");
+      });
+    }
+    return results;
   }
 
   diagnostics() {

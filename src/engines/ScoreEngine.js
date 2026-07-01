@@ -293,11 +293,21 @@ export function evaluateProduct(product = {}) {
   const totalEarned = breakdown.reduce((sum, item) => sum + item.earned, 0);
   const totalPossible = breakdown.reduce((sum, item) => sum + item.weight, 0) || 1;
   const score = clamp(Math.round((totalEarned / totalPossible) * 100));
+  const trustScore = clamp(Number((score / 100).toFixed(2)), 0, 1);
+  const warnings = [];
+
+  if (!product.title) warnings.push("Nome do produto não informado.");
+  if (!product.price || Number(product.price) <= 0) warnings.push("Preço indisponível.");
+  if (!product.brand) warnings.push("Marca não informada.");
+  if (!product.seller?.reputation && !product.seller?.rating) warnings.push("Dados de vendedor limitados.");
+  if (!product.reviewCount && !product.reviewsCount) warnings.push("Poucas avaliações documentadas.");
 
   return {
     score,
+    trustScore,
     breakdown,
     explanation: buildExplanation(product, score, breakdown),
+    warnings,
   };
 }
 

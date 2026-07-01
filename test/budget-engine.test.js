@@ -1,4 +1,4 @@
-import test from "node:test";
+﻿import test from "node:test";
 import assert from "node:assert/strict";
 import BudgetEngine from "../src/engines/BudgetEngine.js";
 
@@ -40,4 +40,57 @@ test("limitBudgetResults keeps ranking priority and caps groups", () => {
   assert.equal(results[1].title, "B");
   assert.equal(results[2].title, "C");
   assert.equal(results[3].title, "A");
+});
+
+test("evaluateBudget calcula impacto mensal, custo total e juros embutidos", () => {
+  const result = BudgetEngine.evaluateBudget(1200, {
+    mode: "monthly",
+    budgetLivre: 400,
+    months: 12,
+    installment: {
+      amount: 95,
+      months: 12,
+      downpayment: 120,
+    },
+  });
+
+  assert.equal(result.status, "CABE");
+  assert.equal(result.warningLevel, "yellow");
+  assert.equal(result.financialMetrics.budgetLivre, 400);
+  assert.equal(result.financialMetrics.installmentAmount, 95);
+  assert.equal(result.financialMetrics.installmentMonths, 12);
+  assert.equal(result.financialMetrics.downpayment, 120);
+  assert.equal(result.financialMetrics.impactoMensal, 23.75);
+  assert.equal(result.financialMetrics.custoTotalPrazo, 1260);
+  assert.equal(result.financialMetrics.jurosEmbutidos, 5);
+  assert.equal(result.decision.riskLevel, "yellow");
+  assert.match(result.warningMessage, /orçamento livre/i);
+});
+
+test("evaluateBudget marca yellow e red pelo impacto mensal", () => {
+  const yellow = BudgetEngine.evaluateBudget(900, {
+    mode: "monthly",
+    monthly: 100,
+    months: 12,
+    installment: {
+      amount: 24,
+      months: 12,
+      downpayment: 0,
+    },
+  });
+  const red = BudgetEngine.evaluateBudget(900, {
+    mode: "monthly",
+    monthly: 100,
+    months: 12,
+    installment: {
+      amount: 40,
+      months: 12,
+      downpayment: 0,
+    },
+  });
+
+  assert.equal(yellow.warningLevel, "yellow");
+  assert.equal(yellow.financialMetrics.impactoMensal, 24);
+  assert.equal(red.warningLevel, "red");
+  assert.equal(red.financialMetrics.impactoMensal, 40);
 });

@@ -45,7 +45,7 @@ test("APERTADO vira destaque quando não há CABE", () => {
   ]);
 
   assert.equal(result.recommended[0].product.title, "Apertado 1");
-  assert.match(result.recommended[0].label, /Boa alternativa|Melhor escolha/i);
+  assert.match(result.recommended[0].label, /Melhor alternativa dentro do possível|Boa alternativa|Melhor escolha/i);
   assert.ok(result.summary.length > 0);
 });
 

@@ -5,7 +5,18 @@ import MercadoLivreConnector from "../connectors/MercadoLivreConnector.js";
 import CatalogManager from "../catalog/CatalogManager.js";
 import { resolveCatalogSeedPath } from "../runtime/catalog-path.js";
 import { projectRoot } from "../runtime/project-root.js";
-
+import {
+  buildDisplayTitle,
+  detectLanguage,
+  extractBrand,
+  extractModel,
+  inferCategoryFromFields,
+  inferProductType,
+  normalizeForAnalysis,
+  resolvePortugueseDisplayTitle,
+  sanitizeCategory,
+  scoreProductMatch,
+} from "../catalog/ProductNormalizer.js";
 
 const root = projectRoot;
 const seedPath = resolveCatalogSeedPath(path.join(root, "data", "products.seed.json"));
@@ -23,7 +34,17 @@ function normalizeText(value = "") {
   return String(value || "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
+    .toLowerCase()
+    .trim();
+}
+
+function textHasTerm(text = "", term = "") {
+  const haystack = normalizeText(text);
+  const needle = normalizeText(term);
+  if (!haystack || !needle) return false;
+  if (needle.includes(" ")) return haystack.includes(needle);
+  const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(^|\\W)${escaped}(\\W|$)`).test(haystack);
 }
 
 function seedRules(query = "") {
@@ -33,6 +54,7 @@ function seedRules(query = "") {
     tv: { include: ["tv", "televisao", "smart tv", "smarttv", "oled", "qled", "roku"], exclude: ["celular", "notebook", "tablet", "casa", "presente"] },
     relogio: { include: ["relogio", "smartwatch", "watch", "pulseira inteligente"], exclude: ["celular", "notebook", "tablet", "casa", "presente"] },
     notebook: { include: ["notebook", "laptop", "ideapad", "vivobook", "aspire", "inspiron"], exclude: ["celular", "tv", "tablet", "casa", "presente"] },
+    fone: { include: ["fone", "headphone", "headset", "earbud", "earphone", "airpods"], exclude: ["glasses", "audio glasses", "smart glasses", "power bank", "carregador", "cabo", "case", "capa", "pelicula", "vidro", "protetor"] },
     presente: { include: ["presente", "kit", "caneca", "bloco", "acessorio"], exclude: ["celular", "tv", "notebook", "tablet"] },
     casa: { include: ["casa", "air fryer", "fritadeira", "aspirador", "cozinha"], exclude: ["celular", "tv", "notebook", "tablet"] },
     tablet: { include: ["tablet", "ipad", "galaxy tab"], exclude: ["celular", "tv", "notebook", "casa", "presente"] },
@@ -42,20 +64,28 @@ function seedRules(query = "") {
 
 function matchSeedProduct(product = {}, query = "") {
   const q = normalizeText(query).trim();
-  const text = normalizeText(`${product.title || ""} ${product.category || ""}`);
+  const text = normalizeText(`${product.title || ""} ${product.category || ""} ${product.brand || ""} ${product.model || ""}`);
   if (!q) return true;
   const rule = seedRules(q);
   if (rule) {
-    return rule.include.some((term) => text.includes(term)) && !rule.exclude.some((term) => text.includes(term));
+    return rule.include.some((term) => textHasTerm(text, term)) && !rule.exclude.some((term) => textHasTerm(text, term));
   }
-  return text.includes(q);
+  return textHasTerm(text, q);
 }
 
 function mapSeedProduct(raw = {}) {
   return {
     id: raw.id || "",
-    title: raw.title || "",
+    title: raw.displayTitle || raw.title || "",
+    originalTitle: raw.originalTitle || raw.title || "",
+    displayTitle: raw.displayTitle || raw.title || "",
     category: raw.category || "",
+    normalizedCategory: raw.normalizedCategory || raw.category || "",
+    productType: raw.productType || "product",
+    isAccessory: Boolean(raw.isAccessory),
+    compatibility: raw.compatibility || "",
+    language: raw.language || "latin",
+    normalizationWarnings: Array.isArray(raw.normalizationWarnings) ? raw.normalizationWarnings : [],
     store: "Mercado Livre",
     price: Number(raw.price || 0),
     currency: raw.currency || "BRL",
@@ -92,7 +122,11 @@ function catalogSourceLabel(item = {}) {
 
 function buildCatalogSearchText(item = {}) {
   return normalizeText([
+    item.displayTitle,
+    item.originalTitle,
     item.title,
+    item.normalizedCategory,
+    item.productType,
     item.category,
     item.brand,
     item.model,
@@ -101,28 +135,65 @@ function buildCatalogSearchText(item = {}) {
     item.marketplace,
     item.source,
     item.store,
+    item.compatibility,
   ].filter(Boolean).join(" "));
 }
 
 function matchCatalogQuery(item = {}, query = "") {
   const q = normalizeText(query).trim();
   if (!q) return true;
-  const text = buildCatalogSearchText(item);
-  const termsByQuery = {
-    celular: ["celular", "smartphone", "galaxy", "moto", "redmi", "iphone"],
-    smartphone: ["celular", "smartphone", "galaxy", "moto", "redmi", "iphone"],
-    relogio: ["relogio", "relógio", "smartwatch", "watch", "pulseira inteligente"],
-    relógio: ["relogio", "relógio", "smartwatch", "watch", "pulseira inteligente"],
-    notebook: ["notebook", "laptop", "ideapad", "vivobook", "aspire", "inspiron"],
-    tablet: ["tablet", "ipad", "galaxy tab", "tab"],
-    fone: ["fone", "headphone", "earbud", "auricular", "airpods", "buds"],
-    carregador: ["carregador", "charger", "fonte", "usb c", "usb-c"],
-    xiaomi: ["xiaomi", "redmi", "poco", "mi "],
-    redmi: ["xiaomi", "redmi", "poco", "mi "],
-    poco: ["xiaomi", "redmi", "poco", "mi "],
-  };
-  const terms = termsByQuery[q] || [q];
-  return terms.some((term) => text.includes(normalizeText(term)));
+  const rule = seedRules(q);
+  if (rule) return matchSeedProduct(item, q);
+  return scoreProductMatch(item, q) > 0 || textHasTerm(buildCatalogSearchText(item), q);
+}
+
+function looksLikeAccessory(item = {}) {
+  const text = normalizeText([
+    item.displayTitle,
+    item.originalTitle,
+    item.title,
+    item.normalizedCategory,
+    item.category,
+    item.productType,
+    item.description,
+    item.compatibility,
+  ].filter(Boolean).join(" "));
+  return [
+    "capa",
+    "capinha",
+    "case",
+    "cover",
+    "pelicula",
+    "pel?cula",
+    "vidro",
+    "protetor",
+    "screen protector",
+    "film",
+    "carregador",
+    "charger",
+    "cabo",
+    "cable",
+    "fonte",
+    "adapter",
+    "adaptador",
+    "strap",
+    "pulseira",
+    "holder",
+    "power bank",
+    "powerbank",
+    "audio glasses",
+    "smart audio glasses",
+    "bamper",
+    "bumper",
+    "watch band",
+    "smart band",
+    "suporte",
+    "acessorio",
+    "accessory",
+    "peca",
+    "piece",
+    "compatible",
+  ].some((term) => text.includes(term));
 }
 
 function isRealCatalogItem(item = {}) {
@@ -134,10 +205,31 @@ function normalizeCatalogProduct(item = {}) {
   const permalink = String(item.permalink || item.productUrl || item.affiliateUrl || item.url || "").trim();
   const productUrl = String(item.productUrl || item.affiliateUrl || item.permalink || item.url || "").trim();
   const image = String(item.image || item.thumbnail || "").trim();
+  const originalTitle = String(item.originalTitle || item.title || "").trim();
+  const displayTitle = String(resolvePortugueseDisplayTitle(originalTitle || item.title || "", item.displayTitle || buildDisplayTitle(originalTitle || item.title || ""))).trim();
+  const language = String(item.language || detectLanguage(originalTitle || item.title || "")).trim();
+  const inferredCategoryFromTitle = sanitizeCategory(inferCategoryFromFields(item, displayTitle || originalTitle), displayTitle || originalTitle);
+  const inferredCategory = inferredCategoryFromTitle !== "outros"
+    ? inferredCategoryFromTitle
+    : sanitizeCategory(item.normalizedCategory || item.category || "", displayTitle || originalTitle);
+  const productType = String(item.productType || inferProductType(inferredCategory, normalizeForAnalysis(`${displayTitle} ${item.description || ""}`)) || "product").trim().toLowerCase();
+  const brand = item.brand || extractBrand(`${displayTitle} ${item.description || ""}`) || null;
+  const model = item.model || extractModel(displayTitle || originalTitle, brand || "") || null;
+  const isAccessory = Boolean((item.isAccessory ?? ["accessory", "piece", "compatible"].includes(productType)) || ["pelicula", "capa", "cabo", "carregador", "acessorio", "peca"].includes(inferredCategory));
   return {
     id: String(item.id || item.externalId || item.sku || item.gtin || item.ean || item.title || ""),
-    title: String(item.title || ""),
-    category: String(item.category || ""),
+    title: String(displayTitle || item.title || ""),
+    originalTitle,
+    displayTitle,
+    category: String(item.category || inferredCategory || ""),
+    normalizedCategory: inferredCategory || String(item.category || "").toLowerCase(),
+    productType,
+    brand,
+    model,
+    isAccessory,
+    compatibility: String(item.compatibility || "").trim(),
+    language,
+    normalizationWarnings: Array.isArray(item.normalizationWarnings) ? item.normalizationWarnings : [],
     store: catalogSourceLabel(item),
     price: Number(item.price || 0),
     currency: String(item.currency || "BRL"),
@@ -165,19 +257,34 @@ function normalizeCatalogProduct(item = {}) {
 class MercadoLivreProvider extends MarketplaceProvider {
   searchCatalogProducts(query = "", options = {}) {
     const q = String(query || "").trim();
+    const accessoryIntent = /\b(capa|case|pelicula|pel[íi]cula|carregador|cabo|fone|headphone|airpods|earbud|strap|pulseira|acessorio|acess[óo]rio)\b/i.test(q);
     const catalog = catalogManager.list().filter((item) => item && Number(item.price || 0) > 0 && (item.productUrl || item.affiliateUrl || item.permalink || item.url));
-    const realItems = catalog.filter((item) => isRealCatalogItem(item) && matchCatalogQuery(item, q));
-    const seedItems = catalog.filter((item) => !isRealCatalogItem(item) && matchCatalogQuery(item, q));
+    const realItems = catalog.filter((item) => {
+      const itemAccessory = Boolean(item.isAccessory || looksLikeAccessory(item) || ["accessory", "piece", "compatible"].includes(String(item.productType || "").toLowerCase()));
+      if (!accessoryIntent && itemAccessory) return false;
+      return isRealCatalogItem(item) && matchCatalogQuery(item, q);
+    });
+    const seedItems = catalog.filter((item) => {
+      const itemAccessory = Boolean(item.isAccessory || looksLikeAccessory(item) || ["accessory", "piece", "compatible"].includes(String(item.productType || "").toLowerCase()));
+      if (!accessoryIntent && itemAccessory) return false;
+      return !isRealCatalogItem(item) && matchCatalogQuery(item, q);
+    });
     const ranked = [...realItems, ...seedItems].sort((a, b) => {
       const aReal = isRealCatalogItem(a) ? 1 : 0;
       const bReal = isRealCatalogItem(b) ? 1 : 0;
       if (bReal !== aReal) return bReal - aReal;
+      const aScore = scoreProductMatch(a, q);
+      const bScore = scoreProductMatch(b, q);
+      if (bScore !== aScore) return bScore - aScore;
+      const aAccessory = Boolean(a.isAccessory || looksLikeAccessory(a) || ["accessory", "piece", "compatible"].includes(String(a.productType || "").toLowerCase()));
+      const bAccessory = Boolean(b.isAccessory || looksLikeAccessory(b) || ["accessory", "piece", "compatible"].includes(String(b.productType || "").toLowerCase()));
+      if (aAccessory !== bAccessory) return aAccessory ? 1 : -1;
       const aSource = String(a.marketplace || a.source || "").toLowerCase() === "mi_shop" ? 1 : 0;
       const bSource = String(b.marketplace || b.source || "").toLowerCase() === "mi_shop" ? 1 : 0;
       if (bSource !== aSource) return bSource - aSource;
       const byPrice = Number(a.price || 0) - Number(b.price || 0);
       if (byPrice !== 0) return byPrice;
-      return String(a.title || "").localeCompare(String(b.title || ""), "pt-BR");
+      return String(a.displayTitle || a.title || "").localeCompare(String(b.displayTitle || b.title || ""), "pt-BR");
     });
     const limited = ranked.slice(0, Number(options.limit || 20));
     return {
@@ -196,7 +303,7 @@ class MercadoLivreProvider extends MarketplaceProvider {
       rawCount: ranked.length,
       returnedCount: limited.length,
       firstFive: limited.slice(0, 5).map((item) => ({
-        title: item.title,
+        title: item.displayTitle || item.title,
         price: item.price,
         permalink: item.productUrl || item.affiliateUrl || item.permalink || item.url || "",
         image: item.image || item.thumbnail || "",
@@ -240,8 +347,16 @@ class MercadoLivreProvider extends MarketplaceProvider {
       return mapSeedProduct(rawItem);
     }
     const product = MercadoLivreConnector.normalizeProduct(rawItem, rawItem?.dataMode || "real-authenticated");
+    const normalized = normalizeCatalogProduct({
+      ...product,
+      marketplace: "mercadolivre",
+      source: "mercadolivre",
+      dataMode: product.dataMode || "real-authenticated",
+      category: product.category || "",
+    });
     return {
       ...product,
+      ...normalized,
       marketplace: "mercadolivre",
       source: "mercadolivre",
       dataMode: product.dataMode || "real-authenticated",
@@ -254,4 +369,4 @@ class MercadoLivreProvider extends MarketplaceProvider {
 }
 
 export { MercadoLivreProvider };
-export default MercadoLivreProvider;
+export default new MercadoLivreProvider();

@@ -56,6 +56,13 @@ function safeText(value, fallback = "") {
   return String(value);
 }
 
+function resolveProductTitle(product) {
+  return safeText(
+    product?.displayTitle || product?.originalTitle || product?.title,
+    "Produto",
+  );
+}
+
 function normalizeStatusLabel(value = "") {
   const text = String(value || "").trim().toUpperCase();
   if (!text) return "CABE";
@@ -86,7 +93,6 @@ function resolveSourceLabel(product) {
   if (product?.sourceLabel) return String(product.sourceLabel);
 
   const source = String(product?.marketplace || product?.source || product?.store || "").trim().toLowerCase();
-  if (!source) return "Loja parceira";
   if (source === "awin") return "Awin";
   if (source === "actionpay") return "Actionpay";
   if (source === "mi_shop" || source === "mishop" || source === "mi shop") return "Mi Shop";
@@ -96,7 +102,11 @@ function resolveSourceLabel(product) {
     if (sourceType === "seed" || sourceType === "catalog_seed") return "Mercado Livre seed";
     return "Mercado Livre";
   }
-  return String(product?.store || product?.marketplace || product?.source || "Origem não informada");
+  const seller = String(product?.seller?.name || product?.seller || "").trim();
+  if (seller) return seller;
+  const store = String(product?.store || "").trim();
+  if (store && store.toLowerCase() !== "loja parceira") return store;
+  return String(product?.marketplace || product?.source || "Origem não informada");
 }
 
 function productImage(product) {
@@ -128,7 +138,7 @@ function buildProductCardHtml(product) {
     : "";
   const total = formatPrice(product.price);
   const note = safeText(
-    product.note,
+    product.explanation || product.note,
     isDemoProduct(product)
       ? "Demonstração — sem anúncio real."
       : "Preço e disponibilidade devem ser confirmados na loja.",
@@ -147,7 +157,7 @@ function buildProductCardHtml(product) {
       <div class="image-box">${productImage(product)}</div>
       <div class="card-body">
         <span class="store">${escapeHtml(sourceLabel)}</span>
-        <h2>${escapeHtml(product.title || "")}</h2>
+        <h2>${escapeHtml(resolveProductTitle(product))}</h2>
         ${product.status ? `<p class="small"><strong>Status:</strong> ${escapeHtml(normalizeStatusLabel(product.status))}</p>` : ""}
         ${Number.isFinite(product.score) ? `<p class="small"><strong>Score O Que Cabe:</strong> ${Number(product.score).toFixed(0)}/100</p>` : ""}
         <p class="small">${escapeHtml(note)}</p>
@@ -224,7 +234,7 @@ function renderRecommendationBlock(recommendations = []) {
           </div>
         </div>
         <span class="store">${escapeHtml(sourceLabel)}</span>
-        <h3>${escapeHtml(product.title || "Produto")}</h3>
+        <h3>${escapeHtml(resolveProductTitle(product))}</h3>
         <p class="small">${escapeHtml(statusLabel)} · Score ${Number.isFinite(product.score) ? product.score : 0}/100</p>
         <p class="small">${formatPrice(product.price)}</p>
         <p class="small">Base do O Que Cabe. ${escapeHtml(statusLabel)} no orçamento.</p>
@@ -473,7 +483,7 @@ async function loadHomeCatalogData() {
     const response = await fetch("/api/home-data");
     const data = await response.json();
     const categories = Array.isArray(data.categories) ? data.categories : [];
-    const pechinchas = Array.isArray(data.pechinchas) ? data.pechinchas : [];
+    const pechinchas = Array.isArray(data.shortcuts) ? data.shortcuts : Array.isArray(data.pechinchas) ? data.pechinchas : [];
     if (data.ok === false && homeCatalogState) {
       homeCatalogState.textContent = "O catálogo está sendo carregado aos poucos.";
     }
@@ -535,7 +545,8 @@ async function loadHomeCatalogData() {
     }
 
     if (homeCatalogState) {
-      homeCatalogState.textContent = `${categories.length} categorias reais e ${pechinchas.length} atalhos do catálogo`;
+      const focusLabel = data.focusLabel || "Balcão de Informática";
+      homeCatalogState.textContent = `${focusLabel}: ${categories.length} categorias reais e ${pechinchas.length} atalhos do catálogo`;
     }
   } catch {
     if (categoryGrid && !categoryGrid.children.length) {
