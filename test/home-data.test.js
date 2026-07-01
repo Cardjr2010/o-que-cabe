@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { buildHomeCatalogData } from "../src/runtime/home-data.js";
 
-test("home data prioriza o balcão de informática sem acessórios aleatórios", () => {
+test("home data prioriza o balcao de informatica sem acessorios aleatorios", () => {
   const data = buildHomeCatalogData();
   const categories = Array.isArray(data.categories) ? data.categories : [];
   const categoryKeys = categories.map((entry) => String(entry.category || ""));

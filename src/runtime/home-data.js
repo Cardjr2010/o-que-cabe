@@ -33,7 +33,7 @@ function getCategoryBuilder() {
 function normalizedCatalogCategoryKey(value = "") {
   return String(value || "")
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[̀-ͯ]/g, "")
     .trim()
     .toLowerCase();
 }
@@ -48,6 +48,20 @@ const HOME_TECH_CATEGORIES = new Set([
   "monitor",
 ]);
 
+const HOME_ALLOWED_CATEGORY_LABELS = new Set([
+  "celular",
+  "notebook",
+  "tablet",
+  "tv",
+  "relogio",
+  "fone",
+  "monitor",
+  "carregador",
+  "cabo",
+  "pelicula",
+  "capa",
+]);
+
 const HOME_ACCESSORY_CATEGORIES = new Set([
   "carregador",
   "cabo",
@@ -58,6 +72,25 @@ const HOME_ACCESSORY_CATEGORIES = new Set([
   "compativel",
 ]);
 
+const REAL_HOME_MARKETPLACES = new Set([
+  "mi_shop",
+  "mi shop",
+  "awin",
+  "actionpay",
+  "google_merchant",
+  "csv_feed",
+  "feed",
+]);
+
+const REAL_HOME_SOURCE_TYPES = new Set([
+  "csv_feed",
+  "awin_feed",
+  "actionpay_yml",
+  "google_merchant_api",
+  "manual",
+  "feed",
+]);
+
 function normalizeProductType(value = "") {
   return normalizedCatalogCategoryKey(value || "");
 }
@@ -65,6 +98,8 @@ function normalizeProductType(value = "") {
 function isHomeTechProduct(item = {}) {
   const category = normalizedCatalogCategoryKey(item?.normalizedCategory || item?.category || "");
   const productType = normalizeProductType(item?.productType || "");
+  const source = normalizedCatalogCategoryKey(item?.marketplace || item?.source || "");
+  const sourceType = normalizedCatalogCategoryKey(item?.sourceType || "");
   const text = normalizedCatalogCategoryKey([
     item?.displayTitle,
     item?.originalTitle,
@@ -106,6 +141,8 @@ function isHomeTechProduct(item = {}) {
       "piece",
       "compatible",
     ].some((term) => text.includes(term));
+  const isRealSource = REAL_HOME_MARKETPLACES.has(source) || REAL_HOME_SOURCE_TYPES.has(sourceType) || item?.dataMode === "real";
+  if (!isRealSource) return false;
   if (isAccessory) return false;
   return HOME_TECH_CATEGORIES.has(category);
 }
@@ -171,14 +208,22 @@ function buildHomePechinchas(items = [], categories = []) {
   }).filter(Boolean);
 }
 
+function getRealHomeCatalog(items = []) {
+  const realItems = items.filter(isHomeTechProduct);
+  if (realItems.length) return realItems;
+  return items.filter((item) => String(item?.dataMode || "").toLowerCase() === "real");
+}
+
 export function buildHomeCatalogData() {
   try {
     const items = getCatalogManager().list();
-    const homeItems = items.filter(isHomeTechProduct);
+    const catalogForHome = getRealHomeCatalog(items);
     const builder = getCategoryBuilder();
-    const catalogForHome = homeItems.length ? homeItems : items;
-    const categories = builder.build(catalogForHome).filter((entry) => entry.category !== "outros");
-    const shortcuts = buildHomePechinchas(catalogForHome, categories);
+    const categories = builder
+      .build(catalogForHome)
+      .filter((entry) => entry.category !== "outros" && HOME_ALLOWED_CATEGORY_LABELS.has(String(entry.category || "").toLowerCase()));
+    const shortcuts = buildHomePechinchas(catalogForHome, categories)
+      .filter((entry) => HOME_ALLOWED_CATEGORY_LABELS.has(String(entry.category || "").toLowerCase()));
     const activeSources = builder.buildMarketplaceSummary(catalogForHome)
       .map((item) => ({
         source: item.marketplace,
