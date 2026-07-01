@@ -13,7 +13,6 @@ import { ActionpayFeedProvider } from "../src/providers/ActionpayFeedProvider.js
 import { ActionpayProvider } from "../src/providers/ActionpayProvider.js";
 import { ActionpayYmlImporter } from "../src/importers/ActionpayYmlImporter.js";
 import CatalogManager from "../src/catalog/CatalogManager.js";
-import CategoryBuilder from "../src/catalog/CategoryBuilder.js";
 import { GoogleMerchantProductsAdapter } from "../src/adapters/GoogleMerchantProductsAdapter.js";
 import { buildHomeCatalogData } from "../src/runtime/home-data.js";
 import { projectRoot, resolveProjectPath } from "../src/runtime/project-root.js";
