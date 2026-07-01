@@ -46,9 +46,20 @@ function parseNumber(value) {
   if (typeof value === "number") return Number.isFinite(value) ? value : 0;
   const text = cleanText(value).replace(/[^\d.,-]/g, "");
   if (!text) return 0;
-  const normalized = text.includes(",") && text.includes(".")
-    ? text.replace(/\./g, "").replace(",", ".")
-    : text.replace(",", ".");
+  const hasComma = text.includes(",");
+  const hasDot = text.includes(".");
+  let normalized = text;
+  if (hasComma && hasDot) {
+    normalized = text.lastIndexOf(",") > text.lastIndexOf(".")
+      ? text.replace(/\./g, "").replace(",", ".")
+      : text.replace(/,/g, "");
+  } else if (hasComma) {
+    const decimalComma = /,\d{1,2}$/.test(text);
+    normalized = decimalComma ? text.replace(/\./g, "").replace(",", ".") : text.replace(/,/g, "");
+  } else if (hasDot) {
+    const decimalDot = /\.\d{1,2}$/.test(text);
+    normalized = decimalDot ? text.replace(/,/g, "") : text.replace(/\./g, "");
+  }
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : 0;
 }
@@ -88,10 +99,24 @@ function extractAttributes(block = "") {
 
 function parsePrice(rawPrice = "") {
   const text = cleanText(rawPrice);
-  const match = text.match(/([0-9]+(?:[.,][0-9]+)?)(?:\s*([A-Z]{3}))?/i);
+  const match = text.match(/([0-9][0-9.,]*)/);
   if (!match) return { price: 0, currency: "BRL" };
-  const amount = Number(String(match[1]).replace(/\./g, "").replace(",", "."));
-  const currency = cleanText(match[2] || "BRL") || "BRL";
+  const numeric = String(match[1]).trim();
+  const hasComma = numeric.includes(",");
+  const hasDot = numeric.includes(".");
+  let normalized = numeric;
+  if (hasComma && hasDot) {
+    normalized = numeric.lastIndexOf(",") > numeric.lastIndexOf(".")
+      ? numeric.replace(/\./g, "").replace(",", ".")
+      : numeric.replace(/,/g, "");
+  } else if (hasComma) {
+    normalized = /,\d{1,2}$/.test(numeric) ? numeric.replace(/\./g, "").replace(",", ".") : numeric.replace(/,/g, "");
+  } else if (hasDot) {
+    normalized = /\.(\d{1,2})$/.test(numeric) ? numeric : numeric.replace(/\./g, "");
+  }
+  const amount = Number(normalized);
+  const currencyMatch = text.match(/\b([A-Z]{3})\b/);
+  const currency = cleanText(currencyMatch?.[1] || "BRL") || "BRL";
   return {
     price: Number.isFinite(amount) ? amount : 0,
     currency,

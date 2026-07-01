@@ -33,7 +33,20 @@ function parseNumber(value) {
   if (typeof value === "number") return Number.isFinite(value) ? value : 0;
   const text = cleanText(value).replace(/[^\d.,-]/g, "");
   if (!text) return 0;
-  const normalized = text.includes(",") && text.includes(".") ? text.replace(/\./g, "").replace(",", ".") : text.replace(",", ".");
+  const hasComma = text.includes(",");
+  const hasDot = text.includes(".");
+  let normalized = text;
+  if (hasComma && hasDot) {
+    normalized = text.lastIndexOf(",") > text.lastIndexOf(".")
+      ? text.replace(/\./g, "").replace(",", ".")
+      : text.replace(/,/g, "");
+  } else if (hasComma) {
+    const decimalComma = /,\d{1,2}$/.test(text);
+    normalized = decimalComma ? text.replace(/\./g, "").replace(",", ".") : text.replace(/,/g, "");
+  } else if (hasDot) {
+    const decimalDot = /\.\d{1,2}$/.test(text);
+    normalized = decimalDot ? text.replace(/,/g, "") : text.replace(/\./g, "");
+  }
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : 0;
 }
