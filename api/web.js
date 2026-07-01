@@ -368,7 +368,7 @@ function getBuildMarker() {
     ok: true,
     buildCommit: process.env.VERCEL_GIT_COMMIT_SHA || "unknown",
     buildTime: process.env.VERCEL_DEPLOYMENT_CREATED_AT || new Date().toISOString(),
-    apiVersion: "health-minimal-001",
+    apiVersion: "health-minimal-002",
   };
 }
 
