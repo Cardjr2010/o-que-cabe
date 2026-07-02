@@ -1,15 +1,10 @@
-﻿import CategoryBuilder from "../catalog/CategoryBuilder.js";
 import CatalogManager from "../catalog/CatalogManager.js";
-import { projectRoot, resolveProjectPath } from "./project-root.js";
+import ProductIntelligenceEngine from "../catalog/ProductIntelligenceEngine.js";
 import { resolveCatalogSeedPath } from "./catalog-path.js";
-
-const currency = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-});
+import { projectRoot, resolveProjectPath } from "./project-root.js";
 
 let catalogManagerInstance = null;
-let categoryBuilderInstance = null;
+let productIntelligenceEngineInstance = null;
 
 function getCatalogManager() {
   if (!catalogManagerInstance) {
@@ -23,11 +18,17 @@ function getCatalogManager() {
   return catalogManagerInstance;
 }
 
-function getCategoryBuilder() {
-  if (!categoryBuilderInstance) {
-    categoryBuilderInstance = new CategoryBuilder({ minCount: 5, maxButtons: 6 });
+function getProductIntelligenceEngine() {
+  if (!productIntelligenceEngineInstance) {
+    productIntelligenceEngineInstance = new ProductIntelligenceEngine({
+      minCount: 5,
+      maxHomeButtons: 6,
+      maxDepartments: 14,
+      maxCategories: 6,
+      focusLabel: "Catálogo real",
+    });
   }
-  return categoryBuilderInstance;
+  return productIntelligenceEngineInstance;
 }
 
 function normalizedCatalogCategoryKey(value = "") {
@@ -38,182 +39,25 @@ function normalizedCatalogCategoryKey(value = "") {
     .toLowerCase();
 }
 
-const HOME_TECH_CATEGORIES = new Set([
-  "celular",
-  "notebook",
-  "tablet",
-  "tv",
-  "relogio",
-  "fone",
-  "monitor",
+const HOME_EXCLUDED_SOURCES = new Set([
+  "mi_shop",
+  "mercadolivre",
+  "mercado livre",
 ]);
 
-const HOME_ALLOWED_CATEGORY_LABELS = new Set([
-  "celular",
-  "notebook",
-  "tablet",
-  "monitor",
-  "tv",
-  "fone",
-]);
-
-const HOME_ACCESSORY_CATEGORIES = new Set([
-  "carregador",
-  "cabo",
-  "pelicula",
-  "capa",
-  "acessorio",
-  "peca",
-  "compativel",
-]);
-
-const HOME_PRIMARY_SOURCE_MARKETPLACES = new Set([
-  "saldao_informatica",
-  "actionpay_saldao",
-]);
-
-const REAL_HOME_MARKETPLACES = new Set([
-  "saldao_informatica",
-  "actionpay_saldao",
-]);
-
-const REAL_HOME_SOURCE_TYPES = new Set([
-  "csv_feed",
-  "actionpay_yml",
-  "manual",
-  "feed",
-]);
-
-function normalizeProductType(value = "") {
-  return normalizedCatalogCategoryKey(value || "");
-}
-
-function isPrimaryHomeProduct(item = {}) {
+function isVisibleHomeProduct(item = {}) {
   const source = normalizedCatalogCategoryKey(item?.marketplace || item?.source || "");
   const seller = normalizedCatalogCategoryKey(item?.seller || item?.store || "");
   const sourceType = normalizedCatalogCategoryKey(item?.sourceType || "");
-  return HOME_PRIMARY_SOURCE_MARKETPLACES.has(source)
-    || HOME_PRIMARY_SOURCE_MARKETPLACES.has(seller)
-    || HOME_PRIMARY_SOURCE_MARKETPLACES.has(sourceType)
-    || seller.includes("saldao")
-    || source.includes("saldao")
-    || sourceType.includes("saldao")
-    || sourceType.includes("saldao");
-}
-
-function isHomeTechProduct(item = {}) {
-  const category = normalizedCatalogCategoryKey(item?.normalizedCategory || item?.category || "");
-  const productType = normalizeProductType(item?.productType || "");
-  const source = normalizedCatalogCategoryKey(item?.marketplace || item?.source || "");
-  const sourceType = normalizedCatalogCategoryKey(item?.sourceType || "");
-  const text = normalizedCatalogCategoryKey([
-    item?.displayTitle,
-    item?.originalTitle,
-    item?.title,
-    item?.description,
-    item?.compatibility,
-  ].filter(Boolean).join(" "));
-  const isAccessory = Boolean(item?.isAccessory)
-    || HOME_ACCESSORY_CATEGORIES.has(category)
-    || ["accessory", "piece", "compatible"].includes(productType)
-    || [
-      "capa",
-      "case",
-      "cover",
-      "pelicula",
-      "screen protector",
-      "carregador",
-      "charger",
-      "cabo",
-      "cable",
-      "fonte",
-      "adapter",
-      "adaptador",
-      "strap",
-      "pulseira",
-      "holder",
-      "power bank",
-      "powerbank",
-      "audio glasses",
-      "smart audio glasses",
-      "bamper",
-      "bumper",
-      "watch band",
-      "smart band",
-      "suporte",
-      "acessorio",
-      "accessory",
-      "peca",
-      "piece",
-      "compatible",
-    ].some((term) => text.includes(term));
-  const isRealSource = REAL_HOME_MARKETPLACES.has(source) || REAL_HOME_SOURCE_TYPES.has(sourceType) || item?.dataMode === "real";
-  if (!isRealSource) return false;
-  if (isAccessory) return false;
-  return HOME_TECH_CATEGORIES.has(category);
-}
-
-function buildCatalogCategoryStats(items = []) {
-  const stats = new Map();
-  for (const item of Array.isArray(items) ? items : []) {
-    const key = normalizedCatalogCategoryKey(item?.normalizedCategory || item?.category || "outros") || "outros";
-    const price = Number(item?.price || 0);
-    const entry = stats.get(key) || {
-      category: key,
-      count: 0,
-      minPrice: Number.POSITIVE_INFINITY,
-      sampleTitles: [],
-    };
-    entry.count += 1;
-    if (Number.isFinite(price) && price > 0 && price < entry.minPrice) entry.minPrice = price;
-    const title = item?.displayTitle || item?.title || "";
-    if (title && entry.sampleTitles.length < 3) entry.sampleTitles.push(title);
-    stats.set(key, entry);
-  }
-  return stats;
-}
-
-function buildHomePechinchas(items = [], categories = []) {
-  const stats = buildCatalogCategoryStats(items);
-  const prioritized = [...categories]
-    .filter((entry) => entry && entry.category && entry.category !== "outros")
-    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "pt-BR"));
-
-  const shortcutBudgets = {
-    celular: [500, 1500],
-    notebook: [1500, 2500],
-    tablet: [500, 1000],
-    tv: [500, 1000, 2000],
-    relogio: [150, 300, 500],
-    fone: [100, 250],
-    casa: [100, 250, 500],
-    presente: [50, 100, 250],
-  };
-
-  return prioritized.slice(0, 5).map((pick) => {
-    const stat = stats.get(pick.category);
-    const allowedBudgets = shortcutBudgets[pick.category] || [500, 1000, 1500];
-    const minPrice = Number(stat?.minPrice || 0);
-    const threshold = allowedBudgets.find((value) => Number.isFinite(minPrice) && minPrice <= value)
-      || allowedBudgets[allowedBudgets.length - 1];
-    return {
-      label: `${pick.label} até ${currency.format(threshold)}`,
-      subtitle: `${pick.count} itens reais · menor preço ${currency.format(stat?.minPrice || threshold)}`,
-      query: pick.category,
-      category: pick.category,
-      count: pick.count,
-      mode: "total",
-      totalBudget: threshold,
-      monthly: threshold,
-      months: 12,
-    };
-  }).filter(Boolean);
+  return !(
+    HOME_EXCLUDED_SOURCES.has(source)
+    || HOME_EXCLUDED_SOURCES.has(seller)
+    || HOME_EXCLUDED_SOURCES.has(sourceType)
+  );
 }
 
 function getRealHomeCatalog(items = []) {
-  const primaryItems = items.filter((item) => isPrimaryHomeProduct(item) && isHomeTechProduct(item));
-  if (primaryItems.length) return primaryItems;
-  return items.filter((item) => isPrimaryHomeProduct(item));
+  return Array.isArray(items) ? items.filter((item) => isVisibleHomeProduct(item)) : [];
 }
 
 function labelHomeSource(value = "") {
@@ -224,10 +68,6 @@ function labelHomeSource(value = "") {
   if (source === "actionpay") return "Actionpay";
   if (source === "awin") return "Awin";
   if (source === "google_merchant") return "Google Merchant";
-  return cleanLabel(value);
-}
-
-function cleanLabel(value = "") {
   return String(value || "").replace(/\s+/g, " ").trim();
 }
 
@@ -235,79 +75,73 @@ export function buildHomeCatalogData() {
   try {
     const items = getCatalogManager().list();
     const catalogForHome = getRealHomeCatalog(items);
-    const builder = getCategoryBuilder();
-    const categories = builder
-      .build(catalogForHome)
-      .filter((entry) => entry.category !== "outros"
-        && HOME_ALLOWED_CATEGORY_LABELS.has(String(entry.category || "").toLowerCase())
-        && Number(entry.count || 0) >= 20)
-      .sort((a, b) => {
-        const preferred = [
-          "celular",
-          "notebook",
-          "tablet",
-          "tv",
-          "relogio",
-          "fone",
-          "monitor",
-          "cabo",
-          "capa",
-        ];
-        const aIndex = preferred.indexOf(String(a.category || "").toLowerCase());
-        const bIndex = preferred.indexOf(String(b.category || "").toLowerCase());
-        if (aIndex !== -1 || bIndex !== -1) {
-          const safeA = aIndex === -1 ? Number.MAX_SAFE_INTEGER : aIndex;
-          const safeB = bIndex === -1 ? Number.MAX_SAFE_INTEGER : bIndex;
-          return safeA - safeB || b.count - a.count || a.label.localeCompare(b.label, "pt-BR");
-        }
-        return b.count - a.count || a.label.localeCompare(b.label, "pt-BR");
-      })
-      .slice(0, 6);
-  const shortcuts = buildHomePechinchas(catalogForHome, categories)
-      .filter((entry) => HOME_ALLOWED_CATEGORY_LABELS.has(String(entry.category || "").toLowerCase()));
-    const activeSources = builder.buildMarketplaceSummary(catalogForHome)
-      .map((item) => ({
-        source: labelHomeSource(item.marketplace),
+    const analysis = getProductIntelligenceEngine().buildHomeData(catalogForHome);
+
+    const departments = Array.isArray(analysis.departments) ? analysis.departments : [];
+    const categories = Array.isArray(analysis.categories) ? analysis.categories : [];
+    const shortcuts = Array.isArray(analysis.shortcuts) ? analysis.shortcuts : [];
+    const activeSources = Array.isArray(analysis.activeSources)
+      ? analysis.activeSources.map((item) => ({
+        source: labelHomeSource(item.source || item.marketplace || ""),
         count: item.count,
-      }));
+      }))
+      : [];
+
     return {
       ok: true,
       totalProducts: items.length,
-      focusLabel: "Saldão da Informática",
+      analyzedProducts: analysis.analyzedProducts || catalogForHome.length,
+      focusLabel: analysis.focusLabel || "Catálogo real",
       categories,
-      searchCategories: categories,
+      departments,
+      searchCategories: departments,
+      departmentCategories: departments,
       pechinchas: shortcuts,
       shortcuts,
       activeSources,
-      marketplaceSummary: builder.buildMarketplaceSummary(catalogForHome).slice(0, 8),
-      sellerSummary: builder.buildSellerSummary(catalogForHome).slice(0, 8),
-      brandSummary: builder.buildBrandSummary(catalogForHome).slice(0, 8),
+      marketplaceSummary: Array.isArray(analysis.marketplaceSummary)
+        ? analysis.marketplaceSummary.map((item) => ({
+          marketplace: item.source || item.marketplace || "",
+          count: item.count,
+          categories: item.categories || [],
+          sellers: item.sellers || [],
+        })).slice(0, 8)
+        : [],
+      sellerSummary: Array.isArray(analysis.sellerSummary) ? analysis.sellerSummary.slice(0, 8) : [],
+      brandSummary: Array.isArray(analysis.brandSummary) ? analysis.brandSummary.slice(0, 8) : [],
+      topBrands: Array.isArray(analysis.topBrands) ? analysis.topBrands.slice(0, 8) : [],
+      departmentSummary: Array.isArray(analysis.departmentSummary) ? analysis.departmentSummary.slice(0, 14) : [],
+      categorySummary: Array.isArray(analysis.categorySummary) ? analysis.categorySummary.slice(0, 6) : [],
+      beforeOutros: analysis.beforeOutros ?? 0,
+      afterOutros: analysis.afterOutros ?? 0,
     };
   } catch (error) {
     return {
       ok: false,
       totalProducts: 0,
-      focusLabel: "Balcão de Informática",
+      analyzedProducts: 0,
+      focusLabel: "Catálogo real",
       categories: [],
+      departments: [],
       searchCategories: [],
+      departmentCategories: [],
       pechinchas: [],
       shortcuts: [],
       activeSources: [],
       marketplaceSummary: [],
       sellerSummary: [],
       brandSummary: [],
+      topBrands: [],
+      departmentSummary: [],
+      categorySummary: [],
+      beforeOutros: 0,
+      afterOutros: 0,
       error: error?.message || "HOME_CATALOG_ERROR",
     };
   }
 }
 
-function primarySourceLabel(items = []) {
-  for (const item of Array.isArray(items) ? items : []) {
-    const source = normalizedCatalogCategoryKey(item?.marketplace || item?.source || "");
-    const seller = normalizedCatalogCategoryKey(item?.seller || item?.store || "");
-    if (source.includes("saldao") || seller.includes("saldao")) return "Saldão da Informática";
-    if (source.includes("infostore") || seller.includes("info store")) return "Info Store - Informática";
-  }
-  return "";
+export function primarySourceLabel() {
+  return "Catálogo real";
 }
 
