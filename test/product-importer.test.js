@@ -96,7 +96,7 @@ test("/api/search usa catálogo real antes de demo", async () => {
   }
 });
 
-test("demo continua sem link externo", async () => {
+test("demo continua sem link externo quando nao ha produto real", async () => {
   const originalFetch = global.fetch;
   global.fetch = async () => {
     throw new Error("offline");
@@ -104,7 +104,7 @@ test("demo continua sem link externo", async () => {
 
   try {
     const res = createResponse();
-    await handler({ url: "/api/search?q=shampoo&mode=total&totalBudget=100" }, res);
+    await handler({ url: "/api/search?q=produto-inexistente-zzzz-12345&mode=total&totalBudget=100" }, res);
     const body = JSON.parse(res.body);
 
     assert.equal(res.statusCode, 200);

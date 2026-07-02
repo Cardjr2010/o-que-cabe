@@ -8,12 +8,14 @@ import ExplanationEngine from "../src/engines/ExplanationEngine.js";
 import CsvFeedProvider from "../src/feed/providers/CsvFeedProvider.js";
 import MiShopFeedProvider from "../src/feed/providers/MiShopFeedProvider.js";
 import { SaldaoInformaticaFeedProvider } from "../src/providers/SaldaoInformaticaFeedProvider.js";
+import { InfoStoreFeedProvider } from "../src/providers/InfoStoreFeedProvider.js";
 import { MercadoLivreProvider } from "../src/providers/MercadoLivreProvider.js";
 import { AwinFeedProvider } from "../src/providers/AwinFeedProvider.js";
 import { ActionpayFeedProvider } from "../src/providers/ActionpayFeedProvider.js";
 import { ActionpayProvider } from "../src/providers/ActionpayProvider.js";
 import { ActionpayYmlImporter } from "../src/importers/ActionpayYmlImporter.js";
 import CatalogManager from "../src/catalog/CatalogManager.js";
+import SearchOrchestrator from "../src/search/SearchOrchestrator.js";
 import { GoogleMerchantProductsAdapter } from "../src/adapters/GoogleMerchantProductsAdapter.js";
 import { buildHomeCatalogData } from "../src/runtime/home-data.js";
 import { projectRoot, resolveProjectPath } from "../src/runtime/project-root.js";
@@ -57,6 +59,8 @@ let actionpayFeedProvider = null;
 let actionpayProvider = null;
 let actionpayYmlImporter = null;
 let mercadoLivreProviderInstance = null;
+let infoStoreFeedProvider = null;
+let searchOrchestratorInstance = null;
 function createFeedProvider(providerName = "mi_shop", options = {}) {
   const name = String(providerName || "").trim().toLowerCase();
   const baseOptions = {
@@ -89,6 +93,20 @@ function createFeedProvider(providerName = "mi_shop", options = {}) {
   if (name === "awin") {
     return getAwinFeedProvider();
   }
+  if (name === "infostore" || name === "info_store") {
+    if (!infoStoreFeedProvider) {
+      infoStoreFeedProvider = new InfoStoreFeedProvider({
+        ...baseOptions,
+        networkName: "infostore",
+        feedPaths: options.feedPaths || [
+          options.feedPath || process.env.INFOSTORE_FEED_PATH || resolveProjectPath("data", "infostore-feed-3029.xml"),
+          options.feedPathSecondary || process.env.INFOSTORE_FEED_PATH_SECONDARY || resolveProjectPath("data", "infostore-feed-3030.xml"),
+        ].filter(Boolean),
+        sourceName: options.sourceName || "Info Store - Informática",
+      });
+    }
+    return infoStoreFeedProvider;
+  }
   if (name === "saldao_informatica" || name === "saldao") {
     return new SaldaoInformaticaFeedProvider({
       ...baseOptions,
@@ -101,7 +119,14 @@ function createFeedProvider(providerName = "mi_shop", options = {}) {
 }
 
 function getFeedProviderNames() {
-  return ["saldao_informatica", "mi_shop", "csv", "actionpay", "awin"];
+  return ["saldao_informatica", "infostore", "mi_shop", "csv", "actionpay", "awin"];
+}
+
+function getSearchOrchestrator() {
+  if (!searchOrchestratorInstance) {
+    searchOrchestratorInstance = new SearchOrchestrator({ catalogManager: getCatalogManager() });
+  }
+  return searchOrchestratorInstance;
 }
 
 function createActionpayProvider() {
@@ -140,7 +165,12 @@ function isSaldaoCatalogProduct(item = {}) {
   const source = String(item?.marketplace || item?.source || item?.store || "").toLowerCase();
   const seller = String(item?.seller?.name || item?.seller || item?.store || "").toLowerCase();
   const sourceType = String(item?.sourceType || "").toLowerCase();
-  return source.includes("saldao") || seller.includes("saldao") || sourceType.includes("saldao");
+  return source.includes("saldao")
+    || seller.includes("saldao")
+    || sourceType.includes("saldao")
+    || source.includes("infostore")
+    || seller.includes("info store")
+    || sourceType.includes("infostore");
 }
 
 function filterSaldaoCatalogProducts(products = []) {
@@ -172,6 +202,20 @@ function getFeedProviderInstance(providerName = "mi_shop", options = {}) {
   }
   if (name === "awin") {
     return getAwinFeedProvider();
+  }
+  if (name === "infostore" || name === "info_store") {
+    if (!infoStoreFeedProvider) {
+      infoStoreFeedProvider = new InfoStoreFeedProvider({
+        ...baseOptions,
+        networkName: "infostore",
+        feedPaths: options.feedPaths || [
+          options.feedPath || process.env.INFOSTORE_FEED_PATH || resolveProjectPath("data", "infostore-feed-3029.xml"),
+          options.feedPathSecondary || process.env.INFOSTORE_FEED_PATH_SECONDARY || resolveProjectPath("data", "infostore-feed-3030.xml"),
+        ].filter(Boolean),
+        sourceName: options.sourceName || "Info Store - Informática",
+      });
+    }
+    return infoStoreFeedProvider;
   }
   if (name === "saldao_informatica" || name === "saldao") {
     return new SaldaoInformaticaFeedProvider({
@@ -218,6 +262,9 @@ function getFeedProviderStatus(providerName = "") {
       if (name === "csv") return marketplace === "csv" || marketplace === "csv_feed";
       if (name === "actionpay") return marketplace === "actionpay";
       if (name === "awin") return marketplace === "awin";
+      if (name === "infostore" || name === "info store") {
+        return marketplace === "infostore" || marketplace === "info_store" || seller.includes("info store");
+      }
       if (name === "saldao_informatica" || name === "saldao") {
         return marketplace === "saldao_informatica" || marketplace === "actionpay_saldao" || seller.includes("saldao");
       }
@@ -329,7 +376,9 @@ function describeCatalogSeedSource(seedPathResolved, seedFileExists, catalogCoun
 
 function getCatalogHealthSnapshot() {
   try {
-    const items = getCatalogManager().list();
+    const catalogManager = getCatalogManager();
+    const items = catalogManager.list();
+    const diagnostics = catalogManager.diagnostics();
     const sample = items.slice(0, 3).map((item) => ({
       id: item?.id || "",
       title: item?.title || "",
@@ -347,6 +396,14 @@ function getCatalogHealthSnapshot() {
     return {
       catalogLoaded: true,
       catalogCount: items.length,
+      totalCatalogProducts: diagnostics.rawCount ?? items.length,
+      totalPublishedProducts: diagnostics.publishedCount ?? items.length,
+      hiddenProducts: diagnostics.hiddenProducts ?? 0,
+      filteredCount: diagnostics.filteredCount ?? 0,
+      filterReasons: Array.isArray(diagnostics.filterReasons) ? diagnostics.filterReasons : [],
+      sourceCounts: Array.isArray(diagnostics.sourceCounts) ? diagnostics.sourceCounts : [],
+      seedUsed: diagnostics.seedUsed || diagnostics.seedPath || "",
+      seedCandidates: Array.isArray(diagnostics.seedCandidates) ? diagnostics.seedCandidates : [],
       sample,
       schemaErrors,
       error: "",
@@ -355,6 +412,14 @@ function getCatalogHealthSnapshot() {
     return {
       catalogLoaded: false,
       catalogCount: 0,
+      totalCatalogProducts: 0,
+      totalPublishedProducts: 0,
+      hiddenProducts: 0,
+      filteredCount: 0,
+      filterReasons: [],
+      sourceCounts: [],
+      seedUsed: "",
+      seedCandidates: [],
       sample: [],
       schemaErrors: [],
       error: error?.message || "CATALOG_HEALTH_ERROR",
@@ -1190,17 +1255,16 @@ export default async function handler(req, res) {
     const totalBudget = mode === "total"
       ? Number(url.searchParams.get("totalBudget") || "0")
       : Number(url.searchParams.get("totalBudget") || (monthly * months));
-    let providerResult = null;
     try {
-      providerResult = await getMercadoLivreProvider().searchProducts(q, {
-        limit: 20,
+      const searchResult = getSearchOrchestrator().search({
+        query: q,
         mode,
         monthly,
         months,
         totalBudget,
       });
-      const selectedProducts = filterSaldaoCatalogProducts(providerResult.products);
-      const dataMode = providerResult.dataMode || (providerResult.strategyUsed === "demo" ? "demo" : "real-authenticated");
+      const selectedProducts = searchResult.products || [];
+      const dataMode = searchResult.dataMode || (selectedProducts.some((item) => String(item.dataMode || item.mode || "").toLowerCase().startsWith("real") || String(item.dataMode || item.mode || "").toLowerCase() === "seed") ? "real" : "demo");
       const response = buildOqcResponse({
         products: selectedProducts,
         query: q,
@@ -1214,48 +1278,29 @@ export default async function handler(req, res) {
       sendJson(res, 200, {
         ok: true,
         ...response,
-        strategyUsed: providerResult.strategyUsed,
-        tokenState: providerResult.tokenState,
-        statusHttp: providerResult.statusHttp,
-        returnedCount: providerResult.returnedCount,
-        firstFive: providerResult.firstFive,
+        strategyUsed: searchResult.strategyUsed,
+        tokenState: searchResult.tokenState,
+        statusHttp: searchResult.statusHttp,
+        returnedCount: searchResult.returnedCount,
+        firstFive: searchResult.firstFive,
+        searchIntent: searchResult.intent,
+        installmentWarnings: searchResult.warnings,
         warning: selectedProducts.length ? "" : "Não encontramos exemplo demonstrativo confiável para este orçamento.",
       });
     } catch (error) {
-      let response = null;
-      const providerProducts = filterSaldaoCatalogProducts(providerResult?.products);
-      if (providerProducts.length) {
-        try {
-          response = buildFallbackRealResponse({
-            products: providerProducts,
-            query: q,
-            mode,
-            monthly,
-            months,
-            totalBudget,
-            dataMode: providerResult?.dataMode || "real",
-          });
-        } catch {
-          response = null;
-        }
-      }
-      if (!response) {
-        response = buildOqcResponse({
-          products: [],
-          query: q,
-          mode,
-          monthly,
-          months,
-          totalBudget,
-          dataMode: "demo",
-        });
-      }
+      const response = buildOqcResponse({
+        products: [],
+        query: q,
+        mode,
+        monthly,
+        months,
+        totalBudget,
+        dataMode: "demo",
+      });
       sendJson(res, 200, {
         ok: true,
         ...response,
-        warning: providerProducts.length
-          ? `${error.message || "Falha na integração com a base parceira"}. Mostrando apenas produtos do Saldão por enquanto.`
-          : `${error.message || "Falha na integração com a base parceira"}. Mostrando demonstração por enquanto.`,
+        warning: `${error.message || "Falha na busca"}. Mostrando demonstração por enquanto.`,
       });
     }
     return;
@@ -1293,10 +1338,15 @@ export default async function handler(req, res) {
       runtime: `node ${process.versions.node}`,
       catalogLoaded: catalogHealth.catalogLoaded,
       catalogCount: catalogHealth.catalogCount,
+      totalCatalogProducts: catalogHealth.totalCatalogProducts ?? catalogHealth.catalogCount,
+      totalPublishedProducts: catalogHealth.totalPublishedProducts ?? catalogHealth.catalogCount,
+      hiddenProducts: catalogHealth.hiddenProducts ?? 0,
+      filteredCount: catalogHealth.filteredCount ?? 0,
       seedFileExists: seedFile.exists,
       seedFileSize: seedFile.size,
       resolvedSeedPath: seedPathResolved,
       sourceUsed,
+      filterReasons: catalogHealth.filterReasons || [],
       error: catalogHealth.error || "",
     });
     return;
@@ -1908,6 +1958,7 @@ export default async function handler(req, res) {
     }
   }
 }
+
 
 
 

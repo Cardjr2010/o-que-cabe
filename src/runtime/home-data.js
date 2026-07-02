@@ -86,7 +86,9 @@ function labelHomeSource(value = "") {
 
 export function buildHomeCatalogData() {
   try {
-    const items = getCatalogManager().list();
+    const catalogManager = getCatalogManager();
+    const items = catalogManager.list();
+    const catalogDiagnostics = catalogManager.diagnostics();
     const catalogForHome = getRealHomeCatalog(items);
     const analysis = getProductIntelligenceEngine().buildHomeData(catalogForHome);
     const seoEngine = getSEOIntelligenceEngine();
@@ -95,7 +97,8 @@ export function buildHomeCatalogData() {
     const menu = seoEngine.buildMenu();
 
     const departments = Array.isArray(analysis.departments) ? analysis.departments : [];
-    const categories = Array.isArray(analysis.categories) ? analysis.categories : [];
+    const categories = homeButtons;
+    const topCategories = Array.isArray(analysis.categories) ? analysis.categories : [];
     const shortcuts = Array.isArray(analysis.shortcuts) ? analysis.shortcuts : [];
     const activeSources = Array.isArray(analysis.activeSources)
       ? analysis.activeSources.map((item) => ({
@@ -107,12 +110,18 @@ export function buildHomeCatalogData() {
     return {
       ok: true,
       totalProducts: items.length,
+      totalCatalogProducts: catalogDiagnostics.rawCount ?? items.length,
+      totalPublishedProducts: catalogDiagnostics.publishedCount ?? items.length,
+      hiddenProducts: catalogDiagnostics.hiddenProducts ?? 0,
       analyzedProducts: analysis.analyzedProducts || catalogForHome.length,
-      focusLabel: analysis.focusLabel || "Catálogo real",
+      focusLabel: analysis.focusLabel || "Cat??logo real",
       menu,
       categories,
       homeButtons,
       departments,
+      topDepartments: departments,
+      topCategories,
+      topSources: activeSources,
       searchCategories: homeButtons.length ? homeButtons : departments,
       departmentCategories: departments,
       pechinchas: shortcuts,
@@ -134,17 +143,32 @@ export function buildHomeCatalogData() {
       categorySummary: Array.isArray(analysis.categorySummary) ? analysis.categorySummary.slice(0, 6) : [],
       beforeOutros: analysis.beforeOutros ?? 0,
       afterOutros: analysis.afterOutros ?? 0,
+      catalogSummary: {
+        seedUsed: catalogDiagnostics.seedPath || "",
+        rawCount: catalogDiagnostics.rawCount ?? 0,
+        publishedCount: catalogDiagnostics.publishedCount ?? items.length,
+        hiddenProducts: catalogDiagnostics.hiddenProducts ?? 0,
+        filteredCount: catalogDiagnostics.filteredCount ?? 0,
+        filterReasons: Array.isArray(catalogDiagnostics.filterReasons) ? catalogDiagnostics.filterReasons : [],
+        sourceCounts: Array.isArray(catalogDiagnostics.sourceCounts) ? catalogDiagnostics.sourceCounts : [],
+      },
     };
   } catch (error) {
     return {
       ok: false,
       totalProducts: 0,
+      totalCatalogProducts: 0,
+      totalPublishedProducts: 0,
+      hiddenProducts: 0,
       analyzedProducts: 0,
-      focusLabel: "Catálogo real",
+      focusLabel: "Cat??logo real",
       menu: getSEOIntelligenceEngine().buildMenu(),
       categories: [],
       homeButtons: [],
       departments: [],
+      topDepartments: [],
+      topCategories: [],
+      topSources: [],
       searchCategories: [],
       departmentCategories: [],
       pechinchas: [],
@@ -159,6 +183,15 @@ export function buildHomeCatalogData() {
       categorySummary: [],
       beforeOutros: 0,
       afterOutros: 0,
+      catalogSummary: {
+        seedUsed: "",
+        rawCount: 0,
+        publishedCount: 0,
+        hiddenProducts: 0,
+        filteredCount: 0,
+        filterReasons: [],
+        sourceCounts: [],
+      },
       error: error?.message || "HOME_CATALOG_ERROR",
     };
   }

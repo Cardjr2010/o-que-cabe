@@ -8,6 +8,7 @@ import CatalogUpdater from "./CatalogUpdater.js";
 import CatalogExporter from "./CatalogExporter.js";
 import { loadSeedProducts, normalizeImportedProduct } from "../importers/ProductImporter.js";
 import { normalizeText, scoreProductMatch } from "./ProductNormalizer.js";
+import { getCatalogSeedCandidates } from "../runtime/catalog-path.js";
 
 const root = projectRoot;
 const seedPath = resolveCatalogSeedPath(path.join(root, "data", "products.seed.json"));
@@ -22,11 +23,27 @@ function sourcePriorityForItem(item = {}) {
   ].filter(Boolean).join(" "));
 
   if (source.includes("saldao") || source.includes("saldão")) return 0;
-  if (source.includes("actionpay")) return 1;
-  if (source.includes("awin")) return 2;
-  if (source.includes("mi_shop") || source.includes("mi shop") || source.includes("mishop")) return 3;
-  if (source.includes("mercadolivre") || source.includes("mercado livre")) return 4;
-  return 5;
+  if (source.includes("infostore") || source.includes("info store")) return 1;
+  if (source.includes("actionpay")) return 2;
+  if (source.includes("awin")) return 3;
+  if (source.includes("mi_shop") || source.includes("mi shop") || source.includes("mishop")) return 4;
+  if (source.includes("mercadolivre") || source.includes("mercado livre")) return 5;
+  return 6;
+}
+
+function isExcludedSource(item = {}) {
+  const source = normalizeText([
+    item.marketplace,
+    item.source,
+    item.sourceType,
+    item.seller,
+    item.store,
+  ].filter(Boolean).join(" "));
+  return source.includes("mi_shop")
+    || source.includes("mi shop")
+    || source.includes("mishop")
+    || source.includes("mercadolivre")
+    || source.includes("mercado livre");
 }
 
 function looksLikeAccessory(item = {}) {
@@ -78,6 +95,31 @@ function looksLikeAccessory(item = {}) {
   ].some((term) => text.includes(term));
 }
 
+function sourceKey(item = {}) {
+  return String([
+    item.marketplace,
+    item.source,
+    item.sourceType,
+    item.seller,
+    item.store,
+  ].filter(Boolean).join(" ") || "unknown").trim() || "unknown";
+}
+
+function isVisibleSource(item = {}) {
+  return !isExcludedSource(item);
+}
+
+function groupBySource(items = []) {
+  const counts = new Map();
+  for (const item of Array.isArray(items) ? items : []) {
+    const key = sourceKey(item);
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([source, count]) => ({ source, count }))
+    .sort((a, b) => b.count - a.count || a.source.localeCompare(b.source, "pt-BR"));
+}
+
 export default class CatalogManager {
   constructor(options = {}) {
     this.seedPath = options.seedPath || seedPath;
@@ -88,7 +130,15 @@ export default class CatalogManager {
   }
 
   list() {
+    return this.getPublishedItems();
+  }
+
+  getRawItems() {
     return loadSeedProducts(this.seedPath);
+  }
+
+  getPublishedItems() {
+    return this.getRawItems().filter((item) => isVisibleSource(item));
   }
 
   getById(id) {
@@ -128,7 +178,7 @@ export default class CatalogManager {
       });
     }
 
-    const current = this.list();
+    const current = this.getPublishedItems();
     const merged = mode === "replace" ? accepted : this.updater.merge(current, accepted);
     this.repository.write(this.seedPath, merged);
     return {
@@ -145,19 +195,19 @@ export default class CatalogManager {
   }
 
   remove(id) {
-    const next = this.updater.remove(this.list(), id);
+    const next = this.updater.remove(this.getPublishedItems(), id);
     this.repository.write(this.seedPath, next);
     return next;
   }
 
   disable(id) {
-    const next = this.updater.disable(this.list(), id);
+    const next = this.updater.disable(this.getPublishedItems(), id);
     this.repository.write(this.seedPath, next);
     return next;
   }
 
   export(format = "json") {
-    const products = this.list();
+    const products = this.getPublishedItems();
     return String(format).toLowerCase() === "csv" ? this.exporter.toCsv(products) : this.exporter.toJson(products);
   }
 
@@ -167,6 +217,7 @@ export default class CatalogManager {
     const normalizedNeedle = normalizeText(needle);
     const accessoryIntent = /\b(capa|case|pelicula|pel[íi]cula|carregador|cabo|fone|headphone|airpods|earbud|strap|pulseira|acessorio|acess[óo]rio)\b/i.test(needle);
     const results = this.list().filter((item) => {
+      if (isExcludedSource(item)) return false;
       if (category && String(item.category || "").toLowerCase() !== String(category).toLowerCase()) return false;
       if (brand && String(item.brand || "").toLowerCase() !== String(brand).toLowerCase()) return false;
       if (marketplace && String(item.marketplace || "").toLowerCase() !== String(marketplace).toLowerCase()) return false;
@@ -210,16 +261,33 @@ export default class CatalogManager {
   }
 
   diagnostics() {
-    const items = this.list();
+    const rawItems = this.getRawItems();
+    const publishedItems = rawItems.filter((item) => isVisibleSource(item));
+    const filteredItems = rawItems.filter((item) => !isVisibleSource(item));
+    const hiddenSources = groupBySource(filteredItems);
+    const topSources = groupBySource(rawItems);
     return {
       seedPath: this.seedPath,
-      count: items.length,
-      statuses: items.reduce((acc, item) => {
+      seedUsed: this.seedPath,
+      seedCandidates: getCatalogSeedCandidates(),
+      rawCount: rawItems.length,
+      publishedCount: publishedItems.length,
+      filteredCount: filteredItems.length,
+      hiddenProducts: filteredItems.length,
+      filterReasons: hiddenSources.map((item) => ({
+        source: item.source,
+        count: item.count,
+        reason: "Fonte ocultada do catálogo publicado (Mi Shop / Mercado Livre).",
+      })),
+      sourceCounts: topSources,
+      hiddenSources,
+      count: publishedItems.length,
+      statuses: publishedItems.reduce((acc, item) => {
         const key = String(item.status || "ACTIVE");
         acc[key] = (acc[key] || 0) + 1;
         return acc;
       }, {}),
-      marketplaces: items.reduce((acc, item) => {
+      marketplaces: publishedItems.reduce((acc, item) => {
         const key = String(item.marketplace || "unknown");
         acc[key] = (acc[key] || 0) + 1;
         return acc;

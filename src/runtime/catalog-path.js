@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import path from "node:path";
 import { resolveProjectPath } from "./project-root.js";
 
 const CANDIDATES = [
@@ -9,11 +10,19 @@ const CANDIDATES = [
 
 export function resolveCatalogSeedPath(preferredPath = "") {
   const preferred = String(preferredPath || "").trim();
-  if (preferred && fs.existsSync(preferred)) return preferred;
+  const normalizedPreferred = preferred ? path.resolve(preferred) : "";
+  const canonical = new Set(CANDIDATES.map((candidate) => path.resolve(candidate)));
+
+  if (normalizedPreferred && fs.existsSync(normalizedPreferred) && !canonical.has(normalizedPreferred)) {
+    return normalizedPreferred;
+  }
+
   for (const candidate of CANDIDATES) {
     if (fs.existsSync(candidate)) return candidate;
   }
-  return preferred || CANDIDATES[0];
+
+  if (normalizedPreferred) return normalizedPreferred;
+  return CANDIDATES[0];
 }
 
 export function getCatalogSeedCandidates() {
