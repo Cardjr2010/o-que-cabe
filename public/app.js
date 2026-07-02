@@ -19,6 +19,7 @@ const resultsArea = document.querySelector(".results-area");
 const pechinchaGrid = document.querySelector("#pechinchaGrid");
 const categoryGrid = document.querySelector("#categoryGrid");
 const homeCatalogState = document.querySelector("#homeCatalogState");
+const searchCategoriesHint = document.querySelector("#searchCategoriesHint");
 const appView = document.body.dataset.view || "home";
 const apiEndpoint = document.body.dataset.endpoint || "/api/search";
 let searchTimer = null;
@@ -474,14 +475,24 @@ async function loadHomeCatalogData() {
     const data = await response.json();
     const categories = Array.isArray(data.categories) ? data.categories : [];
     const pechinchas = Array.isArray(data.shortcuts) ? data.shortcuts : Array.isArray(data.pechinchas) ? data.pechinchas : [];
+    const searchCategories = Array.isArray(data.searchCategories) ? data.searchCategories : categories;
     if (data.ok === false && homeCatalogState) {
       homeCatalogState.textContent = "O catálogo está sendo carregado aos poucos.";
+    }
+    if (searchCategoriesHint) {
+      const labels = searchCategories
+        .filter((item) => item && item.category)
+        .slice(0, 6)
+        .map((item) => item.label || normalizeHomeCategoryLabel(item.category));
+      searchCategoriesHint.textContent = labels.length
+        ? `Categorias para pesquisar: ${labels.join(", ")}.`
+        : "Categorias para pesquisar: Celulares, Notebooks, Tablets, TVs, Relógios e Fones.";
     }
 
     if (categoryGrid) {
       const cards = categories
         .filter((item) => item && item.category && String(item.category).toLowerCase() !== "outros")
-        .slice(0, 3)
+        .slice(0, 6)
         .map((item) => `
           <article data-category="${escapeHtml(item.category)}">
             <div class="category-icon">${categoryIconSvg(item.category)}</div>

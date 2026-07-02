@@ -25,7 +25,7 @@ function getCatalogManager() {
 
 function getCategoryBuilder() {
   if (!categoryBuilderInstance) {
-    categoryBuilderInstance = new CategoryBuilder({ minCount: 20, maxButtons: 3 });
+    categoryBuilderInstance = new CategoryBuilder({ minCount: 5, maxButtons: 6 });
   }
   return categoryBuilderInstance;
 }
@@ -53,6 +53,8 @@ const HOME_ALLOWED_CATEGORY_LABELS = new Set([
   "notebook",
   "tablet",
   "monitor",
+  "tv",
+  "fone",
 ]);
 
 const HOME_ACCESSORY_CATEGORIES = new Set([
@@ -273,6 +275,7 @@ export function buildHomeCatalogData() {
       totalProducts: items.length,
       focusLabel: "Saldão da Informática",
       categories,
+      searchCategories: categories,
       pechinchas: shortcuts,
       shortcuts,
       activeSources,
@@ -286,6 +289,7 @@ export function buildHomeCatalogData() {
       totalProducts: 0,
       focusLabel: "Balcão de Informática",
       categories: [],
+      searchCategories: [],
       pechinchas: [],
       shortcuts: [],
       activeSources: [],
