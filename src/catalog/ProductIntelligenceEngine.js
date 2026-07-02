@@ -270,6 +270,16 @@ const DEPARTMENT_RULES = [
 ];
 
 const DEPARTMENT_ALIASES = new Map([
+  ["informatica", "Informática"],
+  ["audio", "Áudio"],
+  ["relogios", "Relógios"],
+  ["ferramentas", "Casa e Construção"],
+  ["ferragens", "Casa e Construção"],
+  ["casa e construcao", "Casa e Construção"],
+  ["flores e presentes", "Flores e Presentes"],
+  ["cabos e carregadores", "Cabos e Carregadores"],
+  ["acessorios", "Acessórios"],
+  ["pecas", "Peças"],
   ["construcao", "Casa e Construção"],
   ["casa", "Casa e Construção"],
   ["ferramenta", "Casa e Construção"],
@@ -289,6 +299,16 @@ const DEPARTMENT_ALIASES = new Map([
 ]);
 
 const CATEGORY_ALIASES = new Map([
+  ["informatica", "Informática"],
+  ["audio", "Áudio"],
+  ["relogios", "Relógios"],
+  ["ferramentas", "Ferramentas"],
+  ["ferragens", "Ferragens"],
+  ["casa e construcao", "Casa"],
+  ["flores e presentes", "Flores e Presentes"],
+  ["cabos e carregadores", "Cabos e Carregadores"],
+  ["acessorios", "Acessórios"],
+  ["pecas", "Peças"],
   ["construcao", "Construção"],
   ["casa", "Casa"],
   ["ferramenta", "Ferramentas"],
@@ -815,7 +835,7 @@ function buildShortcuts(categories = [], enrichedItems = []) {
   }
 
   return categories
-    .filter((entry) => entry && entry.category && entry.category !== "outros")
+    .filter((entry) => entry && entry.category && !["outros", "pecas", "acessorios", "cabos e carregadores"].includes(normalizeKey(entry.category)))
     .slice(0, 6)
     .map((entry) => {
       const key = normalizeKey(entry.category);
