@@ -2,6 +2,7 @@ import BudgetEngine from "../engines/BudgetEngine.js";
 import { scoreProductMatch, normalizeText } from "../catalog/ProductNormalizer.js";
 import { buildInstallmentBudgetContext, normalizeInstallmentData } from "../catalog/installments.js";
 import ProductIntelligenceEngine from "../catalog/ProductIntelligenceEngine.js";
+import SEOIntelligenceEngine from "../seo/SEOIntelligenceEngine.js";
 
 function toNumber(value, fallback = 0) {
   const parsed = Number(String(value ?? "").replace(",", "."));
@@ -40,6 +41,7 @@ const BRAND_RULES = [
 ];
 
 let productIntelligenceEngineInstance = null;
+let seoIntelligenceEngineInstance = null;
 
 function getProductIntelligenceEngine() {
   if (!productIntelligenceEngineInstance) {
@@ -52,6 +54,17 @@ function getProductIntelligenceEngine() {
     });
   }
   return productIntelligenceEngineInstance;
+}
+
+function getSEOIntelligenceEngine() {
+  if (!seoIntelligenceEngineInstance) {
+    seoIntelligenceEngineInstance = new SEOIntelligenceEngine({
+      maxHotSearches: 6,
+      maxHomeButtons: 6,
+      minCategoryCount: 5,
+    });
+  }
+  return seoIntelligenceEngineInstance;
 }
 
 function stripBudgetLanguage(value = "") {
@@ -196,9 +209,10 @@ export default class SearchOrchestrator {
   parseIntent({ query = "", mode = "monthly", monthly = 0, months = 12, totalBudget = 0 } = {}) {
     const text = String(query || "").trim();
     const budgetHints = parseBudgetNumber(text);
-    const category = detectCategory(text);
-    const brand = detectBrand(text);
-    const accessoryIntent = detectAccessoryIntent(text);
+    const seoIntent = getSEOIntelligenceEngine().resolveQueryIntent(text) || {};
+    const category = seoIntent.category || detectCategory(text) || "";
+    const brand = detectBrand(text) || seoIntent.intent?.brand || "";
+    const accessoryIntent = detectAccessoryIntent(text) || Boolean(seoIntent.intent?.attributes?.some((attribute) => /capa|pel|cabo|carreg|suporte/i.test(String(attribute || ""))));
     const searchText = budgetHints.searchText || text;
     const normalizedMode = String(mode || budgetHints.mode || "monthly").toLowerCase() === "total" ? "total" : "monthly";
     const normalizedMonths = Math.max(1, toNumber(budgetHints.months || months, 12));
@@ -215,6 +229,8 @@ export default class SearchOrchestrator {
       category,
       brand,
       accessoryIntent,
+      seoIntent,
+      seoKeywords: Array.isArray(seoIntent.intent?.attributes) ? seoIntent.intent.attributes : [],
       marketplace: "",
       status: "ACTIVE",
     };

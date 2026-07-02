@@ -1,10 +1,12 @@
 import CatalogManager from "../catalog/CatalogManager.js";
 import ProductIntelligenceEngine from "../catalog/ProductIntelligenceEngine.js";
+import SEOIntelligenceEngine from "../seo/SEOIntelligenceEngine.js";
 import { resolveCatalogSeedPath } from "./catalog-path.js";
-import { projectRoot, resolveProjectPath } from "./project-root.js";
+import { resolveProjectPath } from "./project-root.js";
 
 let catalogManagerInstance = null;
 let productIntelligenceEngineInstance = null;
+let seoIntelligenceEngineInstance = null;
 
 function getCatalogManager() {
   if (!catalogManagerInstance) {
@@ -29,6 +31,17 @@ function getProductIntelligenceEngine() {
     });
   }
   return productIntelligenceEngineInstance;
+}
+
+function getSEOIntelligenceEngine() {
+  if (!seoIntelligenceEngineInstance) {
+    seoIntelligenceEngineInstance = new SEOIntelligenceEngine({
+      maxHotSearches: 6,
+      maxHomeButtons: 6,
+      minCategoryCount: 5,
+    });
+  }
+  return seoIntelligenceEngineInstance;
 }
 
 function normalizedCatalogCategoryKey(value = "") {
@@ -76,6 +89,10 @@ export function buildHomeCatalogData() {
     const items = getCatalogManager().list();
     const catalogForHome = getRealHomeCatalog(items);
     const analysis = getProductIntelligenceEngine().buildHomeData(catalogForHome);
+    const seoEngine = getSEOIntelligenceEngine();
+    const seoHotSearches = seoEngine.buildSeoHotSearches(6);
+    const homeButtons = seoEngine.buildHomeButtons(catalogForHome);
+    const menu = seoEngine.buildMenu();
 
     const departments = Array.isArray(analysis.departments) ? analysis.departments : [];
     const categories = Array.isArray(analysis.categories) ? analysis.categories : [];
@@ -92,12 +109,15 @@ export function buildHomeCatalogData() {
       totalProducts: items.length,
       analyzedProducts: analysis.analyzedProducts || catalogForHome.length,
       focusLabel: analysis.focusLabel || "Catálogo real",
+      menu,
       categories,
+      homeButtons,
       departments,
-      searchCategories: departments,
+      searchCategories: homeButtons.length ? homeButtons : departments,
       departmentCategories: departments,
       pechinchas: shortcuts,
       shortcuts,
+      seoHotSearches,
       activeSources,
       marketplaceSummary: Array.isArray(analysis.marketplaceSummary)
         ? analysis.marketplaceSummary.map((item) => ({
@@ -121,12 +141,15 @@ export function buildHomeCatalogData() {
       totalProducts: 0,
       analyzedProducts: 0,
       focusLabel: "Catálogo real",
+      menu: getSEOIntelligenceEngine().buildMenu(),
       categories: [],
+      homeButtons: [],
       departments: [],
       searchCategories: [],
       departmentCategories: [],
       pechinchas: [],
       shortcuts: [],
+      seoHotSearches: [],
       activeSources: [],
       marketplaceSummary: [],
       sellerSummary: [],
@@ -144,4 +167,3 @@ export function buildHomeCatalogData() {
 export function primarySourceLabel() {
   return "Catálogo real";
 }
-

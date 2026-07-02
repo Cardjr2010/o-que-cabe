@@ -9,6 +9,11 @@ test("home data expõe catálogo real e departamentos coerentes", () => {
 
   assert.equal(data.ok, true);
   assert.equal(data.focusLabel, "Catálogo real");
+  assert.ok(Array.isArray(data.menu));
+  assert.ok(Array.isArray(data.homeButtons));
+  assert.ok(data.homeButtons.length <= 6);
+  assert.ok(Array.isArray(data.seoHotSearches));
+  assert.ok(data.seoHotSearches.length > 0);
   assert.ok(categories.length > 0);
   assert.ok(Array.isArray(data.shortcuts));
   assert.ok(Array.isArray(data.activeSources));

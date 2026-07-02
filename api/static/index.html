@@ -17,9 +17,19 @@
         <img class="brand-mark" src="/logo-oqc.png" alt="OQC" />
         <strong>O Que Cabe</strong>
       </a>
-      <div class="trust-pill">
-        <svg viewBox="0 0 24 24"><path d="M12 3 19 6v5c0 5-3 8-7 10-4-2-7-5-7-10V6l7-3Z"/><path d="m9 12 2 2 4-5"/></svg>
-        <span>Curadoria de Confiança</span>
+      <div class="topbar-actions">
+        <a class="topbar-link" href="/">Início</a>
+        <div class="trust-pill">
+          <svg viewBox="0 0 24 24"><path d="M12 3 19 6v5c0 5-3 8-7 10-4-2-7-5-7-10V6l7-3Z"/><path d="m9 12 2 2 4-5"/></svg>
+          <span>Curadoria de Confiança</span>
+        </div>
+        <details class="departments-menu">
+          <summary>Todos os departamentos</summary>
+          <div class="departments-menu-panel" id="departmentsMenu"></div>
+        </details>
+        <a class="topbar-link" href="#blog">Blog</a>
+        <a class="topbar-link" href="#conta">Minha Conta</a>
+        <span class="topbar-link future" aria-disabled="true">Favoritos</span>
       </div>
     </header>
 
@@ -69,7 +79,7 @@
           <button class="submit-button" type="submit">Descobrir</button>
         </form>
         <p class="seo-muted search-categories-hint" id="searchCategoriesHint">
-          Categorias para pesquisar: Celulares, Notebooks, Tablets, TVs, Relógios e Fones.
+          Categorias para pesquisar: Celulares, Notebooks, Monitores, TVs, Tablets e Fones.
         </p>
       </section>
 
@@ -91,12 +101,33 @@
         </div>
       </section>
 
-      <section class="categories">
+      <section class="categories" id="departments">
         <h2><span>↗</span> Categorias em Alta</h2>
         <p class="seo-muted" id="homeCatalogState">Carregando catálogo real...</p>
         <div class="category-grid" id="categoryGrid" aria-live="polite">
           <div class="catalog-loading">Carregando categorias reais do catálogo...</div>
         </div>
+      </section>
+
+      <section class="seo-searches">
+        <h2>Buscas em alta</h2>
+        <p class="seo-muted">Os termos mais fortes do SEO ajudam a mostrar o que o usuário realmente procura.</p>
+        <div class="seo-hot-grid" id="seoHotSearchesGrid" aria-live="polite">
+          <div class="catalog-loading">Carregando buscas em alta...</div>
+        </div>
+      </section>
+
+      <section class="utility-panels">
+        <article id="blog">
+          <span class="utility-label">Blog</span>
+          <strong>Dicas para comprar melhor</strong>
+          <p>Conteúdos rápidos para decidir com mais clareza e menos impulso.</p>
+        </article>
+        <article id="conta">
+          <span class="utility-label">Conta</span>
+          <strong>Sua área pessoal</strong>
+          <p>Crie sua conta, salve buscas e acompanhe os produtos que você quer monitorar.</p>
+        </article>
       </section>
 
       <section class="how">

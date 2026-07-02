@@ -95,6 +95,84 @@ svg {
   font-size: 24px;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-left: auto;
+}
+
+.topbar-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 850;
+  text-decoration: none;
+  background: #f8fbff;
+}
+
+.topbar-link:hover {
+  border-color: #d5e5f7;
+  background: #eef6ff;
+}
+
+.topbar-link.future {
+  color: #8794a9;
+  background: #f4f7fb;
+  cursor: not-allowed;
+}
+
+.departments-menu {
+  position: relative;
+}
+
+.departments-menu summary {
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 1px solid #dbe6f2;
+  border-radius: 999px;
+  background: #fbfcfe;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.departments-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.departments-menu-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(520px, calc(100vw - 24px));
+  max-height: 72vh;
+  overflow: auto;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: white;
+  box-shadow: 0 22px 50px rgba(15, 23, 42, 0.14);
+}
+
+.departments-menu-panel .department-link {
+  width: 100%;
+  text-align: left;
+}
+
 main {
   overflow: hidden;
 }
@@ -810,6 +888,94 @@ h2 {
   font-weight: 750;
 }
 
+.seo-searches {
+  width: min(1640px, calc(100% - 44px));
+  margin: 0 auto;
+  padding: 0 0 52px;
+}
+
+.seo-searches h2 {
+  margin: 0 0 10px;
+}
+
+.seo-hot-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.seo-hot-chip {
+  appearance: none;
+  width: 100%;
+  min-height: 76px;
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  padding: 14px 18px;
+  border: 1px solid #d7e4f5;
+  border-radius: 18px;
+  background: white;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.seo-hot-chip strong {
+  font-size: 15px;
+}
+
+.seo-hot-chip span {
+  color: #678098;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.utility-panels {
+  width: min(1640px, calc(100% - 44px));
+  margin: 0 auto;
+  padding: 0 0 48px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.utility-panels article {
+  min-height: 190px;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
+}
+
+.utility-label {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: #e9f4ff;
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.utility-panels strong {
+  display: block;
+  margin-top: 14px;
+  font-size: 22px;
+}
+
+.utility-panels p {
+  margin: 10px 0 0;
+  color: #68778d;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
 .how {
   margin-top: 34px;
   padding: 78px 72px 84px;
@@ -957,6 +1123,11 @@ footer strong {
     grid-template-columns: 1fr;
   }
 
+  .seo-hot-grid,
+  .utility-panels {
+    grid-template-columns: 1fr;
+  }
+
   .pechincha-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -989,6 +1160,27 @@ footer strong {
     flex-direction: column;
     min-height: auto;
     padding: 18px;
+  }
+
+  .topbar-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .departments-menu {
+    width: 100%;
+  }
+
+  .departments-menu summary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .departments-menu-panel {
+    position: static;
+    width: 100%;
+    max-height: none;
+    margin-top: 10px;
   }
 
   .brand-mark {
@@ -1049,6 +1241,8 @@ footer strong {
 
   .results-area,
   .categories,
+  .seo-searches,
+  .utility-panels,
   .how,
   footer {
     width: calc(100% - 28px);
@@ -1141,6 +1335,33 @@ footer strong {
   }
 
   .category-grid p {
+    font-size: 14px;
+  }
+
+  .seo-hot-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .seo-hot-chip {
+    min-height: 68px;
+    padding: 12px 14px;
+  }
+
+  .utility-panels {
+    gap: 14px;
+  }
+
+  .utility-panels article {
+    min-height: auto;
+    padding: 22px;
+    border-radius: 22px;
+  }
+
+  .utility-panels strong {
+    font-size: 18px;
+  }
+
+  .utility-panels p {
     font-size: 14px;
   }
 

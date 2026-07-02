@@ -1,0 +1,128 @@
+[
+  {
+    "label": "Celular até R$ 1.000 128GB",
+    "query": "celular até 1000 reais 128gb",
+    "category": "celulares",
+    "volume": 1000,
+    "intent": { "mode": "total", "totalBudget": 1000, "attributes": ["128GB"] }
+  },
+  {
+    "label": "Celular até R$ 1.000 256GB",
+    "query": "celular até 1000 reais 256gb",
+    "category": "celulares",
+    "volume": 320,
+    "intent": { "mode": "total", "totalBudget": 1000, "attributes": ["256GB"] }
+  },
+  {
+    "label": "Celular até R$ 100",
+    "query": "celular até 100 reais",
+    "category": "celulares",
+    "volume": 140,
+    "intent": { "mode": "total", "totalBudget": 100 }
+  },
+  {
+    "label": "Celular bom até R$ 1.000",
+    "query": "celular até 1000 reais bom",
+    "category": "celulares",
+    "volume": 50,
+    "intent": { "mode": "total", "totalBudget": 1000, "attributes": ["bom"] }
+  },
+  {
+    "label": "Notebook bom até R$ 2.500",
+    "query": "notebook bom até 2500 reais",
+    "category": "notebooks",
+    "volume": 70,
+    "intent": { "mode": "total", "totalBudget": 2500 }
+  },
+  {
+    "label": "Melhor notebook até R$ 2.500",
+    "query": "melhor notebook até 2500 reais",
+    "category": "notebooks",
+    "volume": 50,
+    "intent": { "mode": "total", "totalBudget": 2500 }
+  },
+  {
+    "label": "Notebook gamer até R$ 2.500",
+    "query": "notebook gamer até 2500 reais",
+    "category": "notebooks",
+    "volume": 30,
+    "intent": { "mode": "total", "totalBudget": 2500, "attributes": ["gamer"] }
+  },
+  {
+    "label": "Notebook até R$ 2.500 i5",
+    "query": "notebook até 2500 i5",
+    "category": "notebooks",
+    "volume": 50,
+    "intent": { "mode": "total", "totalBudget": 2500, "attributes": ["i5"] }
+  },
+  {
+    "label": "Monitor gamer curvo",
+    "query": "monitor gamer curvo",
+    "category": "monitores",
+    "volume": 8100,
+    "intent": { "category": "monitores", "attributes": ["curvo"] }
+  },
+  {
+    "label": "Monitor gamer 144Hz",
+    "query": "monitor gamer 144hz",
+    "category": "monitores",
+    "volume": 5400,
+    "intent": { "category": "monitores", "attributes": ["144HZ"] }
+  },
+  {
+    "label": "Monitor gamer 240Hz",
+    "query": "monitor gamer 240hz",
+    "category": "monitores",
+    "volume": 5400,
+    "intent": { "category": "monitores", "attributes": ["240HZ"] }
+  },
+  {
+    "label": "Monitor gamer 27 polegadas",
+    "query": "monitor gamer 27 polegadas",
+    "category": "monitores",
+    "volume": 3600,
+    "intent": { "category": "monitores", "attributes": ["27 polegadas"] }
+  },
+  {
+    "label": "Monitor gamer 4K",
+    "query": "monitor gamer 4k",
+    "category": "monitores",
+    "volume": 3600,
+    "intent": { "category": "monitores", "attributes": ["4K"] }
+  },
+  {
+    "label": "Monitor gamer AOC",
+    "query": "monitor gamer aoc",
+    "category": "monitores",
+    "volume": 3600,
+    "intent": { "category": "monitores", "brand": "AOC" }
+  },
+  {
+    "label": "Monitor gamer Samsung",
+    "query": "monitor gamer samsung",
+    "category": "monitores",
+    "volume": 2400,
+    "intent": { "category": "monitores", "brand": "Samsung" }
+  },
+  {
+    "label": "Monitor gamer barato",
+    "query": "monitor gamer barato",
+    "category": "monitores",
+    "volume": 1600,
+    "intent": { "category": "monitores", "attributes": ["barato"] }
+  },
+  {
+    "label": "Monitor gamer 24 polegadas",
+    "query": "monitor gamer 24 polegadas",
+    "category": "monitores",
+    "volume": 1900,
+    "intent": { "category": "monitores", "attributes": ["24 polegadas"] }
+  },
+  {
+    "label": "Monitor gamer LG UltraGear 27",
+    "query": "monitor gamer lg ultragear 27",
+    "category": "monitores",
+    "volume": 1900,
+    "intent": { "category": "monitores", "brand": "LG", "attributes": ["ultragear", "27"] }
+  }
+]

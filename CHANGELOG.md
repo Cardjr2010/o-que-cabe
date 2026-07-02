@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Sprint 24 - Home, departamentos e SEO intelligence
+- A home passou a expor menu superior com Início, Departamentos, Blog, Minha Conta e Favoritos futuro.
+- O bloco principal de 6 atalhos agora é guiado pelo `SEOIntelligenceEngine` junto com o `ProductIntelligenceEngine`, priorizando categorias reais e buscas de maior volume.
+- Adicionamos o `data/seo-keywords.seed.json` com intenções reais do Ubersuggest para Celulares, Notebooks e Monitores.
+- `/api/home-data` agora retorna `menu`, `homeButtons` e `seoHotSearches` para a home usar atalhos e buscas em alta.
+- A busca passou a interpretar melhor consultas como `monitor gamer 144hz`, `monitor gamer curvo`, `notebook bom até 2500` e `celular até 1000 reais 128gb`.
+
 ### Sprint 23 - Motor de decisao financeira com catalogo real
 - Adicionamos o `RiskEngine` para medir risco financeiro, classificar verde/amarelo/vermelho e simular o que acontece se o usuario esperar o prazo do parcelamento.
 - Adicionamos o `ExplanationEngine` para devolver explicacoes humanas sobre cabimento, risco e ordem das recomendacoes.
