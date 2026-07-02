@@ -25,7 +25,7 @@ function getCatalogManager() {
 
 function getCategoryBuilder() {
   if (!categoryBuilderInstance) {
-    categoryBuilderInstance = new CategoryBuilder({ minCount: 20, maxButtons: 6 });
+    categoryBuilderInstance = new CategoryBuilder({ minCount: 20, maxButtons: 3 });
   }
   return categoryBuilderInstance;
 }
@@ -52,9 +52,7 @@ const HOME_ALLOWED_CATEGORY_LABELS = new Set([
   "celular",
   "notebook",
   "tablet",
-  "tv",
-  "relogio",
-  "fone",
+  "monitor",
 ]);
 
 const HOME_ACCESSORY_CATEGORIES = new Set([
@@ -70,28 +68,16 @@ const HOME_ACCESSORY_CATEGORIES = new Set([
 const HOME_PRIMARY_SOURCE_MARKETPLACES = new Set([
   "saldao_informatica",
   "actionpay_saldao",
-  "infostore",
 ]);
 
 const REAL_HOME_MARKETPLACES = new Set([
-  "mi_shop",
-  "mi shop",
-  "awin",
-  "actionpay",
   "saldao_informatica",
   "actionpay_saldao",
-  "infostore",
-  "google_merchant",
-  "csv_feed",
-  "feed",
 ]);
 
 const REAL_HOME_SOURCE_TYPES = new Set([
   "csv_feed",
-  "awin_feed",
   "actionpay_yml",
-  "infostore_feed",
-  "google_merchant_api",
   "manual",
   "feed",
 ]);
@@ -108,11 +94,9 @@ function isPrimaryHomeProduct(item = {}) {
     || HOME_PRIMARY_SOURCE_MARKETPLACES.has(seller)
     || HOME_PRIMARY_SOURCE_MARKETPLACES.has(sourceType)
     || seller.includes("saldao")
-    || seller.includes("info store")
     || source.includes("saldao")
-    || source.includes("info store")
     || sourceType.includes("saldao")
-    || sourceType.includes("infostore");
+    || sourceType.includes("saldao");
 }
 
 function isHomeTechProduct(item = {}) {
@@ -277,7 +261,7 @@ export function buildHomeCatalogData() {
         return b.count - a.count || a.label.localeCompare(b.label, "pt-BR");
       })
       .slice(0, 6);
-    const shortcuts = buildHomePechinchas(catalogForHome, categories)
+  const shortcuts = buildHomePechinchas(catalogForHome, categories)
       .filter((entry) => HOME_ALLOWED_CATEGORY_LABELS.has(String(entry.category || "").toLowerCase()));
     const activeSources = builder.buildMarketplaceSummary(catalogForHome)
       .map((item) => ({
@@ -287,7 +271,7 @@ export function buildHomeCatalogData() {
     return {
       ok: true,
       totalProducts: items.length,
-      focusLabel: activeSources[0]?.source || primarySourceLabel(catalogForHome) || "Balcão de Informática",
+      focusLabel: "Saldão da Informática",
       categories,
       pechinchas: shortcuts,
       shortcuts,

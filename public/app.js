@@ -481,7 +481,7 @@ async function loadHomeCatalogData() {
     if (categoryGrid) {
       const cards = categories
         .filter((item) => item && item.category && String(item.category).toLowerCase() !== "outros")
-        .slice(0, 6)
+        .slice(0, 3)
         .map((item) => `
           <article data-category="${escapeHtml(item.category)}">
             <div class="category-icon">${categoryIconSvg(item.category)}</div>
