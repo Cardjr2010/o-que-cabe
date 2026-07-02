@@ -1,4 +1,4 @@
-import { normalizeText } from "./ProductNormalizer.js";
+﻿import { normalizeText } from "./ProductNormalizer.js";
 
 function titleCase(value = "") {
   return String(value || "")
@@ -150,3 +150,5 @@ export default class CategoryBuilder {
 }
 
 export { humanLabel };
+
+

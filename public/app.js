@@ -447,20 +447,20 @@ function categoryIconSvg(category = "") {
 
 function presetForCategory(category = "") {
   const normalized = String(category || "").toLowerCase();
-  if (normalized.includes("celular")) return { mode: "monthly", monthly: "80", months: "12" };
-  if (normalized.includes("notebook")) return { mode: "monthly", monthly: "250", months: "10" };
-  if (normalized.includes("tablet")) return { mode: "monthly", monthly: "100", months: "12" };
-  if (normalized.includes("tv")) return { mode: "monthly", monthly: "200", months: "12" };
-  if (normalized.includes("relog")) return { mode: "total", totalBudget: "300", monthly: "100", months: "12" };
+  if (normalized.includes("celular")) return { mode: "monthly", monthly: "500", months: "12" };
+  if (normalized.includes("notebook")) return { mode: "monthly", monthly: "1500", months: "10" };
+  if (normalized.includes("tablet")) return { mode: "monthly", monthly: "500", months: "12" };
+  if (normalized.includes("tv")) return { mode: "monthly", monthly: "500", months: "12" };
+  if (normalized.includes("relog")) return { mode: "monthly", monthly: "300", months: "12" };
   if (normalized.includes("fone")) return { mode: "monthly", monthly: "100", months: "12" };
   if (normalized.includes("carreg")) return { mode: "total", totalBudget: "100", monthly: "100", months: "12" };
   if (normalized.includes("cabo")) return { mode: "total", totalBudget: "100", monthly: "100", months: "12" };
-  if (normalized.includes("pelic")) return { mode: "total", totalBudget: "50", monthly: "50", months: "12" };
-  if (normalized.includes("capa")) return { mode: "total", totalBudget: "50", monthly: "50", months: "12" };
-  if (normalized.includes("monitor")) return { mode: "monthly", monthly: "150", months: "12" };
-  if (normalized.includes("casa")) return { mode: "total", totalBudget: "100", monthly: "100", months: "12" };
+  if (normalized.includes("pelic")) return { mode: "total", totalBudget: "100", monthly: "100", months: "12" };
+  if (normalized.includes("capa")) return { mode: "total", totalBudget: "100", monthly: "100", months: "12" };
+  if (normalized.includes("monitor")) return { mode: "monthly", monthly: "250", months: "12" };
+  if (normalized.includes("casa")) return { mode: "total", totalBudget: "250", monthly: "250", months: "12" };
   if (normalized.includes("presente")) return { mode: "total", totalBudget: "50", monthly: "50", months: "12" };
-  return { mode: "monthly", monthly: "100", months: "12" };
+  return { mode: "monthly", monthly: "500", months: "12" };
 }
 
 async function loadHomeCatalogData() {
@@ -481,7 +481,7 @@ async function loadHomeCatalogData() {
     if (categoryGrid) {
       const cards = categories
         .filter((item) => item && item.category && String(item.category).toLowerCase() !== "outros")
-        .slice(0, 8)
+        .slice(0, 6)
         .map((item) => `
           <article data-category="${escapeHtml(item.category)}">
             <div class="category-icon">${categoryIconSvg(item.category)}</div>
