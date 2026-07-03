@@ -12,6 +12,7 @@ Resultado: o build da Vercel falhava com `UNRESOLVED_IMPORT`.
 ## O que foi corrigido
 
 - O arquivo `src/providers/InfoStoreFeedProvider.js` foi incluido no repositorio.
+- O arquivo `src/catalog/installments.js` tambem precisou ser incluido, porque o `SearchOrchestrator` importava esse modulo e a Vercel estava quebrando com `UNRESOLVED_IMPORT`.
 - Nenhuma regra de layout, catalogo, seed ou motor foi alterada.
 
 ## Validacao local
