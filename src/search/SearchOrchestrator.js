@@ -321,6 +321,16 @@ function getMercadoLivreSearchProvider() {
   return mercadoLivreSearchProviderInstance;
 }
 
+function canUseMercadoLivreFallback(provider) {
+  if (!provider) return false;
+  const diagnostics = typeof provider.getDiagnostics === "function" ? provider.getDiagnostics() : null;
+  if (!diagnostics) return true;
+  if (diagnostics.hasAccessToken) return true;
+  if (diagnostics.hasRefreshToken) return true;
+  if (diagnostics.hasSearchEndpoint) return true;
+  return false;
+}
+
 function stripBudgetLanguage(value = "") {
   return String(value || "")
     .replace(/\b(?:até|ate)\s*\d+(?:[.,]\d+)?\s*(?:por\s*m[eê]s|mensal|mensais|x|parcelas?)?\b/gi, " ")
@@ -752,6 +762,24 @@ export default class SearchOrchestrator {
     }
 
     const marketplaceProvider = this.marketplaceSearchProvider || getMercadoLivreSearchProvider();
+    const marketplaceDiagnostics = typeof marketplaceProvider.getDiagnostics === "function" ? marketplaceProvider.getDiagnostics() : null;
+    const marketplaceFallbackAllowed = canUseMercadoLivreFallback(marketplaceProvider);
+    if (!marketplaceFallbackAllowed) {
+      return {
+        ...prepared,
+        strategyUsed: "catalog-search",
+        tokenState: marketplaceDiagnostics?.tokenState || "TOKEN_MISSING_OR_REQUIRED",
+        statusHttp: 200,
+        firstFive: prepared.products.slice(0, 5),
+        fallbackUsed: false,
+        fallbackAttempted: false,
+        fallbackSource: "mercado_livre",
+        fallbackWarning: "Mercado Livre indisponível sem autenticação configurada. Configure um token OAuth ou endpoint/proxy autenticado para ativar o fallback.",
+        fallbackCount: 0,
+        fallbackRawCount: 0,
+        fallbackStatusHttp: 0,
+      };
+    }
     try {
       const variantQueries = buildMercadoLivreFallbackVariants(intent);
       let marketplaceResult = { products: [], rawCount: 0, returnedCount: 0, statusHttp: 200, fallbackText: "" };

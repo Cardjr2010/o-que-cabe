@@ -1,8 +1,25 @@
 import { scoreProductMatch, normalizeText } from "../catalog/ProductNormalizer.js";
 import fs from "node:fs";
+import path from "node:path";
+import os from "node:os";
 import { resolveProjectPath } from "../runtime/project-root.js";
 
-const oauthPath = resolveProjectPath("data", "mercadolivre-oauth.json");
+const oauthPaths = [
+  resolveProjectPath("data", "mercadolivre-oauth.json"),
+  resolveProjectPath("data", "mercadolivre-oauth.tmp.json"),
+  resolveProjectPath("data", "mercadolivre-oauth.cache.json"),
+  path.join(os.tmpdir(), "mercadolivre-oauth.json"),
+];
+
+function readStoredOAuth() {
+  for (const filePath of oauthPaths) {
+    const oauth = readJson(filePath, null);
+    if (oauth && (oauth.access_token || oauth.refresh_token)) {
+      return oauth;
+    }
+  }
+  return null;
+}
 
 function readJson(filePath, fallback = null) {
   try {
@@ -21,14 +38,87 @@ function envValue(...keys) {
 }
 
 function readStoredAccessToken() {
-  const oauth = readJson(oauthPath, null);
+  const oauth = readStoredOAuth();
   return String(oauth?.access_token || "").trim();
 }
 
+function readStoredRefreshToken() {
+  const oauth = readStoredOAuth();
+  return String(oauth?.refresh_token || "").trim();
+}
+
 function configuredAccessToken(explicitToken = "") {
-  return String(explicitToken || "").trim()
-    || envValue("MELI_ACCESS_TOKEN", "MERCADOLIVRE_ACCESS_TOKEN", "MERCADO_LIVRE_ACCESS_TOKEN")
+  if (explicitToken !== undefined && explicitToken !== null) {
+    return String(explicitToken || "").trim();
+  }
+  return envValue("MELI_ACCESS_TOKEN", "MERCADOLIVRE_ACCESS_TOKEN", "MERCADO_LIVRE_ACCESS_TOKEN")
     || readStoredAccessToken();
+}
+
+function configuredRefreshToken(explicitToken = "") {
+  if (explicitToken !== undefined && explicitToken !== null) {
+    return String(explicitToken || "").trim();
+  }
+  return envValue("MELI_REFRESH_TOKEN", "MERCADOLIVRE_REFRESH_TOKEN", "MERCADO_LIVRE_REFRESH_TOKEN")
+    || readStoredRefreshToken();
+}
+
+function mercadolivreClientId(explicitValue = "") {
+  if (explicitValue !== undefined && explicitValue !== null) {
+    return String(explicitValue || "").trim();
+  }
+  return envValue("MELI_CLIENT_ID", "CLIENT_ID", "MERCADOLIVRE_CLIENT_ID", "MERCADO_LIVRE_CLIENT_ID");
+}
+
+function mercadolivreClientSecret(explicitValue = "") {
+  if (explicitValue !== undefined && explicitValue !== null) {
+    return String(explicitValue || "").trim();
+  }
+  return envValue("MELI_CLIENT_SECRET", "CLIENT_SECRET", "MERCADOLIVRE_CLIENT_SECRET", "MERCADO_LIVRE_CLIENT_SECRET");
+}
+
+function mercadolivreConfigured(clientId = "", clientSecret = "") {
+  return Boolean(mercadolivreClientId(clientId) && mercadolivreClientSecret(clientSecret));
+}
+
+async function refreshAccessToken(provider, refreshToken) {
+  const token = String(refreshToken || "").trim();
+  const clientId = provider?.getClientId?.() || mercadolivreClientId();
+  const clientSecret = provider?.getClientSecret?.() || mercadolivreClientSecret();
+  if (!token || !mercadolivreConfigured(clientId, clientSecret)) return null;
+  const fetchImpl = provider?.fetchImpl || globalThis.fetch;
+  const response = await fetchImpl("https://api.mercadolibre.com/oauth/token", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      grant_type: "refresh_token",
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: token,
+    }),
+  });
+  if (!response.ok) return null;
+  const payload = await response.json().catch(() => null);
+  if (!payload?.access_token) return null;
+  const stored = {
+    ...payload,
+    refresh_token: payload.refresh_token || token,
+    expires_at: payload.expires_in ? Date.now() + (Number(payload.expires_in) * 1000) : undefined,
+    created_at: new Date().toISOString(),
+  };
+  for (const filePath of oauthPaths) {
+    try {
+      fs.mkdirSync(path.dirname(filePath), { recursive: true });
+      fs.writeFileSync(filePath, JSON.stringify(stored, null, 2), "utf8");
+      break;
+    } catch {
+      /* ignore write failures in serverless */
+    }
+  }
+  return stored.access_token;
 }
 
 function buildSearchEndpoint({ siteId = "MLB", query = "", limit = 20, searchEndpoint = "" } = {}) {
@@ -185,12 +275,39 @@ function rankItem(item = {}, query = "") {
 }
 
 export class MercadoLivreSearchProvider {
-  constructor({ fetchImpl = null, siteId = "MLB", limit = 20, accessToken = "", searchEndpoint = "" } = {}) {
+  constructor({ fetchImpl = null, siteId = "MLB", limit = 20, accessToken = null, refreshToken = null, clientId = null, clientSecret = null, searchEndpoint = "" } = {}) {
     this.fetchImpl = fetchImpl;
     this.siteId = siteId;
     this.limit = limit;
     this.accessToken = accessToken;
+    this.refreshToken = refreshToken;
+    this.clientId = clientId;
+    this.clientSecret = clientSecret;
     this.searchEndpoint = searchEndpoint;
+  }
+
+  getToken() {
+    return configuredAccessToken(this.accessToken);
+  }
+
+  getRefreshToken() {
+    return configuredRefreshToken(this.refreshToken);
+  }
+
+  getClientId() {
+    return mercadolivreClientId(this.clientId);
+  }
+
+  getClientSecret() {
+    return mercadolivreClientSecret(this.clientSecret);
+  }
+
+  async resolveToken() {
+    const accessToken = this.getToken();
+    if (accessToken) return accessToken;
+    const refreshToken = this.getRefreshToken();
+    if (!refreshToken) return "";
+    return await refreshAccessToken(this, refreshToken);
   }
 
   async searchProducts(query = "", options = {}) {
@@ -216,14 +333,14 @@ export class MercadoLivreSearchProvider {
       limit,
       searchEndpoint: options.searchEndpoint || this.searchEndpoint,
     });
-    const accessToken = configuredAccessToken(options.accessToken || this.accessToken);
+    let accessToken = String(options.accessToken || this.getToken() || "").trim();
     const headers = {
       Accept: "application/json",
       "User-Agent": "OQueCabe/1.0",
     };
     if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
     const fetchImpl = this.fetchImpl || globalThis.fetch;
-    const response = await fetchImpl(endpoint, {
+    let response = await fetchImpl(endpoint, {
       headers,
     });
     const rawText = await response.text().catch(() => "");
@@ -232,6 +349,25 @@ export class MercadoLivreSearchProvider {
       body = rawText ? JSON.parse(rawText) : {};
     } catch {
       body = {};
+    }
+
+    if (!response.ok && response.status === 403) {
+      const refreshedToken = await this.resolveToken();
+      if (refreshedToken && refreshedToken !== accessToken) {
+        accessToken = refreshedToken;
+        response = await fetchImpl(endpoint, {
+          headers: {
+            ...headers,
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+        const retryText = await response.text().catch(() => "");
+        try {
+          body = retryText ? JSON.parse(retryText) : {};
+        } catch {
+          body = {};
+        }
+      }
     }
 
     if (!response.ok) {
@@ -290,6 +426,21 @@ export class MercadoLivreSearchProvider {
 
   normalizeResult(item = {}) {
     return normalizeMercadoLivreItem(item);
+  }
+
+  getDiagnostics() {
+    const configuredToken = this.getToken();
+    const configuredRefresh = this.getRefreshToken();
+    const configuredSearchEndpoint = String(this.searchEndpoint || envValue("MERCADOLIVRE_SEARCH_ENDPOINT", "MELI_SEARCH_ENDPOINT") || "").trim();
+    return {
+      configured: Boolean(configuredToken || configuredRefresh || configuredSearchEndpoint || mercadolivreConfigured(this.getClientId(), this.getClientSecret())),
+      hasAccessToken: Boolean(configuredToken),
+      hasRefreshToken: Boolean(configuredRefresh),
+      hasSearchEndpoint: Boolean(configuredSearchEndpoint),
+      tokenState: configuredToken ? "available" : "TOKEN_MISSING_OR_REQUIRED",
+      authMode: configuredToken ? "bearer" : (configuredRefresh ? "refresh-token" : (configuredSearchEndpoint ? "proxy" : "anonymous")),
+      searchEndpoint: configuredSearchEndpoint || "",
+    };
   }
 }
 

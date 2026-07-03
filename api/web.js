@@ -1,5 +1,7 @@
-import fs from "node:fs";
+﻿import fs from "node:fs";
 import path from "node:path";
+import os from "node:os";
+import crypto from "node:crypto";
 import BudgetEngine from "../src/engines/BudgetEngine.js";
 import ScoreEngine from "../src/engines/ScoreEngine.js";
 import RankingEngine from "../src/engines/RankingEngine.js";
@@ -26,7 +28,12 @@ import { resolveCatalogSeedPath, getCatalogSeedCandidates } from "../src/runtime
 const root = projectRoot;
 const bundledPublicDir = resolveProjectPath("api", "static");
 const publicDir = fs.existsSync(bundledPublicDir) ? bundledPublicDir : resolveProjectPath("public");
-const oauthPath = resolveProjectPath("data", "mercadolivre-oauth.json");
+const oauthPaths = [
+  resolveProjectPath("data", "mercadolivre-oauth.json"),
+  resolveProjectPath("data", "mercadolivre-oauth.tmp.json"),
+  resolveProjectPath("data", "mercadolivre-oauth.cache.json"),
+  path.join(os.tmpdir(), "mercadolivre-oauth.json"),
+];
 const productsPath = resolveProjectPath("data", "products.json");
 const mercadolivreDemoPath = resolveProjectPath("data", "mercadolivre-demo-products.json");
 const mlLinksPath = resolveProjectPath("data", "mercadolivre-links.json");
@@ -106,7 +113,7 @@ function createFeedProvider(providerName = "mi_shop", options = {}) {
           options.feedPath || process.env.INFOSTORE_FEED_PATH || resolveProjectPath("data", "infostore-feed-3029.xml"),
           options.feedPathSecondary || process.env.INFOSTORE_FEED_PATH_SECONDARY || resolveProjectPath("data", "infostore-feed-3030.xml"),
         ].filter(Boolean),
-        sourceName: options.sourceName || "Info Store - Informática",
+        sourceName: options.sourceName || "Info Store - InformÃ¡tica",
       });
     }
     return infoStoreFeedProvider;
@@ -116,7 +123,7 @@ function createFeedProvider(providerName = "mi_shop", options = {}) {
       ...baseOptions,
       networkName: "saldao_informatica",
       feedPath: options.feedPath || process.env.SALDAO_FEED_PATH || resolveProjectPath("data", "saldao-feed.xml"),
-      sourceName: options.sourceName || "Saldão da Informática",
+      sourceName: options.sourceName || "SaldÃ£o da InformÃ¡tica",
     });
   }
   return null;
@@ -171,7 +178,7 @@ function createActionpayImporter() {
       catalogManager: getCatalogManager(),
       catalogSeedPath: process.env.ACTIONPAY_CATALOG_SEED_PATH || resolveCatalogSeedPath(resolveProjectPath("data", "products.seed.json")),
       sourceOfferId: process.env.ACTIONPAY_SALDAO_OFFER_ID || "13241",
-      sourceOfferName: "Saldão da Informática - Notebooks, iPhones e TVs.",
+      sourceOfferName: "SaldÃ£o da InformÃ¡tica - Notebooks, iPhones e TVs.",
     });
   }
   return actionpayYmlImporter;
@@ -235,7 +242,7 @@ function getFeedProviderInstance(providerName = "mi_shop", options = {}) {
           options.feedPath || process.env.INFOSTORE_FEED_PATH || resolveProjectPath("data", "infostore-feed-3029.xml"),
           options.feedPathSecondary || process.env.INFOSTORE_FEED_PATH_SECONDARY || resolveProjectPath("data", "infostore-feed-3030.xml"),
         ].filter(Boolean),
-        sourceName: options.sourceName || "Info Store - Informática",
+        sourceName: options.sourceName || "Info Store - InformÃ¡tica",
       });
     }
     return infoStoreFeedProvider;
@@ -245,7 +252,7 @@ function getFeedProviderInstance(providerName = "mi_shop", options = {}) {
       ...baseOptions,
       networkName: "saldao_informatica",
       feedPath: options.feedPath || process.env.SALDAO_FEED_PATH || resolveProjectPath("data", "saldao-feed.xml"),
-      sourceName: options.sourceName || "Saldão da Informática",
+      sourceName: options.sourceName || "SaldÃ£o da InformÃ¡tica",
     });
   }
   return null;
@@ -259,6 +266,87 @@ function readJson(filePath, fallback) {
   }
 }
 
+function readMercadoLivreOAuth() {
+  for (const filePath of oauthPaths) {
+    const data = readJson(filePath, null);
+    if (data && data.access_token) {
+      return data;
+    }
+  }
+  return null;
+}
+
+function writeMercadoLivreOAuth(payload) {
+  const serialized = JSON.stringify(payload, null, 2);
+  let lastError = null;
+  for (const filePath of oauthPaths) {
+    try {
+      fs.mkdirSync(path.dirname(filePath), { recursive: true });
+      fs.writeFileSync(filePath, serialized, "utf8");
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  if (lastError && !readMercadoLivreOAuth()) {
+    throw lastError;
+  }
+}
+
+function mercadolivreTokenExpired(data) {
+  if (!data) return true;
+  const expiresAt = Number(data.expires_at || 0);
+  if (!expiresAt) return false;
+  return Date.now() >= expiresAt - 60_000;
+}
+
+function mercadolivreClientId() {
+  return process.env.MELI_CLIENT_ID
+    || process.env.CLIENT_ID
+    || process.env.MERCADOLIVRE_CLIENT_ID
+    || process.env.MERCADO_LIVRE_CLIENT_ID
+    || "";
+}
+
+function mercadolivreClientSecret() {
+  return process.env.MELI_CLIENT_SECRET
+    || process.env.CLIENT_SECRET
+    || process.env.MERCADOLIVRE_CLIENT_SECRET
+    || process.env.MERCADO_LIVRE_CLIENT_SECRET
+    || "";
+}
+
+function mercadolivreConfigured() {
+  return Boolean(mercadolivreClientId() && mercadolivreClientSecret());
+}
+function mercadolivreStateSecret() {
+  return process.env.MELI_STATE_SECRET || mercadolivreClientSecret() || mercadolivreClientId() || "oqc-mercadolivre-state";
+}
+
+function buildMercadoLivreState() {
+  const nonce = crypto.randomBytes(12).toString("hex");
+  const issuedAt = Date.now().toString(36);
+  const payload = `${issuedAt}.${nonce}`;
+  const signature = crypto.createHmac("sha256", mercadolivreStateSecret()).update(payload).digest("hex");
+  return `${payload}.${signature}`;
+}
+
+function validateMercadoLivreState(value) {
+  const state = String(value || "").trim();
+  if (!state) return false;
+  const parts = state.split(".");
+  if (parts.length !== 3) return false;
+  const [issuedAt, nonce, signature] = parts;
+  if (!issuedAt || !nonce || !signature) return false;
+  const payload = `${issuedAt}.${nonce}`;
+  const expected = crypto.createHmac("sha256", mercadolivreStateSecret()).update(payload).digest("hex");
+  const expectedBuffer = Buffer.from(expected, "hex");
+  const signatureBuffer = Buffer.from(signature, "hex");
+  if (expectedBuffer.length !== signatureBuffer.length) return false;
+  if (!crypto.timingSafeEqual(expectedBuffer, signatureBuffer)) return false;
+  const ageMs = Date.now() - Number.parseInt(issuedAt, 36);
+  return Number.isFinite(ageMs) && ageMs >= 0 && ageMs <= 15 * 60 * 1000;
+}
+
 function getFeedProviderStatus(providerName = "") {
   const name = String(providerName || "").trim().toLowerCase();
   const provider = getFeedProviderInstance(name, { fetchImpl: globalThis.fetch });
@@ -269,7 +357,7 @@ function getFeedProviderStatus(providerName = "") {
       lastSync: null,
       productCount: 0,
       updated: 0,
-      errors: ["Provider não suportado."],
+      errors: ["Provider nÃ£o suportado."],
     };
   }
   const diagnostics = typeof provider.getDiagnostics === "function"
@@ -358,8 +446,16 @@ function safeJoin(base, target) {
 }
 
 function hasToken() {
-  const data = readJson(oauthPath, null);
-  return Boolean(data && data.access_token);
+  const data = readMercadoLivreOAuth();
+  return Boolean(
+    data && (data.access_token || data.refresh_token)
+    || process.env.MELI_ACCESS_TOKEN
+    || process.env.MERCADOLIVRE_ACCESS_TOKEN
+    || process.env.MERCADO_LIVRE_ACCESS_TOKEN
+    || process.env.MELI_REFRESH_TOKEN
+    || process.env.MERCADOLIVRE_REFRESH_TOKEN
+    || process.env.MERCADO_LIVRE_REFRESH_TOKEN
+  );
 }
 
 function readProducts() {
@@ -557,7 +653,7 @@ function buildAdvisorSnapshot(searchResult = {}, query = "") {
   if (recommendations.length) {
     addAlternative(recommendations[0].product || recommendations[0], recommendations[0].label || "Melhor escolha");
     addAlternative(recommendations[1]?.product || recommendations[1], recommendations[1]?.label || "Boa alternativa");
-    addAlternative(recommendations[2]?.product || recommendations[2], recommendations[2]?.label || "Opção econômica");
+    addAlternative(recommendations[2]?.product || recommendations[2], recommendations[2]?.label || "OpÃ§Ã£o econÃ´mica");
   } else {
     addAlternative(firstProduct, "Melhor escolha");
   }
@@ -569,7 +665,7 @@ function buildAdvisorSnapshot(searchResult = {}, query = "") {
     addAlternative(apertado[0], "Cabe apertado");
   }
   if (alternatives.length < 2 && naoCabe.length) {
-    addAlternative(naoCabe[0], "Não cabe");
+    addAlternative(naoCabe[0], "NÃ£o cabe");
   }
 
   const comparison = comparisonProducts.length
@@ -581,23 +677,23 @@ function buildAdvisorSnapshot(searchResult = {}, query = "") {
 
   const whyThisProduct = firstProduct
     ? [
-      firstProduct.status === "CABE" ? "Cabe no orçamento." : firstProduct.status === "APERTADO" ? "Cabe, mas está apertado." : "Fica acima do orçamento.",
-      firstProduct.isAccessory ? "Produto acessório rebaixado pela consulta." : "Produto principal priorizado pela consulta.",
-      String(firstProduct.affiliateUrl || firstProduct.productUrl || firstProduct.permalink || firstProduct.url || "").trim() ? "Tem link real válido." : "Link indisponível.",
+      firstProduct.status === "CABE" ? "Cabe no orÃ§amento." : firstProduct.status === "APERTADO" ? "Cabe, mas estÃ¡ apertado." : "Fica acima do orÃ§amento.",
+      firstProduct.isAccessory ? "Produto acessÃ³rio rebaixado pela consulta." : "Produto principal priorizado pela consulta.",
+      String(firstProduct.affiliateUrl || firstProduct.productUrl || firstProduct.permalink || firstProduct.url || "").trim() ? "Tem link real vÃ¡lido." : "Link indisponÃ­vel.",
     ].filter(Boolean)
     : [];
 
   const overviewParts = [];
   if (products.length === 1) {
-    overviewParts.push("Encontramos apenas 1 resultado real no catálogo atual.");
+    overviewParts.push("Encontramos apenas 1 resultado real no catÃ¡logo atual.");
   } else if (products.length > 1) {
-    overviewParts.push(`Encontramos ${products.length} resultados reais no catálogo atual.`);
+    overviewParts.push(`Encontramos ${products.length} resultados reais no catÃ¡logo atual.`);
   }
   if (principalCount || accessoryCount) {
-    overviewParts.push(`${pluralize(principalCount, "produto principal")} e ${pluralize(accessoryCount, "acessório")} avaliados.`);
+    overviewParts.push(`${pluralize(principalCount, "produto principal")} e ${pluralize(accessoryCount, "acessÃ³rio")} avaliados.`);
   }
   if (firstProduct?.status) {
-    overviewParts.push(`Melhor posição atual: ${firstProduct.status}.`);
+    overviewParts.push(`Melhor posiÃ§Ã£o atual: ${firstProduct.status}.`);
   }
 
   return {
@@ -667,7 +763,7 @@ function isGenericMercadoLivreUrl(value) {
 }
 
 function readMercadoLivreToken() {
-  return readJson(oauthPath, null);
+  return readMercadoLivreOAuth();
 }
 
 async function fetchMercadoLivreSearch(query, limit = 12) {
@@ -766,14 +862,14 @@ function normalizeDemoProducts(products, monthlyBudget, months, query, source) {
   const categoryRules = {
     celular: {
       include: ["celular", "smartphone", "galaxy", "moto", "redmi", "iphone"],
-      exclude: ["air fryer", "câmera", "camera", "notebook", "tablet", "casa"],
+      exclude: ["air fryer", "cÃ¢mera", "camera", "notebook", "tablet", "casa"],
     },
     tv: {
       include: ["tv", "televisao", "televis?o", "smart tv", "smarttv", "oled", "qled", "roku"],
       exclude: ["celular", "smartphone", "notebook", "tablet", "casa", "presente"],
     },
     relogio: {
-      include: ["relógio", "relogio", "smartwatch", "watch", "pulseira inteligente"],
+      include: ["relÃ³gio", "relogio", "smartwatch", "watch", "pulseira inteligente"],
       exclude: ["celular", "smartphone", "notebook", "tablet", "casa", "presente"],
     },
     notebook: {
@@ -789,7 +885,7 @@ function normalizeDemoProducts(products, monthlyBudget, months, query, source) {
       exclude: ["celular", "smartphone", "notebook", "tablet"],
     },
     presente: {
-      include: ["presente", "kit", "caneca", "bloco", "acessório", "acessorio"],
+      include: ["presente", "kit", "caneca", "bloco", "acessÃ³rio", "acessorio"],
       exclude: ["celular", "smartphone", "notebook", "tablet"],
     },
   };
@@ -828,7 +924,7 @@ function normalizeDemoProducts(products, monthlyBudget, months, query, source) {
         image: product.image || "",
         rating: product.rating ?? null,
         description: product.riskNote || product.description || "",
-        note: product.riskNote || "Dados de teste — preços simulados.",
+        note: product.riskNote || "Dados de teste â€” preÃ§os simulados.",
         url: "",
         permalink: "",
         installments: product.installments || months,
@@ -841,7 +937,7 @@ function normalizeDemoProducts(products, monthlyBudget, months, query, source) {
       };
     })
     .sort((a, b) => {
-      const rank = { "CABE": 0, "APERTADO": 1, "NÃO CABE": 2 };
+      const rank = { "CABE": 0, "APERTADO": 1, "NÃƒO CABE": 2 };
       const byRank = rank[a.status] - rank[b.status];
       if (byRank !== 0) return byRank;
       const byRelevance = (b.relevance || 0) - (a.relevance || 0);
@@ -849,12 +945,12 @@ function normalizeDemoProducts(products, monthlyBudget, months, query, source) {
       return b.score - a.score;
     });
 
-  const grouped = { "CABE": [], "APERTADO": [], "NÃO CABE": [] };
+  const grouped = { "CABE": [], "APERTADO": [], "NÃƒO CABE": [] };
   for (const item of normalized) grouped[item.status].push(item);
   return [
     ...grouped["CABE"].slice(0, 8),
     ...grouped["APERTADO"].slice(0, 4),
-    ...grouped["NÃO CABE"].slice(0, 3),
+    ...grouped["NÃƒO CABE"].slice(0, 3),
   ];
 }
 
@@ -1072,7 +1168,7 @@ function renderExplorerPage({ title, heading, description, view, badge, endpoint
     <body data-view="${escapeHtml(view)}" data-endpoint="${escapeHtml(endpoint)}">
       <header class="topbar">
         <a class="brand" href="/"><img class="brand-mark" src="/logo-oqc.png" alt="OQC" /><strong>O Que Cabe</strong></a>
-        <div class="trust-pill">Curadoria de Confiança</div>
+        <div class="trust-pill">Curadoria de ConfianÃ§a</div>
       </header>
       <main>
         <section class="hero">
@@ -1081,9 +1177,9 @@ function renderExplorerPage({ title, heading, description, view, badge, endpoint
             <p>${escapeHtml(description)}</p>
           </div>
           <form id="searchForm" class="search-card">
-            <div class="mode-tabs" aria-label="Tipo de orçamento">
-              <button class="active" type="button">Orçamento Mensal</button>
-              <button type="button">Orçamento Total</button>
+            <div class="mode-tabs" aria-label="Tipo de orÃ§amento">
+              <button class="active" type="button">OrÃ§amento Mensal</button>
+              <button type="button">OrÃ§amento Total</button>
             </div>
             <div class="field field-product">
               <label for="productInput">${escapeHtml(inputLabel)}</label>
@@ -1093,7 +1189,7 @@ function renderExplorerPage({ title, heading, description, view, badge, endpoint
               </div>
             </div>
             <div class="field">
-              <label for="monthlyInput">Máx. mensal</label>
+              <label for="monthlyInput">MÃ¡x. mensal</label>
               <div class="money-input">
                 <span>R$</span>
                 <input id="monthlyInput" name="monthly" type="number" min="1" step="1" value="100" required />
@@ -1119,16 +1215,16 @@ function renderExplorerPage({ title, heading, description, view, badge, endpoint
         <section class="results-area">
           <div class="section-head">
             <div>
-              <p class="panel-label">Seu teto estimado: <strong id="budgetTotal">R$ 1.200,00</strong> <span id="budgetLine">R$ 100,00 por mês em até 12x</span></p>
-              <h2 id="summaryTitle">Faça uma busca para começar</h2>
+              <p class="panel-label">Seu teto estimado: <strong id="budgetTotal">R$ 1.200,00</strong> <span id="budgetLine">R$ 100,00 por mÃªs em atÃ© 12x</span></p>
+              <h2 id="summaryTitle">FaÃ§a uma busca para comeÃ§ar</h2>
             </div>
             <span class="source-badge" id="sourceBadge">${escapeHtml(badge)}</span>
           </div>
           <div class="notice" id="notice" hidden></div>
           <div class="grid" id="results">
             <article class="empty-state">
-              <strong>Teste uma busca rápida</strong>
-              <span>O resultado aparece aqui com parcela, total e botão de oferta.</span>
+              <strong>Teste uma busca rÃ¡pida</strong>
+              <span>O resultado aparece aqui com parcela, total e botÃ£o de oferta.</span>
             </article>
           </div>
         </section>
@@ -1153,7 +1249,7 @@ function renderHome() {
       <body>
         <main style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;padding:32px;max-width:720px;margin:0 auto;">
           <h1>O Que Cabe</h1>
-          <p>O site está iniciando em modo seguro. A interface completa será carregada assim que o arquivo principal estiver disponível.</p>
+          <p>O site estÃ¡ iniciando em modo seguro. A interface completa serÃ¡ carregada assim que o arquivo principal estiver disponÃ­vel.</p>
         </main>
       </body>
     </html>`;
@@ -1183,7 +1279,7 @@ function renderTravelPage() {
   return renderExplorerPage({
     title: "Teste Viagens | O Que Cabe",
     heading: "Teste viagens com cards mockados.",
-    description: "Simulação de destinos para preparar a futura vertical de viagens.",
+    description: "SimulaÃ§Ã£o de destinos para preparar a futura vertical de viagens.",
     view: "travel",
     badge: "Viagem mock",
     endpoint: "/api/teste-viagens",
@@ -1192,7 +1288,7 @@ function renderTravelPage() {
     quickLabel: "Destinos:",
     quickButtons: [
       { label: "Rio", query: "Rio", monthly: 150, months: 12 },
-      { label: "São Paulo", query: "São Paulo", monthly: 120, months: 12 },
+      { label: "SÃ£o Paulo", query: "SÃ£o Paulo", monthly: 120, months: 12 },
       { label: "Salvador", query: "Salvador", monthly: 180, months: 12 },
     ],
   });
@@ -1218,7 +1314,7 @@ function renderMercadoLivrePage() {
   }).replace(
     '<div class="notice" id="notice" hidden></div>',
     connected
-      ? '<div class="notice" id="notice">Digite ou cole uma URL do Mercado Livre. Também é possível testar por categoria. A busca roda com debounce.</div>'
+      ? '<div class="notice" id="notice">Digite ou cole uma URL do Mercado Livre. TambÃ©m Ã© possÃ­vel testar por categoria. A busca roda com debounce.</div>'
       : '<div class="notice" id="notice">Conecte sua conta Mercado Livre para consultar produtos reais.</div>',
   );
 }
@@ -1228,11 +1324,12 @@ function mercadolivreRedirectUri() {
 }
 
 function mercadolivreAuthUrl() {
-  const clientId = process.env.MELI_CLIENT_ID || "";
+  const clientId = mercadolivreClientId();
   const params = new URLSearchParams({
     response_type: "code",
     client_id: clientId,
     redirect_uri: mercadolivreRedirectUri(),
+    state: buildMercadoLivreState(),
   });
   return `https://auth.mercadolibre.com.br/authorization?${params.toString()}`;
 }
@@ -1258,7 +1355,7 @@ function normalizeMercadoLivreSearchItem(item, monthly, months) {
   const normalized = normalizeMercadoLivreItem(item);
   const price = Number(normalized.price || 0);
   const monthlyPrice = months > 0 ? price / months : price;
-  const status = monthlyPrice <= monthly ? "CABE" : monthlyPrice <= monthly * 1.2 ? "APERTADO" : "NÃO CABE";
+  const status = monthlyPrice <= monthly ? "CABE" : monthlyPrice <= monthly * 1.2 ? "APERTADO" : "NÃƒO CABE";
   return {
     id: normalized.id,
     title: normalized.title,
@@ -1309,15 +1406,15 @@ function renderCatalogPage(query = {}) {
     <head>
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <title>Catálogo OQC</title>
+      <title>CatÃ¡logo OQC</title>
       <link rel="stylesheet" href="/styles.css" />
     </head>
     <body>
       <header class="topbar">
-        <a class="brand" href="/"><img class="brand-mark" src="/logo-oqc.png" alt="OQC" /><strong>Catálogo OQC</strong></a>
+        <a class="brand" href="/"><img class="brand-mark" src="/logo-oqc.png" alt="OQC" /><strong>CatÃ¡logo OQC</strong></a>
       </header>
       <main style="padding:24px;max-width:1200px;margin:0 auto;">
-        <h1 style="margin:0 0 12px;">Catálogo interno</h1>
+        <h1 style="margin:0 0 12px;">CatÃ¡logo interno</h1>
         <p style="margin:0 0 16px;">Produtos gerenciados pelo OQC. Importar, exportar, editar, desativar e excluir podem ser ligados depois sem mudar o motor.</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
           <a class="submit-button" href="/api/catalog?action=export&format=json">Export JSON</a>
@@ -1383,11 +1480,11 @@ function relevanceScore(query, product) {
   const text = `${product.title || ""} ${product.category || ""}`.toLowerCase();
   const termsByQuery = {
     celular: ["celular", "smartphone", "galaxy", "moto", "redmi", "iphone"],
-    relogio: ["relógio", "relogio", "smartwatch", "watch", "pulseira inteligente"],
+    relogio: ["relÃ³gio", "relogio", "smartwatch", "watch", "pulseira inteligente"],
     notebook: ["notebook", "laptop", "ideapad", "vivobook", "aspire"],
     tablet: ["tablet", "ipad", "galaxy tab", "tab"],
     casa: ["casa", "air fryer", "fritadeira", "aspirador", "cozinha"],
-    presente: ["presente", "kit", "caneca", "bloco", "acessório", "acessorio"],
+    presente: ["presente", "kit", "caneca", "bloco", "acessÃ³rio", "acessorio"],
   };
   const terms = termsByQuery[q] || [q];
   return terms.reduce((score, term) => score + (text.includes(term) ? 20 : 0), 0);
@@ -1396,7 +1493,7 @@ function relevanceScore(query, product) {
 function buildMercadoLivreManualResult({ item, itemId, monthly, months }) {
   const price = Number(item?.price ?? 0);
   const monthlyPrice = months > 0 ? price / months : price;
-  const status = monthlyPrice <= monthly ? "CABE" : monthlyPrice <= monthly * 1.2 ? "APERTADO" : "NÃO CABE";
+  const status = monthlyPrice <= monthly ? "CABE" : monthlyPrice <= monthly * 1.2 ? "APERTADO" : "NÃƒO CABE";
   return {
     ok: true,
     mode: "mercadolivre",
@@ -1490,19 +1587,19 @@ export default async function handler(req, res) {
         ...response,
         advisor,
         strategyUsed: searchResult.strategyUsed,
+        tokenState: searchResult.tokenState,
+        statusHttp: searchResult.statusHttp,
         fallbackUsed: Boolean(searchResult.fallbackUsed),
         fallbackAttempted: Boolean(searchResult.fallbackAttempted),
         fallbackSource: searchResult.fallbackSource || "",
         fallbackCount: Number(searchResult.fallbackCount || 0),
         fallbackRawCount: Number(searchResult.fallbackRawCount || 0),
         fallbackStatusHttp: searchResult.fallbackStatusHttp || null,
-        tokenState: searchResult.tokenState,
-        statusHttp: searchResult.statusHttp,
         returnedCount: searchResult.returnedCount,
         firstFive: searchResult.firstFive,
         searchIntent: searchResult.intent,
         installmentWarnings: searchResult.warnings,
-        warning: selectedProducts.length ? "" : "Não encontramos exemplo demonstrativo confiável para este orçamento.",
+        warning: searchResult.fallbackWarning || (selectedProducts.length ? "" : "NÃ£o encontramos exemplo demonstrativo confiÃ¡vel para este orÃ§amento."),
       });
     } catch (error) {
       const response = buildOqcResponse({
@@ -1518,7 +1615,7 @@ export default async function handler(req, res) {
         ok: true,
         ...response,
         advisor: buildAdvisorSnapshot(response, q),
-        warning: `${error.message || "Falha na busca"}. Mostrando demonstração por enquanto.`,
+        warning: `${error.message || "Falha na busca"}. Mostrando demonstraÃ§Ã£o por enquanto.`,
       });
     }
     return;
@@ -1697,20 +1794,20 @@ export default async function handler(req, res) {
       ? (price) => {
         if (price <= totalBudget) return "CABE";
         if (price <= totalBudget * 1.2) return "APERTADO";
-        return "NÃO CABE";
+        return "NÃƒO CABE";
       }
       : (price) => {
         const installment = price / months;
         if (installment <= monthly) return "CABE";
         if (installment <= monthly * 1.2) return "APERTADO";
-        return "NÃO CABE";
+        return "NÃƒO CABE";
       };
     const products = normalizeDemoProducts(readMercadoLivreDemoProducts(), monthly, months, q, "mercadolivre").map((item) => ({
       ...item,
       status: classifyByMode(item.price || 0),
       dataMode: "demo",
     })).sort((a, b) => {
-      const rank = { "CABE": 0, "APERTADO": 1, "NÃO CABE": 2 };
+      const rank = { "CABE": 0, "APERTADO": 1, "NÃƒO CABE": 2 };
       const byRank = rank[a.status] - rank[b.status];
       if (byRank !== 0) return byRank;
       return (b.score || 0) - (a.score || 0);
@@ -1720,7 +1817,7 @@ export default async function handler(req, res) {
       mode,
       products,
       totalBudget,
-      warning: products.length ? "" : "Nenhum produto encontrado dentro desse orçamento. Tente aumentar o valor mensal ou o orçamento total.",
+      warning: products.length ? "" : "Nenhum produto encontrado dentro desse orÃ§amento. Tente aumentar o valor mensal ou o orÃ§amento total.",
     });
     return;
   }
@@ -1735,13 +1832,13 @@ export default async function handler(req, res) {
       ? (price) => {
         if (price <= totalBudget) return "CABE";
         if (price <= totalBudget * 1.2) return "APERTADO";
-        return "NÃO CABE";
+        return "NÃƒO CABE";
       }
       : (price) => {
         const installment = price / months;
         if (installment <= monthly) return "CABE";
         if (installment <= monthly * 1.2) return "APERTADO";
-        return "NÃO CABE";
+        return "NÃƒO CABE";
       };
     const realSearch = await searchMercadoLivreWithDiagnostics(q, 20);
     const realProducts = realSearch.results
@@ -1764,7 +1861,7 @@ export default async function handler(req, res) {
     const products = realProducts.length ? realProducts : demoProducts;
     const dataMode = realProducts.length ? "real" : "demo";
     sendJson(res, 200, {
-      configured: Boolean(process.env.MELI_CLIENT_ID && process.env.MELI_CLIENT_SECRET && process.env.MELI_REDIRECT_URI),
+      configured: mercadolivreConfigured(),
       authenticated: hasToken(),
       dataMode,
       statusHttp: realSearch.error ? 502 : 200,
@@ -1790,7 +1887,7 @@ export default async function handler(req, res) {
       const diagnostic = await fetchMercadoLivreSearchDiagnostics(q, 20, token);
       sendJson(res, diagnostic.statusHttp || 200, {
         ok: !diagnostic.error,
-        configured: Boolean(process.env.MELI_CLIENT_ID && process.env.MELI_CLIENT_SECRET && process.env.MELI_REDIRECT_URI),
+        configured: mercadolivreConfigured(),
         authenticated: Boolean(token),
         endpoint: diagnostic.endpoint,
         statusHttp: diagnostic.statusHttp,
@@ -1807,7 +1904,7 @@ export default async function handler(req, res) {
     } catch (error) {
       sendJson(res, 502, {
         ok: false,
-        configured: Boolean(process.env.MELI_CLIENT_ID && process.env.MELI_CLIENT_SECRET && process.env.MELI_REDIRECT_URI),
+        configured: mercadolivreConfigured(),
         authenticated: Boolean(token),
         endpoint: `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(q)}&limit=20`,
         statusHttp: 502,
@@ -1825,16 +1922,17 @@ export default async function handler(req, res) {
     return;
   }
 
-  if (pathname === "/api/ml-auth-status") {
-    sendJson(res, 200, {
-      configured: Boolean(process.env.MELI_CLIENT_ID && process.env.MELI_CLIENT_SECRET && process.env.MELI_REDIRECT_URI),
-      authenticated: hasToken(),
-      token_expired: false,
-      redirectUri: mercadolivreRedirectUri(),
-      hasClientId: Boolean(process.env.MELI_CLIENT_ID),
-      hasClientSecret: Boolean(process.env.MELI_CLIENT_SECRET),
-    });
-    return;
+    if (pathname === "/api/ml-auth-status") {
+      const token = readMercadoLivreOAuth();
+      sendJson(res, 200, {
+        configured: mercadolivreConfigured(),
+        authenticated: Boolean(token && token.access_token),
+        token_expired: Boolean(token && mercadolivreTokenExpired(token)),
+        redirectUri: mercadolivreRedirectUri(),
+        hasClientId: Boolean(process.env.MELI_CLIENT_ID),
+        hasClientSecret: Boolean(process.env.MELI_CLIENT_SECRET),
+      });
+      return;
   }
 
   if (pathname === "/api/google-merchant/status") {
@@ -1855,7 +1953,7 @@ export default async function handler(req, res) {
     if (!getGoogleMerchantAdapter().configured()) {
       sendJson(res, 400, {
         ok: false,
-        message: "Google Merchant não configurado.",
+        message: "Google Merchant nÃ£o configurado.",
         configured: false,
         hasAccountId: getGoogleMerchantAdapter().getDiagnostics().hasAccountId,
         hasAccessToken: getGoogleMerchantAdapter().getDiagnostics().hasAccessToken,
@@ -1894,7 +1992,7 @@ export default async function handler(req, res) {
     if (!getAwinFeedProvider().configured()) {
       sendJson(res, 400, {
         ok: false,
-        message: "Awin não configurada.",
+        message: "Awin nÃ£o configurada.",
         configured: false,
       });
       return;
@@ -1931,7 +2029,7 @@ export default async function handler(req, res) {
       sendJson(res, 400, {
         ok: false,
         configured: false,
-        message: "Actionpay não configurada.",
+        message: "Actionpay nÃ£o configurada.",
       });
       return;
     }
@@ -1966,7 +2064,7 @@ export default async function handler(req, res) {
       sendJson(res, 400, {
         ok: false,
         configured: false,
-        message: "Actionpay não configurada.",
+        message: "Actionpay nÃ£o configurada.",
         hasApiKey: actionpayProvider.getDiagnostics().hasApiKey,
         hasSourceId: actionpayProvider.getDiagnostics().hasSourceId,
       });
@@ -1984,31 +2082,72 @@ export default async function handler(req, res) {
     return;
   }
 
-  if (pathname === "/auth/mercadolivre") {
-    if (!process.env.MELI_CLIENT_ID || !process.env.MELI_REDIRECT_URI) {
-      sendJson(res, 400, { ok: false, message: "Mercado Livre não configurado." });
+    if (pathname === "/auth/mercadolivre") {
+      if (!mercadolivreConfigured()) {
+        sendJson(res, 400, { ok: false, message: "CLIENT_ID/CLIENT_SECRET do Mercado Livre não configurados." });
+        return;
+      }
+      res.statusCode = 302;
+      res.setHeader("Location", mercadolivreAuthUrl());
+      res.end();
       return;
     }
-    res.statusCode = 302;
-    res.setHeader("Location", mercadolivreAuthUrl());
-    res.end();
-    return;
-  }
 
-  if (pathname === "/auth/mercadolivre/callback") {
-    const code = url.searchParams.get("code") || "";
-    if (!code) {
-      sendJson(res, 400, { ok: false, message: "Código OAuth ausente." });
+    if (pathname === "/auth/mercadolivre/callback") {
+      const error = url.searchParams.get("error");
+      const errorDescription = url.searchParams.get("error_description");
+      const state = url.searchParams.get("state") || "";
+      if (error) {
+        sendJson(res, 400, { ok: false, message: errorDescription || error });
+        return;
+      }
+      if (!validateMercadoLivreState(state)) {
+        sendJson(res, 400, { ok: false, message: "Estado OAuth inválido ou expirado." });
+        return;
+      }
+      const code = url.searchParams.get("code") || "";
+      if (!code) {
+        sendJson(res, 400, { ok: false, message: "Código OAuth ausente." });
+        return;
+      }
+      try {
+        const token = await fetch("https://api.mercadolibre.com/oauth/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({
+            grant_type: "authorization_code",
+            client_id: mercadolivreClientId(),
+            client_secret: mercadolivreClientSecret(),
+            code,
+            redirect_uri: mercadolivreRedirectUri(),
+          }),
+        }).then(async (response) => {
+          const body = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            const message = body.message || body.error_description || body.error || `HTTP ${response.status}`;
+            throw new Error(message);
+          }
+          return body;
+        });
+        const payload = {
+          access_token: token.access_token,
+          refresh_token: token.refresh_token,
+          token_type: token.token_type || "bearer",
+          expires_in: token.expires_in,
+          expires_at: Date.now() + Number(token.expires_in || 0) * 1000,
+          scope: token.scope || null,
+          user_id: token.user_id || null,
+          created_at: new Date().toISOString(),
+        };
+        writeMercadoLivreOAuth(payload);
+        res.statusCode = 302;
+        res.setHeader("Location", "/mercadolivre-manual?auth=ok");
+        res.end();
+      } catch (err) {
+        sendJson(res, 400, { ok: false, message: err.message || "Falha ao autenticar Mercado Livre." });
+      }
       return;
     }
-    sendJson(res, 200, {
-      ok: true,
-      received: true,
-      redirectUri: mercadolivreRedirectUri(),
-      message: "Callback Mercado Livre recebido.",
-    });
-    return;
-  }
 
   if (pathname === "/webhook") {
     sendJson(res, 200, { status: "ok", webhook: true });
@@ -2026,7 +2165,7 @@ export default async function handler(req, res) {
     const fallback = readMercadoLivreDemoProducts().find((item) => item.id && String(item.id).toLowerCase().includes(String(itemId).toLowerCase()));
     const candidate = fallback || match || null;
     if (!candidate) {
-      sendJson(res, 200, { ok: false, title: "", price: null, image: "", permalink: "", message: "Item não localizado na base de teste." });
+      sendJson(res, 200, { ok: false, title: "", price: null, image: "", permalink: "", message: "Item nÃ£o localizado na base de teste." });
       return;
     }
     sendJson(res, 200, {
@@ -2064,11 +2203,11 @@ export default async function handler(req, res) {
     const products = normalizeDemoProducts(readMercadoLivreDemoProducts(), monthly, months, q, "mercadolivre").map((item) => ({
       ...item,
       status: mode === "total"
-        ? (item.price <= totalBudget ? "CABE" : item.price <= totalBudget * 1.2 ? "APERTADO" : "NÃO CABE")
-        : (item.price / months <= monthly ? "CABE" : item.price / months <= monthly * 1.2 ? "APERTADO" : "NÃO CABE"),
+        ? (item.price <= totalBudget ? "CABE" : item.price <= totalBudget * 1.2 ? "APERTADO" : "NÃƒO CABE")
+        : (item.price / months <= monthly ? "CABE" : item.price / months <= monthly * 1.2 ? "APERTADO" : "NÃƒO CABE"),
       dataMode: "demo",
     })).sort((a, b) => {
-      const rank = { "CABE": 0, "APERTADO": 1, "NÃO CABE": 2 };
+      const rank = { "CABE": 0, "APERTADO": 1, "NÃƒO CABE": 2 };
       const byRank = rank[a.status] - rank[b.status];
       if (byRank !== 0) return byRank;
       return (b.score || 0) - (a.score || 0);
@@ -2078,15 +2217,15 @@ export default async function handler(req, res) {
       mode,
       products,
       totalBudget,
-      warning: products.length ? "" : "Nenhum produto encontrado dentro desse orçamento. Tente aumentar o valor mensal ou o orçamento total.",
+      warning: products.length ? "" : "Nenhum produto encontrado dentro desse orÃ§amento. Tente aumentar o valor mensal ou o orÃ§amento total.",
     });
     return;
   }
 
   if (pathname === "/teste-produtos") {
     send(res, 200, renderProductPage().replace(
-      '<div class="mode-tabs" aria-label="Tipo de orçamento">',
-      '<div class="mode-tabs" aria-label="Tipo de orçamento">',
+      '<div class="mode-tabs" aria-label="Tipo de orÃ§amento">',
+      '<div class="mode-tabs" aria-label="Tipo de orÃ§amento">',
     ), { "Content-Type": "text/html; charset=utf-8" });
     return;
   }
@@ -2186,21 +2325,6 @@ export default async function handler(req, res) {
     }
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
