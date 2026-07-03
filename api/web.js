@@ -6,6 +6,7 @@ import RankingEngine from "../src/engines/RankingEngine.js";
 import RiskEngine from "../src/engines/RiskEngine.js";
 import ExplanationEngine from "../src/engines/ExplanationEngine.js";
 import ProductIntelligenceEngine from "../src/catalog/ProductIntelligenceEngine.js";
+import MarketIntelligenceEngine from "../src/catalog/MarketIntelligenceEngine.js";
 import CsvFeedProvider from "../src/feed/providers/CsvFeedProvider.js";
 import MiShopFeedProvider from "../src/feed/providers/MiShopFeedProvider.js";
 import { SaldaoInformaticaFeedProvider } from "../src/providers/SaldaoInformaticaFeedProvider.js";
@@ -35,6 +36,7 @@ const currency = new Intl.NumberFormat("pt-BR", {
 });
 let catalogManagerInstance = null;
 let productIntelligenceEngineInstance = null;
+let marketIntelligenceEngineInstance = null;
 function getCatalogManager() {
   if (!catalogManagerInstance) {
     catalogManagerInstance = new CatalogManager({
@@ -130,6 +132,13 @@ function getProductIntelligenceEngine() {
     });
   }
   return productIntelligenceEngineInstance;
+}
+
+function getMarketIntelligenceEngine() {
+  if (!marketIntelligenceEngineInstance) {
+    marketIntelligenceEngineInstance = new MarketIntelligenceEngine();
+  }
+  return marketIntelligenceEngineInstance;
 }
 
 function getFeedProviderNames() {
@@ -495,6 +504,21 @@ function buildCatalogStatsSnapshot() {
   };
 }
 
+function buildMarketStatsSnapshot() {
+  const catalogManager = getCatalogManager();
+  const publishedItems = catalogManager.list();
+  const diagnostics = catalogManager.diagnostics();
+  const market = getMarketIntelligenceEngine().buildCatalogStats(publishedItems);
+  return {
+    ok: true,
+    seedUsed: diagnostics.seedUsed || diagnostics.seedPath || "",
+    totalProducts: diagnostics.rawCount ?? catalogManager.getRawItems().length,
+    productsPublished: diagnostics.publishedCount ?? publishedItems.length,
+    productsHidden: diagnostics.hiddenProducts ?? 0,
+    ...market,
+  };
+}
+
 function buildAdvisorSnapshot(searchResult = {}, query = "") {
   const pluralize = (count, singular, plural = `${singular}s`) => `${count} ${count === 1 ? singular : plural}`;
   const products = Array.isArray(searchResult.products) ? searchResult.products : [];
@@ -584,6 +608,7 @@ function buildAdvisorSnapshot(searchResult = {}, query = "") {
     comparison,
     alternativesCount: alternatives.length,
     comparisonCount: comparison.length,
+    market: firstProduct ? getMarketIntelligenceEngine().buildProductSnapshot(firstProduct) : null,
     firstProduct: firstProduct ? {
       title: firstProduct.title || firstProduct.displayTitle || "",
       price: Number(firstProduct.price || 0),
@@ -903,20 +928,35 @@ function attachFinancialInsights(product, context, query, rank = 0, siblings = [
   };
 }
 
+function attachMarketInsights(product = {}) {
+  const market = getMarketIntelligenceEngine().buildProductSnapshot(product);
+  return {
+    ...product,
+    market,
+    marketSnapshot: market,
+    oqc: {
+      ...(product.oqc || {}),
+      market,
+    },
+  };
+}
+
 function buildOqcResponse({ products, query, mode, monthly, months, totalBudget, dataMode }) {
   const budget = buildOqcBudgetContext({ mode, monthly, months, totalBudget });
   const enriched = products.map((product) => enrichWithOqc(product, budget, query));
   const ranked = RankingEngine.rankProducts(enriched, query);
-  const productsWithInsights = (ranked.products || enriched).map((product, index, list) => attachFinancialInsights(product, budget, query, index, list));
+  const productsWithInsights = (ranked.products || enriched)
+    .map((product, index, list) => attachFinancialInsights(product, budget, query, index, list))
+    .map((product) => attachMarketInsights(product));
   const recommendations = (ranked.recommended || []).map((item) => ({
     ...item,
-    product: attachFinancialInsights(item.product || {}, budget, query, item.rank - 1, productsWithInsights),
+    product: attachMarketInsights(attachFinancialInsights(item.product || {}, budget, query, item.rank - 1, productsWithInsights)),
   }));
   const groups = {
     ...ranked.groups,
-    cabe: (ranked.groups?.cabe || []).map((item, index, list) => attachFinancialInsights(item, budget, query, index, list)),
-    apertado: (ranked.groups?.apertado || []).map((item, index, list) => attachFinancialInsights(item, budget, query, index, list)),
-    naoCabe: (ranked.groups?.naoCabe || []).map((item, index, list) => attachFinancialInsights(item, budget, query, index, list)),
+    cabe: (ranked.groups?.cabe || []).map((item, index, list) => attachMarketInsights(attachFinancialInsights(item, budget, query, index, list))),
+    apertado: (ranked.groups?.apertado || []).map((item, index, list) => attachMarketInsights(attachFinancialInsights(item, budget, query, index, list))),
+    naoCabe: (ranked.groups?.naoCabe || []).map((item, index, list) => attachMarketInsights(attachFinancialInsights(item, budget, query, index, list))),
   };
   return {
     query,
@@ -985,7 +1025,9 @@ function buildFallbackRealResponse({ products, query, mode, monthly, months, tot
   });
   const ordered = BudgetEngine.sortByBudgetPriority(enriched);
   const groups = BudgetEngine.groupBudgetPriority(enriched);
-  const productsWithInsights = ordered.map((product, index, list) => attachFinancialInsights(product, budget, query, index, list));
+  const productsWithInsights = ordered
+    .map((product, index, list) => attachFinancialInsights(product, budget, query, index, list))
+    .map((product) => attachMarketInsights(product));
   const recommended = ordered.slice(0, 3).map((product, index) => ({
     rank: index + 1,
     label: index === 0 ? (product.status === "CABE" ? "Melhor escolha" : "Melhor alternativa dentro do possivel") : index === 1 ? "Boa alternativa" : "Opcao economica",
@@ -996,7 +1038,7 @@ function buildFallbackRealResponse({ products, query, mode, monthly, months, tot
     },
   })).map((item, index) => ({
     ...item,
-    product: attachFinancialInsights(item.product, budget, query, index, productsWithInsights),
+    product: attachMarketInsights(attachFinancialInsights(item.product, budget, query, index, productsWithInsights)),
   }));
   return {
     query,
@@ -1541,6 +1583,11 @@ export default async function handler(req, res) {
 
   if (pathname === "/api/catalog/stats") {
     sendJson(res, 200, buildCatalogStatsSnapshot());
+    return;
+  }
+
+  if (pathname === "/api/market/stats") {
+    sendJson(res, 200, buildMarketStatsSnapshot());
     return;
   }
 
