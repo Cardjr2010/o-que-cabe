@@ -38,9 +38,9 @@ function formatIndicator(indicator) {
 }
 
 function formatAdvice(indicator, trend, hasHistory) {
+  if (!hasHistory) return "Histórico de preço ainda insuficiente.";
   if (indicator === "excellent" && trend !== "up") return "Vale comprar hoje.";
   if (indicator === "high" || trend === "up") return "Pode valer esperar alguns dias.";
-  if (!hasHistory) return "Sem histórico suficiente. Vale acompanhar.";
   return "Preço está em uma faixa normal. Vale monitorar.";
 }
 
@@ -58,8 +58,8 @@ function buildPriceBounds(history = []) {
 function compareHistory(history = []) {
   if (history.length < 2) {
     return {
-      trend: "stable",
-      trendLabel: formatTrend("stable"),
+      trend: "insufficient",
+      trendLabel: "Histórico de preço ainda insuficiente.",
       delta: 0,
       deltaPercent: 0,
       previousPrice: 0,
@@ -89,7 +89,7 @@ function buildPromotion(history = []) {
       discountValue: 0,
       discountPercent: 0,
       isRealPromotion: false,
-      label: "Sem promoção real detectada",
+      label: "Histórico de preço ainda insuficiente.",
     };
   }
 
@@ -115,17 +115,17 @@ function buildIndicator(product = {}, history = []) {
   const { minPrice, maxPrice, averagePrice } = buildPriceBounds(history);
   if (!currentPrice || !Number.isFinite(currentPrice)) {
     return {
-      indicator: "normal",
-      indicatorLabel: formatIndicator("normal"),
+      indicator: "insufficient",
+      indicatorLabel: "Histórico de preço ainda insuficiente.",
       confidence: 0,
     };
   }
 
   const spread = Math.max(0, maxPrice - minPrice);
-  if (!history.length || spread === 0) {
+  if (history.length < 3 || spread === 0) {
     return {
-      indicator: "normal",
-      indicatorLabel: formatIndicator("normal"),
+      indicator: "insufficient",
+      indicatorLabel: "Histórico de preço ainda insuficiente.",
       confidence: 0.25,
     };
   }
@@ -193,14 +193,30 @@ function buildCategoryPriceSummary(items = []) {
 
 export default class MarketIntelligenceEngine {
   buildProductSnapshot(product = {}) {
-    const history = normalizeHistory(product);
-    const { minPrice, maxPrice, averagePrice } = buildPriceBounds(history);
-    const trend = compareHistory(history);
-    const promotion = buildPromotion(history);
-    const indicator = buildIndicator(product, history);
-    const hasHistory = history.length > 1;
-    const advice = formatAdvice(indicator.indicator, trend.trend, hasHistory);
-    const lastCollectedAt = history.at(-1)?.date || product.lastCheckedAt || product.updatedAt || product.importedAt || "";
+  const history = normalizeHistory(product);
+  const { minPrice, maxPrice, averagePrice } = buildPriceBounds(history);
+  const trend = compareHistory(history);
+  const promotion = buildPromotion(history);
+  const indicator = buildIndicator(product, history);
+  const hasHistory = history.length > 1;
+  const canShowDetailedMarketSignal = history.length >= 3;
+  const canShowTrend = history.length >= 2;
+  const priceIndicator = canShowDetailedMarketSignal ? indicator.indicator : "insufficient";
+  const priceIndicatorLabel = canShowDetailedMarketSignal ? indicator.indicatorLabel : "Histórico de preço ainda insuficiente.";
+  const trendValue = canShowTrend ? trend.trend : "insufficient";
+  const trendLabel = canShowTrend ? trend.trendLabel : "Histórico de preço ainda insuficiente.";
+  const promotionValue = hasHistory ? promotion : {
+    previousPrice: 0,
+    currentPrice: history.at(-1)?.price || 0,
+    discountValue: 0,
+    discountPercent: 0,
+    isRealPromotion: false,
+    label: "Histórico de preço ainda insuficiente.",
+  };
+  const advice = canShowDetailedMarketSignal
+    ? formatAdvice(indicator.indicator, trendValue, true)
+    : "Histórico de preço ainda insuficiente.";
+  const lastCollectedAt = history.at(-1)?.date || product.lastCheckedAt || product.updatedAt || product.importedAt || "";
 
     return {
       currentPrice: toNumber(product.price, 0),
@@ -212,15 +228,15 @@ export default class MarketIntelligenceEngine {
       priceHistory: history,
       historySummary: minPrice > 0
         ? `O menor preço registrado foi ${minPrice.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}.`
-        : "Sem histórico suficiente para comparar preços.",
-      priceIndicator: indicator.indicator,
-      priceIndicatorLabel: indicator.indicatorLabel,
-      priceIndicatorConfidence: indicator.confidence,
-      trend: trend.trend,
-      trendLabel: trend.trendLabel,
+        : "Histórico de preço ainda insuficiente.",
+      priceIndicator,
+      priceIndicatorLabel,
+      priceIndicatorConfidence: canShowDetailedMarketSignal ? indicator.confidence : 0,
+      trend: trendValue,
+      trendLabel,
       trendDelta: trend.delta,
       trendDeltaPercent: trend.deltaPercent,
-      promotion,
+      promotion: promotionValue,
       lowestPriceMessage: minPrice > 0 ? `O menor preço registrado foi ${minPrice.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}.` : "",
       highestPriceMessage: maxPrice > 0 ? `O maior preço registrado foi ${maxPrice.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}.` : "",
       advice,
@@ -233,9 +249,9 @@ export default class MarketIntelligenceEngine {
         minPrice,
         maxPrice,
         averagePrice,
-        trend: trend.trend,
-        promotion,
-        indicator: indicator.indicator,
+        trend: trendValue,
+        promotion: promotionValue,
+        indicator: priceIndicator,
         advice,
       },
     };
@@ -259,7 +275,7 @@ export default class MarketIntelligenceEngine {
       snapshot: this.buildProductSnapshot(item),
     }));
 
-    const realPromotions = productSnapshots.filter(({ snapshot }) => snapshot.promotion.isRealPromotion);
+    const realPromotions = productSnapshots.filter(({ snapshot }) => snapshot.promotion.isRealPromotion && snapshot.historyCount >= 2);
     const drops = [...realPromotions]
       .sort((a, b) => b.snapshot.promotion.discountValue - a.snapshot.promotion.discountValue || b.snapshot.promotion.discountPercent - a.snapshot.promotion.discountPercent)
       .slice(0, 10)

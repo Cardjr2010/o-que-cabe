@@ -25,32 +25,31 @@ function parseBody(res) {
   return JSON.parse(res.body);
 }
 
-test("MarketIntelligenceEngine calcula histórico, promoção, indicador, tendência e alerta", () => {
+test("MarketIntelligenceEngine respeita base mínima e sinaliza histórico insuficiente", () => {
   const engine = new MarketIntelligenceEngine();
   const product = {
     id: "market-1",
     title: "Monitor Gamer 27",
     price: 150,
-    priceHistory: [
-      { date: "2026-07-01T00:00:00.000Z", price: 200 },
-      { date: "2026-07-02T00:00:00.000Z", price: 150 },
-    ],
+    priceHistory: [{ date: "2026-07-02T00:00:00.000Z", price: 150 }],
   };
 
   const snapshot = engine.buildProductSnapshot(product);
 
   assert.equal(snapshot.currentPrice, 150);
   assert.equal(snapshot.minPrice, 150);
-  assert.equal(snapshot.maxPrice, 200);
-  assert.equal(snapshot.priceIndicator, "excellent");
-  assert.equal(snapshot.trend, "down");
-  assert.equal(snapshot.promotion.isRealPromotion, true);
-  assert.equal(snapshot.promotion.discountValue, 50);
+  assert.equal(snapshot.maxPrice, 150);
+  assert.equal(snapshot.priceIndicator, "insufficient");
+  assert.equal(snapshot.priceIndicatorLabel, "Histórico de preço ainda insuficiente.");
+  assert.equal(snapshot.trend, "insufficient");
+  assert.equal(snapshot.trendLabel, "Histórico de preço ainda insuficiente.");
+  assert.equal(snapshot.promotion.isRealPromotion, false);
+  assert.equal(snapshot.promotion.label, "Histórico de preço ainda insuficiente.");
   assert.equal(snapshot.alert.enabled, true);
-  assert.match(snapshot.advice, /Vale comprar hoje|acompanhar/i);
+  assert.equal(snapshot.advice, "Histórico de preço ainda insuficiente.");
 });
 
-test("MarketIntelligenceEngine sinaliza alta e alerta de espera", () => {
+test("MarketIntelligenceEngine usa trilha suficiente para tendência e promoção, mas segura indicador sem 3 registros", () => {
   const engine = new MarketIntelligenceEngine();
   const product = {
     id: "market-2",
@@ -59,6 +58,27 @@ test("MarketIntelligenceEngine sinaliza alta e alerta de espera", () => {
     priceHistory: [
       { date: "2026-07-01T00:00:00.000Z", price: 1000 },
       { date: "2026-07-02T00:00:00.000Z", price: 1300 },
+    ],
+  };
+
+  const snapshot = engine.buildProductSnapshot(product);
+
+  assert.equal(snapshot.priceIndicator, "insufficient");
+  assert.equal(snapshot.trend, "up");
+  assert.equal(snapshot.promotion.isRealPromotion, false);
+  assert.equal(snapshot.advice, "Histórico de preço ainda insuficiente.");
+});
+
+test("MarketIntelligenceEngine sinaliza alta e alerta de espera com histórico suficiente", () => {
+  const engine = new MarketIntelligenceEngine();
+  const product = {
+    id: "market-3",
+    title: "Notebook Gamer",
+    price: 1300,
+    priceHistory: [
+      { date: "2026-07-01T00:00:00.000Z", price: 1000 },
+      { date: "2026-07-02T00:00:00.000Z", price: 1150 },
+      { date: "2026-07-03T00:00:00.000Z", price: 1300 },
     ],
   };
 
