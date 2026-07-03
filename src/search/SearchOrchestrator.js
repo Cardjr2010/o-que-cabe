@@ -4,6 +4,7 @@ import { buildInstallmentBudgetContext, normalizeInstallmentData } from "../cata
 import ProductIntelligenceEngine from "../catalog/ProductIntelligenceEngine.js";
 import CatalogManager from "../catalog/CatalogManager.js";
 import SEOIntelligenceEngine from "../seo/SEOIntelligenceEngine.js";
+import MercadoLivreSearchProvider from "../providers/MercadoLivreSearchProvider.js";
 import { resolveProjectPath } from "../runtime/project-root.js";
 
 function toNumber(value, fallback = 0) {
@@ -173,6 +174,46 @@ function buildSupplementalVariants(intent = {}) {
   return variants.slice(0, 6);
 }
 
+function buildMercadoLivreFallbackVariants(intent = {}) {
+  const query = normalizeText([intent.searchText, intent.query].filter(Boolean).join(" "));
+  const variants = [];
+  const push = (items = []) => {
+    for (const item of items) {
+      const value = String(item || "").trim();
+      if (value && !variants.includes(value)) variants.push(value);
+    }
+  };
+
+  if (isPhoneFamilyQuery(query) || Boolean(intent.brand)) {
+    const terms = query.split(/\s+/).filter(Boolean);
+    const brand = normalizeText(intent.brand || "");
+    const coreTerms = terms.filter((term) => !/^\d+$/.test(term) && !/^(pro|max|ultra|plus|mini|lite)$/i.test(term));
+    const family = brand || (terms.find((term) => /(iphone|samsung|galaxy|redmi|poco|motorola|moto)/i.test(term)) || "");
+    if (query) push([query]);
+    if (family) push([family]);
+    if (family && coreTerms.length) push([`${family} ${coreTerms.join(" ")}`]);
+    if (family && coreTerms.length > 1) push([`${family} ${coreTerms.slice(0, -1).join(" ")}`]);
+    if (family && coreTerms.length > 2) push([`${family} ${coreTerms.slice(0, -2).join(" ")}`]);
+    if (family && /(iphone)/i.test(family)) {
+      push(["iphone", "iphone 17", "iphone 17 pro", "iphone pro max"]);
+    }
+    if (family && /(samsung|galaxy)/i.test(family)) {
+      push(["samsung", "galaxy", "galaxy s25 ultra", "galaxy s25", "galaxy s24", "galaxy a15", "galaxy a25"]);
+    }
+  }
+
+  if (matchesAnyMarker(query, TOOL_QUERY_MARKERS)) {
+    push(["furadeira", "parafusadeira", "serra", "alicate", "ferramenta"]);
+  }
+
+  if (matchesAnyMarker(query, FLOWER_QUERY_MARKERS)) {
+    push(["flores", "flor", "buque", "bouquet", "rosa", "cesta", "presente"]);
+  }
+
+  push([intent.searchText, intent.query]);
+  return uniqueValues(variants).slice(0, 8);
+}
+
 function shouldUseSupplementalCatalog(intent = {}) {
   const normalized = normalizeText([intent.query, intent.searchText, intent.category].filter(Boolean).join(" "));
   return matchesAnyMarker(normalized, TOOL_QUERY_MARKERS) || matchesAnyMarker(normalized, FLOWER_QUERY_MARKERS);
@@ -204,10 +245,42 @@ function isPrincipalProduct(product = {}, intelligence = {}) {
   return !Boolean(intelligence.isAccessory ?? product.isAccessory) && (productType === "principal" || productType === "product");
 }
 
+function countPrincipalProducts(products = []) {
+  return (Array.isArray(products) ? products : []).reduce((count, product) => {
+    const intelligence = product?.intelligence || {};
+    return count + (isPrincipalProduct(product, intelligence) ? 1 : 0);
+  }, 0);
+}
+
+function shouldUseMercadoLivreFallback(intent = {}, products = []) {
+  const principalCount = countPrincipalProducts(products);
+  if (!Array.isArray(products) || !products.length) return true;
+  return principalCount < 3;
+}
+
+function looksLikeGenericMercadoLivreUrl(value = "") {
+  const url = String(value || "").trim().toLowerCase();
+  if (!url) return true;
+  if (url === "https://www.mercadolivre.com.br" || url === "https://mercadolivre.com.br") return true;
+  if (url === "https://www.mercadolivre.com.br/" || url === "https://mercadolivre.com.br/") return true;
+  if (url.includes("lista.mercadolivre.com.br")) return true;
+  if (url.includes("/search")) return true;
+  if (url.includes("/categoria")) return true;
+  if (url.includes("/categories")) return true;
+  return !/\/MLB[\w-]+/i.test(url);
+}
+
+function isDirectMercadoLivreProduct(product = {}) {
+  const itemId = String(product.itemId || product.id || "").trim();
+  const permalink = String(product.permalink || product.productUrl || product.url || "").trim();
+  return Boolean(itemId && permalink && !looksLikeGenericMercadoLivreUrl(permalink) && String(product.title || "").trim() && Number(product.price || 0) > 0);
+}
+
 const SUPPLEMENTAL_CATALOG_PATH = resolveProjectPath("src", "data", "products.seed.json");
 let productIntelligenceEngineInstance = null;
 let seoIntelligenceEngineInstance = null;
 let supplementalCatalogManagerInstance = null;
+let mercadoLivreSearchProviderInstance = null;
 
 function getSupplementalCatalogManager() {
   if (!supplementalCatalogManagerInstance) {
@@ -239,6 +312,13 @@ function getSEOIntelligenceEngine() {
     });
   }
   return seoIntelligenceEngineInstance;
+}
+
+function getMercadoLivreSearchProvider() {
+  if (!mercadoLivreSearchProviderInstance) {
+    mercadoLivreSearchProviderInstance = new MercadoLivreSearchProvider();
+  }
+  return mercadoLivreSearchProviderInstance;
 }
 
 function stripBudgetLanguage(value = "") {
@@ -448,8 +528,9 @@ function filterCandidateList(list = [], intent = {}) {
 }
 
 export default class SearchOrchestrator {
-  constructor({ catalogManager } = {}) {
+  constructor({ catalogManager, marketplaceSearchProvider } = {}) {
     this.catalogManager = catalogManager;
+    this.marketplaceSearchProvider = marketplaceSearchProvider || null;
   }
 
   parseIntent({ query = "", mode = "monthly", monthly = 0, months = 12, totalBudget = 0 } = {}) {
@@ -651,17 +732,93 @@ export default class SearchOrchestrator {
     };
   }
 
-  search(options = {}) {
+  async search(options = {}) {
     const intent = this.parseIntent(options);
     const candidates = this.listCandidates(intent);
     const prepared = this.prepareProducts(candidates, intent);
-    return {
-      ...prepared,
-      strategyUsed: "catalog-search",
-      tokenState: "n/a",
-      statusHttp: 200,
-      firstFive: prepared.products.slice(0, 5),
-    };
+    const fallbackNeeded = shouldUseMercadoLivreFallback(intent, prepared.products);
+
+    if (!fallbackNeeded) {
+      return {
+        ...prepared,
+        strategyUsed: "catalog-search",
+        tokenState: "n/a",
+        statusHttp: 200,
+        firstFive: prepared.products.slice(0, 5),
+        fallbackUsed: false,
+        fallbackAttempted: false,
+        fallbackWarning: "",
+      };
+    }
+
+    const marketplaceProvider = this.marketplaceSearchProvider || getMercadoLivreSearchProvider();
+    try {
+      const variantQueries = buildMercadoLivreFallbackVariants(intent);
+      let marketplaceResult = { products: [], rawCount: 0, returnedCount: 0, statusHttp: 200, fallbackText: "" };
+      let marketplaceProducts = [];
+
+      for (const variantQuery of variantQueries) {
+        marketplaceResult = await marketplaceProvider.searchProducts(variantQuery, {
+          limit: 20,
+          mode: intent.mode,
+          monthly: intent.monthly,
+          months: intent.months,
+          totalBudget: intent.totalBudget,
+        });
+        marketplaceProducts = filterCandidateList(marketplaceResult.products || [], intent)
+          .filter((product) => isDirectMercadoLivreProduct(product));
+        if (marketplaceProducts.length) break;
+      }
+
+      if (marketplaceProducts.length) {
+        const combinedProducts = [...candidates, ...marketplaceProducts];
+        const combinedPrepared = this.prepareProducts(combinedProducts, intent);
+        return {
+          ...combinedPrepared,
+          strategyUsed: "catalog-search+mercado-livre-fallback",
+          tokenState: "n/a",
+          statusHttp: 200,
+          firstFive: combinedPrepared.products.slice(0, 5),
+          fallbackUsed: true,
+          fallbackAttempted: true,
+          fallbackSource: "mercado_livre",
+          fallbackWarning: "Não encontramos opções suficientes no catálogo principal do OQC. Buscamos anúncios diretos no Mercado Livre.",
+          fallbackCount: marketplaceProducts.length,
+          fallbackRawCount: marketplaceResult.rawCount || 0,
+          fallbackStatusHttp: marketplaceResult.statusHttp || 200,
+        };
+      }
+      return {
+        ...prepared,
+        strategyUsed: "catalog-search",
+        tokenState: "n/a",
+        statusHttp: 200,
+        firstFive: prepared.products.slice(0, 5),
+        fallbackUsed: false,
+        fallbackAttempted: true,
+        fallbackSource: "mercado_livre",
+        fallbackWarning: "Não encontramos opções suficientes no catálogo principal do OQC. Buscamos anúncios diretos no Mercado Livre, mas nenhum anúncio direto suficiente foi encontrado.",
+        fallbackCount: 0,
+        fallbackRawCount: marketplaceResult.rawCount || 0,
+        fallbackStatusHttp: marketplaceResult.statusHttp || 200,
+      };
+    } catch (error) {
+      return {
+        ...prepared,
+        strategyUsed: "catalog-search",
+        tokenState: "n/a",
+        statusHttp: 200,
+        firstFive: prepared.products.slice(0, 5),
+        fallbackUsed: false,
+        fallbackAttempted: true,
+        fallbackSource: "mercado_livre",
+        fallbackWarning: "Não encontramos opções suficientes no catálogo principal do OQC. Buscamos anúncios diretos no Mercado Livre, mas a consulta falhou no momento.",
+        fallbackCount: 0,
+        fallbackRawCount: 0,
+        fallbackStatusHttp: 200,
+        fallbackError: error?.message || "Erro ao consultar Mercado Livre",
+      };
+    }
   }
 }
 

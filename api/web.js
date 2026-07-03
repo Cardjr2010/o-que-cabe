@@ -1465,7 +1465,7 @@ export default async function handler(req, res) {
       ? Number(url.searchParams.get("totalBudget") || "0")
       : Number(url.searchParams.get("totalBudget") || (monthly * months));
     try {
-      const searchResult = getSearchOrchestrator().search({
+      const searchResult = await getSearchOrchestrator().search({
         query: q,
         mode,
         monthly,
@@ -1490,6 +1490,12 @@ export default async function handler(req, res) {
         ...response,
         advisor,
         strategyUsed: searchResult.strategyUsed,
+        fallbackUsed: Boolean(searchResult.fallbackUsed),
+        fallbackAttempted: Boolean(searchResult.fallbackAttempted),
+        fallbackSource: searchResult.fallbackSource || "",
+        fallbackCount: Number(searchResult.fallbackCount || 0),
+        fallbackRawCount: Number(searchResult.fallbackRawCount || 0),
+        fallbackStatusHttp: searchResult.fallbackStatusHttp || null,
         tokenState: searchResult.tokenState,
         statusHttp: searchResult.statusHttp,
         returnedCount: searchResult.returnedCount,
