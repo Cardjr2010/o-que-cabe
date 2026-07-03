@@ -95,17 +95,70 @@ function isDemoProduct(product) {
   return String(product?.dataMode || product?.mode || "").toLowerCase() === "demo";
 }
 
+function normalizeSourceKey(value = "") {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replaceAll(/\s+/g, " ")
+    .replaceAll(/[_-]+/g, "_");
+}
+
+function formatSourceName(value = "") {
+  const normalized = normalizeSourceKey(value);
+  const sourceMap = {
+    flores_online: "Flores Online",
+    isabela_flores: "Isabela Flores",
+    saldao_informatica: "Saldão da Informática",
+    info_store: "Info Store",
+    infostore: "Info Store",
+    ccp: "CCP",
+    authentical: "Authentical",
+    mi_shop: "Mi Shop",
+    mishop: "Mi Shop",
+    actionpay: "Actionpay",
+    actionpay_saldao: "Saldão da Informática",
+    awin: "Awin",
+    mercadolivre: "Mercado Livre",
+    mercado_livre: "Mercado Livre",
+  };
+  return sourceMap[normalized] || "";
+}
+
 function resolveSourceLabel(product) {
   if (isDemoProduct(product)) {
     return "Demonstração — sem anúncio real";
   }
 
-  const source = String(product?.marketplace || product?.source || product?.store || "").trim().toLowerCase();
-  const seller = String(product?.seller?.name || product?.seller || "").trim().toLowerCase();
-  const sourceType = String(product?.sourceType || "").trim().toLowerCase();
-  const sourceText = `${source} ${seller} ${sourceType}`;
+  const candidates = [
+    product?.sourceLabel,
+    product?.sourceName,
+    product?.sourceDisplayName,
+    product?.marketplace,
+    product?.source,
+    product?.provider,
+    product?.seller?.name,
+    product?.seller,
+    product?.store,
+    product?.sourceType,
+  ];
+
+  for (const candidate of candidates) {
+    const label = formatSourceName(candidate);
+    if (label) return label;
+  }
+
+  const sourceText = candidates
+    .map((item) => normalizeSourceKey(item))
+    .filter(Boolean)
+    .join(" ");
   if (sourceText.includes("saldao")) return "Saldão da Informática";
-  if (String(product?.sourceLabel || "").toLowerCase().includes("saldao")) return "Saldão da Informática";
+  if (sourceText.includes("flores")) return "Flores Online";
+  if (sourceText.includes("isabela")) return "Isabela Flores";
+  if (sourceText.includes("info store") || sourceText.includes("infostore")) return "Info Store";
+  if (sourceText.includes("ccp")) return "CCP";
+  if (sourceText.includes("authentical")) return "Authentical";
+  if (sourceText.includes("mi_shop") || sourceText.includes("mishop")) return "Mi Shop";
+  if (sourceText.includes("awin")) return "Awin";
   return "Origem não informada";
 }
 
