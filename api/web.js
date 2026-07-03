@@ -5,6 +5,7 @@ import ScoreEngine from "../src/engines/ScoreEngine.js";
 import RankingEngine from "../src/engines/RankingEngine.js";
 import RiskEngine from "../src/engines/RiskEngine.js";
 import ExplanationEngine from "../src/engines/ExplanationEngine.js";
+import ProductIntelligenceEngine from "../src/catalog/ProductIntelligenceEngine.js";
 import CsvFeedProvider from "../src/feed/providers/CsvFeedProvider.js";
 import MiShopFeedProvider from "../src/feed/providers/MiShopFeedProvider.js";
 import { SaldaoInformaticaFeedProvider } from "../src/providers/SaldaoInformaticaFeedProvider.js";
@@ -33,6 +34,7 @@ const currency = new Intl.NumberFormat("pt-BR", {
   currency: "BRL",
 });
 let catalogManagerInstance = null;
+let productIntelligenceEngineInstance = null;
 function getCatalogManager() {
   if (!catalogManagerInstance) {
     catalogManagerInstance = new CatalogManager({
@@ -116,6 +118,18 @@ function createFeedProvider(providerName = "mi_shop", options = {}) {
     });
   }
   return null;
+}
+function getProductIntelligenceEngine() {
+  if (!productIntelligenceEngineInstance) {
+    productIntelligenceEngineInstance = new ProductIntelligenceEngine({
+      minCount: 5,
+      maxHomeButtons: 6,
+      maxDepartments: 20,
+      maxCategories: 20,
+      focusLabel: "Consultor de compras",
+    });
+  }
+  return productIntelligenceEngineInstance;
 }
 
 function getFeedProviderNames() {
@@ -425,6 +439,159 @@ function getCatalogHealthSnapshot() {
       error: error?.message || "CATALOG_HEALTH_ERROR",
     };
   }
+}
+
+function buildCountSummary(items = [], field = "", limit = 20) {
+  const counts = new Map();
+  for (const item of Array.isArray(items) ? items : []) {
+    const key = String(item?.[field] || "sem valor").trim() || "sem valor";
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  const entries = [...counts.entries()]
+    .map(([value, count]) => ({ value, count }))
+    .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value, "pt-BR"))
+    .slice(0, limit);
+  return { total: counts.size, items: entries };
+}
+
+function buildCatalogStatsSnapshot() {
+  const catalogManager = getCatalogManager();
+  const rawItems = catalogManager.getRawItems();
+  const publishedItems = catalogManager.list();
+  const diagnostics = catalogManager.diagnostics();
+  const enriched = getProductIntelligenceEngine().enrichCatalog(publishedItems);
+
+  const departmentCounts = buildCountSummary(enriched, "department", 20);
+  const categoryCounts = buildCountSummary(enriched, "category", 20);
+  const brandCounts = buildCountSummary(enriched, "brand", 20);
+  const sourceCounts = Array.isArray(diagnostics.sourceCounts) ? diagnostics.sourceCounts.slice(0, 20) : [];
+  const topSearches = buildHomeCatalogData().seoHotSearches || [];
+  const principalCount = enriched.filter((item) => !item?.isAccessory && ["principal", "product"].includes(String(item?.productType || "").toLowerCase())).length;
+  const accessoryCount = enriched.filter((item) => Boolean(item?.isAccessory || ["accessory", "piece", "compatible"].includes(String(item?.productType || "").toLowerCase()))).length;
+
+  return {
+    ok: true,
+    seedUsed: diagnostics.seedUsed || diagnostics.seedPath || "",
+    seedCandidates: Array.isArray(diagnostics.seedCandidates) ? diagnostics.seedCandidates : [],
+    totalProducts: rawItems.length,
+    productsPublished: publishedItems.length,
+    productsHidden: diagnostics.hiddenProducts ?? 0,
+    totalBrands: brandCounts.total,
+    totalCategories: categoryCounts.total,
+    principalProducts: principalCount,
+    accessoryProducts: accessoryCount,
+    productsBySource: sourceCounts,
+    productsByCategory: categoryCounts.items,
+    productsByBrand: brandCounts.items,
+    productsByDepartment: departmentCounts.items,
+    top20Brands: brandCounts.items,
+    top20Categories: categoryCounts.items,
+    topSearches,
+    topSources: sourceCounts,
+    hiddenSources: Array.isArray(diagnostics.hiddenSources) ? diagnostics.hiddenSources : [],
+    departmentSummary: departmentCounts.items,
+    categorySummary: categoryCounts.items,
+    brandSummary: brandCounts.items,
+  };
+}
+
+function buildAdvisorSnapshot(searchResult = {}, query = "") {
+  const pluralize = (count, singular, plural = `${singular}s`) => `${count} ${count === 1 ? singular : plural}`;
+  const products = Array.isArray(searchResult.products) ? searchResult.products : [];
+  const recommendations = Array.isArray(searchResult.recommendations) ? searchResult.recommendations : [];
+  const groups = searchResult.groups || {};
+  const cabe = Array.isArray(groups.cabe) ? groups.cabe : [];
+  const apertado = Array.isArray(groups.apertado) ? groups.apertado : [];
+  const naoCabe = Array.isArray(groups.naoCabe) ? groups.naoCabe : [];
+  const firstProduct = products[0] || null;
+  const principalCount = products.filter((item) => !item?.isAccessory && !["accessory", "piece", "compatible"].includes(String(item?.productType || "").toLowerCase())).length;
+  const accessoryCount = products.filter((item) => Boolean(item?.isAccessory || ["accessory", "piece", "compatible"].includes(String(item?.productType || "").toLowerCase()))).length;
+  const comparisonProducts = [cabe[0], apertado[0], naoCabe[0]].filter(Boolean).slice(0, 2).map((item) => ({
+    title: item.title || item.displayTitle || "",
+    price: Number(item.price || 0),
+    status: item.status || item.budgetStatus || "",
+    score: Number(item.score || item.oqc?.finalScore || 0),
+    source: item.marketplace || item.source || item.seller || "",
+    permalink: item.permalink || item.productUrl || item.url || "",
+  }));
+  const alternatives = [];
+  const addAlternative = (item, label) => {
+    if (!item) return;
+    const title = String(item.title || item.displayTitle || "");
+    if (!title || alternatives.some((entry) => entry.title === title)) return;
+    alternatives.push({
+      label,
+      title,
+      price: Number(item.price || 0),
+      status: item.status || item.budgetStatus || "",
+      source: item.marketplace || item.source || item.seller || "",
+      reason: item.reason || item.explanationShort || item.explanation || "",
+      permalink: item.permalink || item.productUrl || item.url || "",
+    });
+  };
+
+  if (recommendations.length) {
+    addAlternative(recommendations[0].product || recommendations[0], recommendations[0].label || "Melhor escolha");
+    addAlternative(recommendations[1]?.product || recommendations[1], recommendations[1]?.label || "Boa alternativa");
+    addAlternative(recommendations[2]?.product || recommendations[2], recommendations[2]?.label || "Opção econômica");
+  } else {
+    addAlternative(firstProduct, "Melhor escolha");
+  }
+
+  if (!alternatives.length && cabe.length) {
+    addAlternative(cabe[0], "Melhor escolha");
+  }
+  if (alternatives.length < 2 && apertado.length) {
+    addAlternative(apertado[0], "Cabe apertado");
+  }
+  if (alternatives.length < 2 && naoCabe.length) {
+    addAlternative(naoCabe[0], "Não cabe");
+  }
+
+  const comparison = comparisonProducts.length
+    ? comparisonProducts.map((item, index) => ({
+      ...item,
+      label: index === 0 ? "Comparativo principal" : "Comparativo alternativo",
+    }))
+    : [];
+
+  const whyThisProduct = firstProduct
+    ? [
+      firstProduct.status === "CABE" ? "Cabe no orçamento." : firstProduct.status === "APERTADO" ? "Cabe, mas está apertado." : "Fica acima do orçamento.",
+      firstProduct.isAccessory ? "Produto acessório rebaixado pela consulta." : "Produto principal priorizado pela consulta.",
+      String(firstProduct.affiliateUrl || firstProduct.productUrl || firstProduct.permalink || firstProduct.url || "").trim() ? "Tem link real válido." : "Link indisponível.",
+    ].filter(Boolean)
+    : [];
+
+  const overviewParts = [];
+  if (products.length === 1) {
+    overviewParts.push("Encontramos apenas 1 resultado real no catálogo atual.");
+  } else if (products.length > 1) {
+    overviewParts.push(`Encontramos ${products.length} resultados reais no catálogo atual.`);
+  }
+  if (principalCount || accessoryCount) {
+    overviewParts.push(`${pluralize(principalCount, "produto principal")} e ${pluralize(accessoryCount, "acessório")} avaliados.`);
+  }
+  if (firstProduct?.status) {
+    overviewParts.push(`Melhor posição atual: ${firstProduct.status}.`);
+  }
+
+  return {
+    query,
+    overview: searchResult.summary || overviewParts.join(" "),
+    whyThisProduct,
+    alternatives,
+    comparison,
+    alternativesCount: alternatives.length,
+    comparisonCount: comparison.length,
+    firstProduct: firstProduct ? {
+      title: firstProduct.title || firstProduct.displayTitle || "",
+      price: Number(firstProduct.price || 0),
+      status: firstProduct.status || firstProduct.budgetStatus || "",
+      source: firstProduct.marketplace || firstProduct.source || firstProduct.seller || "",
+      permalink: firstProduct.permalink || firstProduct.productUrl || firstProduct.url || "",
+    } : null,
+  };
 }
 
 function getFrontendHealthSnapshot() {
@@ -1274,10 +1441,12 @@ export default async function handler(req, res) {
         totalBudget,
         dataMode,
       });
+      const advisor = buildAdvisorSnapshot(searchResult, q);
 
       sendJson(res, 200, {
         ok: true,
         ...response,
+        advisor,
         strategyUsed: searchResult.strategyUsed,
         tokenState: searchResult.tokenState,
         statusHttp: searchResult.statusHttp,
@@ -1300,6 +1469,7 @@ export default async function handler(req, res) {
       sendJson(res, 200, {
         ok: true,
         ...response,
+        advisor: buildAdvisorSnapshot(response, q),
         warning: `${error.message || "Falha na busca"}. Mostrando demonstração por enquanto.`,
       });
     }
@@ -1366,6 +1536,11 @@ export default async function handler(req, res) {
       sourceUsed,
       ...catalogHealth,
     });
+    return;
+  }
+
+  if (pathname === "/api/catalog/stats") {
+    sendJson(res, 200, buildCatalogStatsSnapshot());
     return;
   }
 

@@ -289,7 +289,7 @@ function detectBrand(text = "") {
 }
 
 function detectAccessoryIntent(text = "") {
-  return /\b(capa|case|pelicula|pel[íi]cula|carregador|cabo|fone|headphone|earbud|airpods|strap|pulseira|acessorio|acess[óo]rio|suporte|power bank|powerbank|protector|protetor)\b/i.test(String(text || ""));
+  return /\b(capa|case|pelicula|pel[íi]cula|carregador|cabo|fone|headphone|earbud|airpods|strap|pulseira|acessorio|acess[óo]rio|suporte|power bank|powerbank|protector|protetor|controle remoto|remote control|remote)\b/i.test(String(text || ""));
 }
 
 function classifyVisibility(product = {}) {
@@ -316,7 +316,7 @@ function matchProductType(product = {}, queryCategory = "", accessoryIntent = fa
     || ["accessory", "piece", "compatible"].includes(productType)
     || ["acessorio", "accessorio", "accessory", "piece", "compatible"].includes(productCategory)
     || ["cabos e carregadores", "acessórios", "peças"].includes(productDepartment)
-    || /\b(capa|case|pelicula|cabo|carregador|strap|pulseira|suporte|protector|protetor)\b/i.test(text);
+    || /\b(capa|case|pelicula|cabo|carregador|strap|pulseira|suporte|protector|protetor|controle remoto|remote control|remote)\b/i.test(text);
 
   if (!accessoryIntent && isAccessory) {
     return false;
@@ -405,7 +405,7 @@ function rankPreparedProduct(product = {}, intent = {}) {
   const phoneBrandBonus = phoneFamilyQuery && phoneFamilyProduct && cellularProduct ? 6 : 0;
   const iphoneSamsungBonus = /iphone|apple iphone|samsung|galaxy|redmi|poco|motorola|moto/.test(searchText) && phoneFamilyProduct ? 3 : 0;
   const nonPhonePenalty = phoneFamilyQuery && !cellularProduct && phoneFamilyProduct ? -12 : 0;
-  const accessoryQueryPenalty = phoneFamilyQuery && /capa|case|pelicula|carregador|cabo|fone|headphone|airpods|earbud|strap|pulseira|suporte/.test(brandText) ? -4 : 0;
+  const accessoryQueryPenalty = phoneFamilyQuery && /capa|case|pelicula|carregador|cabo|fone|headphone|airpods|earbud|strap|pulseira|suporte|controle remoto|remote control|remote/.test(brandText) ? -4 : 0;
   return (
     (searchMatch * 8)
     + (titleMatches * 2.5)
@@ -664,3 +664,4 @@ export default class SearchOrchestrator {
     };
   }
 }
+

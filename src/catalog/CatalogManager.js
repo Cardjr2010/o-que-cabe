@@ -77,6 +77,8 @@ function looksLikeAccessory(item = {}) {
     "adaptador",
     "strap",
     "pulseira",
+    "controle remoto",
+    "remote control",
     "holder",
     "power bank",
     "powerbank",
@@ -297,3 +299,4 @@ export default class CatalogManager {
 }
 
 export { CatalogRepository, CatalogValidator, CatalogUpdater, CatalogExporter };
+

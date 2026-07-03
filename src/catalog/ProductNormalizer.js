@@ -96,6 +96,8 @@ const ACCESSORY_KEYWORDS = [
   "bumper",
   "watch band",
   "smart band",
+  "controle remoto",
+  "remote control",
   "suporte",
   "stand",
   "holder",
@@ -374,6 +376,7 @@ function detectAccessoryType(normalized) {
     if (normalized.includes("carregador") || normalized.includes("charger") || normalized.includes("fonte")) return "carregador";
     if (normalized.includes("cabo") || normalized.includes("cable") || normalized.includes("usb-c") || normalized.includes("type c")) return "cabo";
     if (normalized.includes("strap") || normalized.includes("pulseira") || normalized.includes("band") || normalized.includes("bracelet")) return "smartwatch";
+    if (normalized.includes("controle remoto") || normalized.includes("remote control") || normalized.includes("remote")) return "capa";
     return "acessorio";
   }
   return "";
@@ -533,6 +536,7 @@ function scoreProductMatch(product = {}, query = "") {
   if (/celular|smartphone|iphone/.test(q) && normalizedCategory === "celular") score += 25;
   if (/tv|televisor/.test(q) && normalizedCategory === "tv") score += 25;
   if (/notebook|laptop/.test(q) && normalizedCategory === "notebook") score += 25;
+  if (/tv|televisor/.test(q) && /controle remoto|remote control|remote/.test(text)) score -= 35;
   if (/(iphone|apple iphone|samsung|galaxy|redmi|poco|motorola|moto)/.test(q)) {
     const phoneEvidence = /(celular|smartphone|phone|iphone|galaxy|samsung|redmi|poco|motorola)/.test(`${normalizedTitle} ${normalizedBrand} ${normalizedModel} ${normalizedCategory} ${normalizedType}`);
     if (phoneEvidence) score += 18;
