@@ -22,6 +22,12 @@ const seoHotSearchesGrid = document.querySelector("#seoHotSearchesGrid");
 const homeCatalogState = document.querySelector("#homeCatalogState");
 const searchCategoriesHint = document.querySelector("#searchCategoriesHint");
 const departmentsMenu = document.querySelector("#departmentsMenu");
+const decisionHighlightsSection = document.querySelector("#decisions");
+const decisionHighlightsGrid = document.querySelector("#decisionHighlightsGrid");
+const trustTotalCatalog = document.querySelector("#trustTotalCatalog");
+const trustDepartments = document.querySelector("#trustDepartments");
+const trustSources = document.querySelector("#trustSources");
+const trustUpdated = document.querySelector("#trustUpdated");
 const appView = document.body.dataset.view || "home";
 const apiEndpoint = document.body.dataset.endpoint || "/api/search";
 let searchTimer = null;
@@ -35,14 +41,14 @@ function setMode(nextMode) {
   if (searchMode === "total") {
     if (monthsField) monthsField.hidden = true;
     if (totalField) totalField.hidden = false;
-    if (monthlyLabel) monthlyLabel.textContent = "MÃ¡x. mensal";
+    if (monthlyLabel) monthlyLabel.textContent = "Máx. mensal";
     if (monthlyInput) monthlyInput.disabled = true;
     if (monthsInput) monthsInput.disabled = true;
     if (totalBudgetInput) totalBudgetInput.disabled = false;
   } else {
     if (monthsField) monthsField.hidden = false;
     if (totalField) totalField.hidden = true;
-    if (monthlyLabel) monthlyLabel.textContent = "MÃ¡x. mensal";
+    if (monthlyLabel) monthlyLabel.textContent = "Máx. mensal";
     if (monthlyInput) monthlyInput.disabled = false;
     if (monthsInput) monthsInput.disabled = false;
     if (totalBudgetInput) totalBudgetInput.disabled = true;
@@ -70,7 +76,7 @@ function normalizeStatusLabel(value = "") {
   const text = String(value || "").trim().toUpperCase();
   if (!text) return "CABE";
   if (text.includes("APERT")) return "APERTADO";
-  if (text.includes("NAO") || text.includes("NÃƒO") || text.includes("NÃƒ") || text.includes("FORA")) return "NÃƒO CABE";
+  if (text.includes("NÃO") || text.includes("NAO") || text.includes("FORA")) return "NÃO CABE";
   if (text.includes("CABE")) return "CABE";
   return String(value);
 }
@@ -90,16 +96,16 @@ function isDemoProduct(product) {
 
 function resolveSourceLabel(product) {
   if (isDemoProduct(product)) {
-    return "DemonstraÃ§Ã£o â€” sem anÃºncio real";
+    return "Demonstração — sem anúncio real";
   }
 
   const source = String(product?.marketplace || product?.source || product?.store || "").trim().toLowerCase();
   const seller = String(product?.seller?.name || product?.seller || "").trim().toLowerCase();
   const sourceType = String(product?.sourceType || "").trim().toLowerCase();
   const sourceText = `${source} ${seller} ${sourceType}`;
-  if (sourceText.includes("saldao")) return "SaldÃ£o da InformÃ¡tica";
-  if (String(product?.sourceLabel || "").toLowerCase().includes("saldao")) return "SaldÃ£o da InformÃ¡tica";
-  return "Origem nÃ£o informada";
+  if (sourceText.includes("saldao")) return "Saldão da Informática";
+  if (String(product?.sourceLabel || "").toLowerCase().includes("saldao")) return "Saldão da Informática";
+  return "Origem não informada";
 }
 
 function resolveInstallmentInfo(product = {}) {
@@ -233,9 +239,9 @@ function buildProductCardHtml(product) {
 function renderProducts(products) {
   if (!products.length) {
     const emptyMessage = appView === "products"
-      ? "Nenhum produto encontrado dentro desse orÃ§amento. Tente aumentar o valor mensal ou o nÃºmero de parcelas."
+      ? "Nenhum produto encontrado dentro desse orçamento. Tente aumentar o valor mensal ou o número de parcelas."
       : appView === "mercadolivre"
-        ? "Nenhum produto encontrado dentro desse orÃ§amento. Tente outra categoria ou cadastre outra URL manual."
+        ? "Nenhum produto encontrado dentro desse orçamento. Tente outra categoria ou cadastre outra URL manual."
         : "Tente aumentar a parcela, trocar o prazo ou buscar outro produto.";
     results.innerHTML = `
       <article class="empty-state">
@@ -255,22 +261,22 @@ function renderBreakdown(breakdown = []) {
     <details class="oqc-breakdown">
       <summary>Por que o OQC escolheu?</summary>
       <ul>
-        ${breakdown.map((item) => `<li><strong>${safeText(item.factor, "Fator")}:</strong> ${safeText(item.earned, 0)}/${safeText(item.weight, 0)} - ${safeText(item.reason, "PreÃ§o e disponibilidade devem ser confirmados na loja.")}</li>`).join("")}
+        ${breakdown.map((item) => `<li><strong>${safeText(item.factor, "Fator")}:</strong> ${safeText(item.earned, 0)}/${safeText(item.weight, 0)} - ${safeText(item.reason, "Preço e disponibilidade devem ser confirmados na loja.")}</li>`).join("")}
       </ul>
     </details>
   `;
 }
 
 function resolveButtonLabel(product) {
-  if (isDemoProduct(product)) return "Demo â€” sem anÃºncio real";
-  // Compatibilidade com testes legados: "Abrir anÃºncio"
+  if (isDemoProduct(product)) return "Demo — sem anúncio real";
+  // Compatibilidade com testes legados: "Abrir anúncio"
   if (hasValidProductLink(product)) return "Abrir oferta";
   return "Link indisponível";
 }
 
 function renderRecommendationBlock(recommendations = []) {
   if (!Array.isArray(recommendations) || !recommendations.length) return "";
-  const preferred = recommendations.filter((item) => normalizeStatusLabel(item?.product?.status || item?.product?.budgetStatus || "") !== "NÃƒO CABE");
+  const preferred = recommendations.filter((item) => normalizeStatusLabel(item?.product?.status || item?.product?.budgetStatus || "") !== "NÃO CABE");
   const itemsSource = preferred.length ? preferred : recommendations;
   const items = itemsSource.slice(0, 3).map((item) => {
     const product = item.product || {};
@@ -330,27 +336,27 @@ function renderGroupedProducts(groups = null, products = []) {
     : {
         cabe: products.filter((item) => normalizeStatusLabel(item.status || item.budgetStatus || "") === "CABE"),
         apertado: products.filter((item) => normalizeStatusLabel(item.status || item.budgetStatus || "") === "APERTADO"),
-        naoCabe: products.filter((item) => normalizeStatusLabel(item.status || item.budgetStatus || "") === "NÃƒO CABE"),
+        naoCabe: products.filter((item) => normalizeStatusLabel(item.status || item.budgetStatus || "") === "NÃO CABE"),
       };
 
   const sections = [
     {
       key: "cabe",
-      title: "Melhores dentro do orÃ§amento",
+      title: "Melhores dentro do orçamento",
       description: "Prioridade para o que cabe sem aperto.",
       items: readGroup(normalizedGroups, ["cabe", "CABE"]),
     },
     {
       key: "apertado",
       title: "Cabem apertado",
-      description: "Ainda funcionam, mas jÃ¡ exigem mais cuidado no bolso.",
+      description: "Ainda funcionam, mas já exigem mais cuidado no bolso.",
       items: readGroup(normalizedGroups, ["apertado", "APERTADO"]),
     },
     {
       key: "naoCabe",
-      title: "Fora do orÃ§amento",
-      description: "NÃ£o entram como recomendaÃ§Ã£o principal.",
-      items: readGroup(normalizedGroups, ["naoCabe", "nao_cabe", "NÃƒO CABE", "NÃƒO_CABE", "NAO_CABE"]),
+      title: "Fora do orçamento",
+      description: "Não entram como recomendação principal.",
+      items: readGroup(normalizedGroups, ["naoCabe", "nao_cabe", "NÃO CABE", "NÃO_CABE", "NAO_CABE"]),
     },
   ];
 
@@ -397,7 +403,7 @@ function renderTrips(trips) {
           <div class="price">
             <div class="small">Total</div>
             <div class="installment">${currency.format(trip.price)}</div>
-            <div class="small">SimulaÃ§Ã£o de viagem</div>
+            <div class="small">Simulação de viagem</div>
           </div>
           <a href="javascript:void(0)" role="button" aria-disabled="true">Ver pacote</a>
         </div>
@@ -546,22 +552,14 @@ const DEFAULT_HOME_DEPARTMENTS = [
   { category: "tv", label: "TVs", count: 42 },
   { category: "tablet", label: "Tablets", count: 18 },
   { category: "fone", label: "Fones", count: 16 },
-  { category: "carregador", label: "Carregadores", count: 12 },
-  { category: "cabo", label: "Cabos", count: 11 },
-  { category: "pelicula", label: "Películas", count: 11 },
-  { category: "capa", label: "Capas", count: 10 },
-  { category: "relogio", label: "Relógios", count: 9 },
-  { category: "acessorio", label: "Acessórios", count: 8 },
-  { category: "peca", label: "Peças", count: 6 },
-  { category: "compativel", label: "Compatíveis", count: 6 },
-  { category: "ferramenta", label: "Ferramentas", count: 6 },
-  { category: "ferragem", label: "Ferragens", count: 6 },
-  { category: "construcao", label: "Casa e Construção", count: 6 },
 ];
 
 function renderDepartmentMenu(items = [], placeholder = false) {
   if (!departmentsMenu) return;
-  const entries = Array.isArray(items) ? items : [];
+  const entries = (Array.isArray(items) ? items : []).filter((item) => {
+    const category = String(item?.category || "").toLowerCase();
+    return category && !category.includes("outros") && !category.includes("pecas");
+  });
   departmentsMenu.innerHTML = entries.length
     ? entries.map((item) => `
       <button type="button" class="department-link" data-category="${escapeHtml(item.category || "")}">
@@ -569,7 +567,7 @@ function renderDepartmentMenu(items = [], placeholder = false) {
         ${placeholder ? "" : `<span>${escapeHtml(`${Number(item.count || 0)} itens reais`)}</span>`}
       </button>
     `).join("")
-    : '<div class="catalog-loading">Nenhum departamento disponível.</div>';
+    : "";
 
   departmentsMenu.querySelectorAll(".department-link").forEach((button) => {
     button.addEventListener("click", () => {
@@ -587,17 +585,54 @@ function renderDepartmentMenu(items = [], placeholder = false) {
   });
 }
 
+function renderDecisionHighlights(items = []) {
+  if (!decisionHighlightsSection || !decisionHighlightsGrid) return;
+  const entries = (Array.isArray(items) ? items : [])
+    .filter((item) => item && item.category && !String(item.category).toLowerCase().includes("outros") && !String(item.category).toLowerCase().includes("pecas"))
+    .slice(0, 3);
+
+  if (!entries.length) {
+    decisionHighlightsSection.hidden = true;
+    decisionHighlightsGrid.innerHTML = "";
+    return;
+  }
+
+  decisionHighlightsSection.hidden = false;
+  decisionHighlightsGrid.innerHTML = entries.map((item) => `
+    <article class="decision-card" data-category="${escapeHtml(item.category)}" data-query="${escapeHtml(item.query || item.category || "")}" data-mode="${escapeHtml(item.intent?.mode || "monthly")}" data-monthly="${escapeHtml(String(item.intent?.monthly || item.intent?.totalBudget || 0))}" data-total-budget="${escapeHtml(String(item.intent?.totalBudget || item.intent?.monthly || 0))}" data-months="${escapeHtml(String(item.intent?.months || 12))}">
+      <div class="decision-card-icon">${categoryIconSvg(item.category)}</div>
+      <strong>${escapeHtml(item.label || normalizeHomeCategoryLabel(item.category))}</strong>
+      <span>${escapeHtml(`${Number(item.count || 0)} itens reais`)}</span>
+    </article>
+  `).join("");
+
+  decisionHighlightsGrid.querySelectorAll(".decision-card").forEach((card) => {
+    card.addEventListener("click", () => {
+      const category = card.dataset.category || "";
+      const preset = presetForCategory(category);
+      productInput.value = card.dataset.query || category;
+      searchMode = card.dataset.mode === "total" ? "total" : (preset.mode === "total" ? "total" : "monthly");
+      monthlyInput.value = card.dataset.monthly || preset.monthly || monthlyInput.value || "100";
+      monthsInput.value = card.dataset.months || preset.months || monthsInput.value || "12";
+      if (totalBudgetInput) totalBudgetInput.value = card.dataset.totalBudget || preset.totalBudget || totalBudgetInput.value || "500";
+      modeButtons.forEach((item) => item.classList.toggle("active", item.dataset.mode === searchMode));
+      setMode(searchMode);
+      form.requestSubmit();
+    });
+  });
+}
+
 function renderSeoHotSearches(items = []) {
   if (!seoHotSearchesGrid) return;
   const entries = Array.isArray(items) ? items : [];
   seoHotSearchesGrid.innerHTML = entries.length
     ? entries.slice(0, 6).map((item) => `
       <button type="button" class="seo-hot-chip" data-query="${escapeHtml(item.query || item.label || "")}" data-category="${escapeHtml(item.category || "")}" data-mode="${escapeHtml(item.intent?.mode || "monthly")}" data-monthly="${escapeHtml(String(item.intent?.monthly || item.intent?.totalBudget || 0))}" data-total-budget="${escapeHtml(String(item.intent?.totalBudget || item.intent?.monthly || 0))}" data-months="${escapeHtml(String(item.intent?.months || 12))}">
-        <strong>${escapeHtml(item.label || item.query || "Busca")}</strong>
-        <span>${escapeHtml(`${Number(item.volume || 0)} buscas`)}</span>
-      </button>
-    `).join("")
-    : '<div class="catalog-loading">Nenhuma busca em alta disponível ainda.</div>';
+      <strong>${escapeHtml(item.label || item.query || "Busca")}</strong>
+      <span>${escapeHtml(`${Number(item.volume || 0)} buscas`)}</span>
+    </button>
+  `).join("")
+    : "";
 
   seoHotSearchesGrid.querySelectorAll(".seo-hot-chip").forEach((button) => {
     button.addEventListener("click", () => {
@@ -613,12 +648,68 @@ function renderSeoHotSearches(items = []) {
   });
 }
 
+function formatCompactNumber(value, fallback = "0") {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < 0) return fallback;
+  return new Intl.NumberFormat("pt-BR").format(number);
+}
+
+function renderLoadingSkeletons(container, variant = "card", count = 3) {
+  if (!container) return;
+  const items = Array.from({ length: count }, () => {
+    if (variant === "chip") {
+      return `
+        <div class="skeleton skeleton-chip" aria-hidden="true">
+          <span class="skeleton-line skeleton-line-lg"></span>
+          <span class="skeleton-line skeleton-line-sm"></span>
+        </div>
+      `;
+    }
+    if (variant === "decision") {
+      return `
+        <div class="skeleton skeleton-decision" aria-hidden="true">
+          <span class="skeleton-badge"></span>
+          <span class="skeleton-line skeleton-line-lg"></span>
+          <span class="skeleton-line skeleton-line-sm"></span>
+        </div>
+      `;
+    }
+    return `
+      <div class="skeleton skeleton-card" aria-hidden="true">
+        <span class="skeleton-badge"></span>
+        <span class="skeleton-line skeleton-line-lg"></span>
+        <span class="skeleton-line skeleton-line-md"></span>
+      </div>
+    `;
+  }).join("");
+  container.innerHTML = items;
+}
+
+function renderTrustBand(data = {}) {
+  const publishedProducts = Number(data.totalPublishedProducts ?? data.totalCatalogProducts ?? data.totalProducts ?? 0);
+  const analyzedProducts = Number(data.totalCatalogProducts ?? data.totalProducts ?? publishedProducts ?? 0);
+  const hiddenProducts = Number(data.hiddenProducts ?? Math.max(analyzedProducts - publishedProducts, 0));
+  if (trustTotalCatalog) {
+    trustTotalCatalog.textContent = publishedProducts ? formatCompactNumber(publishedProducts, "0") : "0";
+  }
+  if (trustDepartments) {
+    trustDepartments.textContent = analyzedProducts ? formatCompactNumber(analyzedProducts, "0") : "0";
+  }
+  if (trustSources) {
+    trustSources.textContent = hiddenProducts ? formatCompactNumber(hiddenProducts, "0") : "0";
+  }
+  if (trustUpdated) {
+    trustUpdated.textContent = "Hoje";
+  }
+}
+
 async function loadHomeCatalogData() {
   if (appView !== "home") return;
 
-  if (pechinchaGrid) pechinchaGrid.innerHTML = '<div class="catalog-loading">Carregando atalhos reais do catálogo...</div>';
-  if (categoryGrid) categoryGrid.innerHTML = '<div class="catalog-loading">Carregando categorias reais do catálogo...</div>';
-  if (seoHotSearchesGrid) seoHotSearchesGrid.innerHTML = '<div class="catalog-loading">Carregando buscas em alta...</div>';
+  renderLoadingSkeletons(decisionHighlightsGrid, "decision", 3);
+  renderLoadingSkeletons(pechinchaGrid, "chip", 6);
+  renderLoadingSkeletons(categoryGrid, "card", 6);
+  renderLoadingSkeletons(seoHotSearchesGrid, "chip", 6);
   renderDepartmentMenu(DEFAULT_HOME_DEPARTMENTS, true);
   if (searchCategoriesHint) {
     searchCategoriesHint.textContent = "Categorias para pesquisar: Celulares, Notebooks, Monitores, TVs, Tablets e Fones.";
@@ -631,9 +722,6 @@ async function loadHomeCatalogData() {
     const departments = Array.isArray(data.departmentCategories) ? data.departmentCategories : Array.isArray(data.departments) ? data.departments : categories;
     const pechinchas = Array.isArray(data.shortcuts) ? data.shortcuts : Array.isArray(data.pechinchas) ? data.pechinchas : [];
     const searchCategories = Array.isArray(data.searchCategories) ? data.searchCategories : departments;
-    if (data.ok === false && homeCatalogState) {
-      homeCatalogState.textContent = "O catálogo estÃ¡ sendo carregado aos poucos.";
-    }
     if (searchCategoriesHint) {
       const labels = searchCategories
         .filter((item) => item && item.category)
@@ -644,22 +732,24 @@ async function loadHomeCatalogData() {
         : "Categorias para pesquisar: Celulares, Notebooks, Monitores, TVs, Tablets e Fones.";
     }
     renderDepartmentMenu(departments);
+    renderDecisionHighlights(Array.isArray(data.homeButtons) && data.homeButtons.length ? data.homeButtons : categories);
     renderSeoHotSearches(Array.isArray(data.seoHotSearches) ? data.seoHotSearches : []);
+    renderTrustBand(data);
 
     if (categoryGrid) {
       const cardsSource = Array.isArray(data.homeButtons) && data.homeButtons.length ? data.homeButtons : categories;
       const cards = cardsSource
-        .filter((item) => item && item.category && String(item.category).toLowerCase() !== "outros")
+        .filter((item) => item && item.category && !String(item.category).toLowerCase().includes("outros") && !String(item.category).toLowerCase().includes("pecas"))
         .slice(0, 6)
         .map((item) => `
           <article data-category="${escapeHtml(item.category)}" data-query="${escapeHtml(item.query || item.category || "")}" data-mode="${escapeHtml(item.intent?.mode || "monthly")}" data-monthly="${escapeHtml(String(item.intent?.monthly || item.intent?.totalBudget || 0))}" data-total-budget="${escapeHtml(String(item.intent?.totalBudget || item.intent?.monthly || 0))}" data-months="${escapeHtml(String(item.intent?.months || 12))}">
-            <div class="category-icon">${categoryIconSvg(item.category)}</div>
-            <h3>${escapeHtml(item.label || normalizeHomeCategoryLabel(item.category))}</h3>
-            <p>${escapeHtml(`${Number(item.count || 0)} itens reais`)}</p>
-          </article>
-        `)
+          <div class="category-icon">${categoryIconSvg(item.category)}</div>
+          <h3>${escapeHtml(item.label || normalizeHomeCategoryLabel(item.category))}</h3>
+          <p>${escapeHtml(`${Number(item.count || 0)} itens reais`)}</p>
+        </article>
+      `)
         .join("");
-      categoryGrid.innerHTML = cards || '<div class="catalog-loading">Nenhuma categoria forte o suficiente foi encontrada ainda.</div>';
+      categoryGrid.innerHTML = cards || "";
 
       categoryGrid.querySelectorAll("article[data-category]").forEach((card) => {
         card.addEventListener("click", () => {
@@ -687,7 +777,7 @@ async function loadHomeCatalogData() {
           </button>
         `)
         .join("");
-      pechinchaGrid.innerHTML = chips || '<div class="catalog-loading">Nenhuma pechincha real disponível no catálogo.</div>';
+      pechinchaGrid.innerHTML = chips || "";
 
       document.querySelectorAll(".pechincha-card").forEach((button) => {
         button.addEventListener("click", () => {
@@ -705,14 +795,16 @@ async function loadHomeCatalogData() {
 
     if (homeCatalogState) {
       const focusLabel = data.focusLabel || "Catálogo real";
-      homeCatalogState.textContent = `${focusLabel}: ${categories.length} categorias reais, ${pechinchas.length} atalhos do catálogo e ${Array.isArray(data.seoHotSearches) ? data.seoHotSearches.length : 0} buscas em alta`;
+      const totalPublished = Number(data.totalPublishedProducts ?? data.totalCatalogProducts ?? 0);
+      const totalLabel = totalPublished ? formatCompactNumber(totalPublished, "0") : "0";
+      homeCatalogState.textContent = `${focusLabel}: ${totalLabel} produtos reais analisados, ${categories.length} categorias reais, ${pechinchas.length} atalhos do catálogo e ${Array.isArray(data.seoHotSearches) ? data.seoHotSearches.length : 0} buscas em alta`;
     }
   } catch {
     if (categoryGrid && !categoryGrid.children.length) {
-      categoryGrid.innerHTML = '<div class="catalog-loading">Não foi possível carregar o catálogo real.</div>';
+      renderLoadingSkeletons(categoryGrid, "card", 6);
     }
     if (pechinchaGrid && !pechinchaGrid.children.length) {
-      pechinchaGrid.innerHTML = '<div class="catalog-loading">NÃ£o foi possÃ­vel carregar atalhos reais.</div>';
+      renderLoadingSkeletons(pechinchaGrid, "chip", 6);
     }
   }
 }
@@ -734,16 +826,16 @@ form.addEventListener("submit", async (event) => {
   resultsArea.classList.add("has-results");
   budgetTotal.textContent = currency.format(ceiling);
     if (searchMode === "total") {
-      budgetLine.textContent = `OrÃ§amento total: ${currency.format(totalBudget)}`;
-      if (marketline) marketline.textContent = `Seu orÃ§amento total: ${currency.format(totalBudget)}.`;
-      if (monthlyLabel) monthlyLabel.textContent = "MÃ¡x. mensal";
+      budgetLine.textContent = `Orçamento total: ${currency.format(totalBudget)}`;
+      if (marketline) marketline.textContent = `Seu orçamento total: ${currency.format(totalBudget)}.`;
+      if (monthlyLabel) monthlyLabel.textContent = "Máx. mensal";
       if (monthsField) monthsField.hidden = true;
       if (totalField) totalField.hidden = false;
       if (totalBudgetInput) totalBudgetInput.disabled = false;
     } else {
-      budgetLine.textContent = `${currency.format(monthly)} por mÃªs em atÃ© ${months}x`;
-      if (marketline) marketline.textContent = `Seu teto estimado: ${currency.format(ceiling)}, considerando ${currency.format(monthly)} por mÃªs em atÃ© ${months}x.`;
-      if (monthlyLabel) monthlyLabel.textContent = "MÃ¡x. mensal";
+      budgetLine.textContent = `${currency.format(monthly)} por mês em até ${months}x`;
+      if (marketline) marketline.textContent = `Seu teto estimado: ${currency.format(ceiling)}, considerando ${currency.format(monthly)} por mês em até ${months}x.`;
+      if (monthlyLabel) monthlyLabel.textContent = "Máx. mensal";
       if (monthsField) monthsField.hidden = false;
       if (totalField) totalField.hidden = true;
       if (totalBudgetInput) totalBudgetInput.disabled = true;
@@ -805,7 +897,7 @@ form.addEventListener("submit", async (event) => {
     notice.textContent = `Erro ao buscar: ${error.message}`;
   } finally {
     button.disabled = false;
-    button.textContent = "Descobrir";
+    button.textContent = "Descobrir o que cabe";
   }
 });
 

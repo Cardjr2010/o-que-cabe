@@ -567,7 +567,7 @@ function renderDepartmentMenu(items = [], placeholder = false) {
         ${placeholder ? "" : `<span>${escapeHtml(`${Number(item.count || 0)} itens reais`)}</span>`}
       </button>
     `).join("")
-    : '<div class="catalog-loading">Nenhum departamento disponível.</div>';
+    : "";
 
   departmentsMenu.querySelectorAll(".department-link").forEach((button) => {
     button.addEventListener("click", () => {
@@ -628,11 +628,11 @@ function renderSeoHotSearches(items = []) {
   seoHotSearchesGrid.innerHTML = entries.length
     ? entries.slice(0, 6).map((item) => `
       <button type="button" class="seo-hot-chip" data-query="${escapeHtml(item.query || item.label || "")}" data-category="${escapeHtml(item.category || "")}" data-mode="${escapeHtml(item.intent?.mode || "monthly")}" data-monthly="${escapeHtml(String(item.intent?.monthly || item.intent?.totalBudget || 0))}" data-total-budget="${escapeHtml(String(item.intent?.totalBudget || item.intent?.monthly || 0))}" data-months="${escapeHtml(String(item.intent?.months || 12))}">
-        <strong>${escapeHtml(item.label || item.query || "Busca")}</strong>
-        <span>${escapeHtml(`${Number(item.volume || 0)} buscas`)}</span>
-      </button>
-    `).join("")
-    : '<div class="catalog-loading">Nenhuma busca em alta disponível ainda.</div>';
+      <strong>${escapeHtml(item.label || item.query || "Busca")}</strong>
+      <span>${escapeHtml(`${Number(item.volume || 0)} buscas`)}</span>
+    </button>
+  `).join("")
+    : "";
 
   seoHotSearchesGrid.querySelectorAll(".seo-hot-chip").forEach((button) => {
     button.addEventListener("click", () => {
@@ -722,9 +722,6 @@ async function loadHomeCatalogData() {
     const departments = Array.isArray(data.departmentCategories) ? data.departmentCategories : Array.isArray(data.departments) ? data.departments : categories;
     const pechinchas = Array.isArray(data.shortcuts) ? data.shortcuts : Array.isArray(data.pechinchas) ? data.pechinchas : [];
     const searchCategories = Array.isArray(data.searchCategories) ? data.searchCategories : departments;
-    if (data.ok === false && homeCatalogState) {
-      homeCatalogState.textContent = "O catálogo está sendo carregado aos poucos.";
-    }
     if (searchCategoriesHint) {
       const labels = searchCategories
         .filter((item) => item && item.category)
@@ -746,13 +743,13 @@ async function loadHomeCatalogData() {
         .slice(0, 6)
         .map((item) => `
           <article data-category="${escapeHtml(item.category)}" data-query="${escapeHtml(item.query || item.category || "")}" data-mode="${escapeHtml(item.intent?.mode || "monthly")}" data-monthly="${escapeHtml(String(item.intent?.monthly || item.intent?.totalBudget || 0))}" data-total-budget="${escapeHtml(String(item.intent?.totalBudget || item.intent?.monthly || 0))}" data-months="${escapeHtml(String(item.intent?.months || 12))}">
-            <div class="category-icon">${categoryIconSvg(item.category)}</div>
-            <h3>${escapeHtml(item.label || normalizeHomeCategoryLabel(item.category))}</h3>
-            <p>${escapeHtml(`${Number(item.count || 0)} itens reais`)}</p>
-          </article>
-        `)
+          <div class="category-icon">${categoryIconSvg(item.category)}</div>
+          <h3>${escapeHtml(item.label || normalizeHomeCategoryLabel(item.category))}</h3>
+          <p>${escapeHtml(`${Number(item.count || 0)} itens reais`)}</p>
+        </article>
+      `)
         .join("");
-      categoryGrid.innerHTML = cards || '<div class="catalog-loading">Nenhuma categoria forte o suficiente foi encontrada ainda.</div>';
+      categoryGrid.innerHTML = cards || "";
 
       categoryGrid.querySelectorAll("article[data-category]").forEach((card) => {
         card.addEventListener("click", () => {
@@ -780,7 +777,7 @@ async function loadHomeCatalogData() {
           </button>
         `)
         .join("");
-      pechinchaGrid.innerHTML = chips || '<div class="catalog-loading">Nenhuma pechincha real disponível no catálogo.</div>';
+      pechinchaGrid.innerHTML = chips || "";
 
       document.querySelectorAll(".pechincha-card").forEach((button) => {
         button.addEventListener("click", () => {

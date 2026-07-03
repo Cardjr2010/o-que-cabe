@@ -18,18 +18,16 @@
         <strong>O Que Cabe</strong>
       </a>
       <div class="topbar-actions">
-        <a class="topbar-link" href="/">Início</a>
+        <nav class="main-nav" aria-label="Navegação principal">
+          <a class="topbar-link active" href="/">Início</a>
+          <a class="topbar-link" href="#departments">Departamentos</a>
+          <a class="topbar-link" href="#blog">Blog</a>
+          <a class="topbar-link" href="#conta">Minha Conta</a>
+        </nav>
         <div class="trust-pill">
           <svg viewBox="0 0 24 24"><path d="M12 3 19 6v5c0 5-3 8-7 10-4-2-7-5-7-10V6l7-3Z"/><path d="m9 12 2 2 4-5"/></svg>
           <span>Curadoria de Confiança</span>
         </div>
-        <details class="departments-menu">
-          <summary>Todos os departamentos</summary>
-          <div class="departments-menu-panel" id="departmentsMenu"></div>
-        </details>
-        <a class="topbar-link" href="#blog">Blog</a>
-        <a class="topbar-link" href="#conta">Minha Conta</a>
-        <span class="topbar-link future" aria-disabled="true">Favoritos</span>
       </div>
     </header>
 
@@ -37,7 +35,10 @@
       <section class="hero">
         <div class="hero-copy">
           <h1>Você diz quanto pode pagar.<br />A gente mostra <em>o que cabe.</em></h1>
-          <p>Seu orçamento. Sua escolha. Sem complicação.</p>
+          <p>
+            Seu orçamento. Sua escolha. Sem complicação.
+            <strong>Analisamos 15.999 produtos reais para encontrar opções que cabem no seu orçamento.</strong>
+          </p>
         </div>
 
         <form id="searchForm" class="search-card" data-mode="monthly">
@@ -76,11 +77,70 @@
               <input id="totalBudgetInput" name="totalBudget" type="number" min="1" step="1" value="500" disabled />
             </div>
           </div>
-          <button class="submit-button" type="submit">Descobrir</button>
+          <button class="submit-button" type="submit">Descobrir o que cabe</button>
         </form>
         <p class="seo-muted search-categories-hint" id="searchCategoriesHint">
           Categorias para pesquisar: Celulares, Notebooks, Monitores, TVs, Tablets e Fones.
         </p>
+      </section>
+
+      <section class="trust-band" id="catalogTrustBand" aria-live="polite">
+        <article>
+          <strong id="trustTotalCatalog">15.999</strong>
+          <span>produtos reais analisados</span>
+        </article>
+        <article>
+          <strong id="trustDepartments">16.740</strong>
+          <span>produtos analisados</span>
+        </article>
+        <article>
+          <strong id="trustSources">741</strong>
+          <span>ocultos por qualidade/fonte</span>
+        </article>
+        <article>
+          <strong id="trustUpdated">Hoje</strong>
+          <span>catálogo atualizado</span>
+        </article>
+      </section>
+
+      <section class="departments-showcase" id="departmentsShowcase">
+        <div class="section-head section-head-tight">
+          <div>
+            <p class="panel-label">Departamentos em destaque</p>
+            <h2>Departamentos reais, organizados com visual de produto</h2>
+          </div>
+          <p class="section-note">Navegue pelos grupos mais fortes do catálogo sem abrir uma lista crua.</p>
+        </div>
+        <div class="departments-menu-shell">
+          <div class="departments-menu-panel" id="departmentsMenu" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <section class="decision-section" id="decisions">
+        <div class="section-head section-head-tight">
+          <div>
+            <p class="panel-label">Decisões inteligentes</p>
+            <h2>Atalhos pequenos para compras que fazem sentido</h2>
+          </div>
+          <p class="section-note">Cards rápidos aparecem só quando há produtos reais suficientes para essa busca.</p>
+        </div>
+        <div class="decision-grid" id="decisionHighlightsGrid" aria-live="polite"></div>
+      </section>
+
+      <section class="pechinchas" id="pechinchas">
+        <div class="section-head section-head-tight">
+          <div>
+            <p class="panel-label">Atalhos reais</p>
+            <h2>Comece por uma busca que já faz sentido</h2>
+          </div>
+          <p class="section-note">Os atalhos vêm do catálogo real e ajudam a entrar direto em categorias úteis.</p>
+        </div>
+        <div class="pechincha-grid" id="pechinchaGrid" aria-live="polite">
+          <div class="skeleton skeleton-chip" aria-hidden="true">
+            <span class="skeleton-line skeleton-line-lg"></span>
+            <span class="skeleton-line skeleton-line-sm"></span>
+          </div>
+        </div>
       </section>
 
       <section class="results-area">
@@ -102,10 +162,14 @@
       </section>
 
       <section class="categories" id="departments">
-        <h2><span>↗</span> Categorias em Alta</h2>
-        <p class="seo-muted" id="homeCatalogState">Carregando catálogo real...</p>
+        <h2><span>↗</span> Departamentos em Alta</h2>
+        <p class="seo-muted" id="homeCatalogState">15.999 produtos reais analisados</p>
         <div class="category-grid" id="categoryGrid" aria-live="polite">
-          <div class="catalog-loading">Carregando categorias reais do catálogo...</div>
+          <div class="skeleton skeleton-card" aria-hidden="true">
+            <span class="skeleton-badge"></span>
+            <span class="skeleton-line skeleton-line-lg"></span>
+            <span class="skeleton-line skeleton-line-md"></span>
+          </div>
         </div>
       </section>
 
@@ -113,7 +177,10 @@
         <h2>Buscas em alta</h2>
         <p class="seo-muted">Os termos mais fortes do SEO ajudam a mostrar o que o usuário realmente procura.</p>
         <div class="seo-hot-grid" id="seoHotSearchesGrid" aria-live="polite">
-          <div class="catalog-loading">Carregando buscas em alta...</div>
+          <div class="skeleton skeleton-chip" aria-hidden="true">
+            <span class="skeleton-line skeleton-line-lg"></span>
+            <span class="skeleton-line skeleton-line-sm"></span>
+          </div>
         </div>
       </section>
 
