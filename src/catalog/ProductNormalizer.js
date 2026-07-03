@@ -129,6 +129,10 @@ const PIECE_KEYWORDS = [
 ];
 
 const CATEGORY_RULES = [
+  { category: "ferramenta", terms: ["ferramenta", "ferramentas", "broca", "furadeira", "serra", "martelo", "alicate", "parafusadeira", "torque", "chave allen", "chave philips", "chave estrela", "chave fixa", "chave catraca", "trena", "soquete", "bits"] },
+  { category: "ferragem", terms: ["parafuso", "porca", "arruela", "bucha", "prego", "rebite", "dobradi", "cadeado", "fechadura", "gancho", "argola", "corrente", "mola", "abraçadeira", "abracadeira"] },
+  { category: "construcao", terms: ["tinta", "cola", "cimento", "argamassa", "reboco", "massa corrida", "selante", "vedante", "fita veda", "telha", "piso", "revestimento", "construcao", "construção"] },
+  { category: "casa", terms: ["casa", "cozinha", "banheiro", "limpeza", "organizador", "utilidade", "utensilio", "utensílio", "decoracao", "decoração", "jardim", "lar"] },
   { category: "tablet", terms: ["tablet", "ipad", "galaxy tab", "tab ", "redmi pad", "xiaomi pad", "mi pad", "pad se", "pad pro"] },
   { category: "tv", terms: ["smart tv", "smarttv", "televisor", "televis", "tv ", "oled", "qled", "roku"] },
   { category: "notebook", terms: ["notebook", "laptop", "vivobook", "ideapad", "aspire", "inspiron", "thinkpad", "loq"] },
@@ -154,6 +158,10 @@ const VALID_CATEGORY_VALUES = new Set([
   "pelicula",
   "capa",
   "monitor",
+  "ferramenta",
+  "ferragem",
+  "construcao",
+  "casa",
   "acessorio",
   "peca",
   "compativel",
@@ -403,6 +411,7 @@ function inferProductType(category = "", normalizedText = "") {
   if (["pelicula", "capa", "cabo", "carregador", "acessorio"].includes(category)) return "accessory";
   if (category === "peca") return "piece";
   if (normalizedText.includes("compat")) return "compatible";
+  if (["ferramenta", "ferragem", "construcao", "casa"].includes(category)) return "product";
   return "product";
 }
 
@@ -524,6 +533,14 @@ function scoreProductMatch(product = {}, query = "") {
   if (/celular|smartphone|iphone/.test(q) && normalizedCategory === "celular") score += 25;
   if (/tv|televisor/.test(q) && normalizedCategory === "tv") score += 25;
   if (/notebook|laptop/.test(q) && normalizedCategory === "notebook") score += 25;
+  if (/(iphone|apple iphone|samsung|galaxy|redmi|poco|motorola|moto)/.test(q)) {
+    const phoneEvidence = /(celular|smartphone|phone|iphone|galaxy|samsung|redmi|poco|motorola)/.test(`${normalizedTitle} ${normalizedBrand} ${normalizedModel} ${normalizedCategory} ${normalizedType}`);
+    if (phoneEvidence) score += 18;
+    if (isAccessory) score -= 12;
+    if (normalizedCategory === "celular" || normalizedType === "smartphone") score += 10;
+    if (/(iphone|apple)/.test(q) && normalizedBrand === "apple" && phoneEvidence) score += 8;
+    if (/(samsung|galaxy)/.test(q) && normalizedBrand === "samsung" && phoneEvidence) score += 8;
+  }
 
   return directMatch ? score : 0;
 }

@@ -2,11 +2,17 @@ import BudgetEngine from "../engines/BudgetEngine.js";
 import { scoreProductMatch, normalizeText } from "../catalog/ProductNormalizer.js";
 import { buildInstallmentBudgetContext, normalizeInstallmentData } from "../catalog/installments.js";
 import ProductIntelligenceEngine from "../catalog/ProductIntelligenceEngine.js";
+import CatalogManager from "../catalog/CatalogManager.js";
 import SEOIntelligenceEngine from "../seo/SEOIntelligenceEngine.js";
+import { resolveProjectPath } from "../runtime/project-root.js";
 
 function toNumber(value, fallback = 0) {
   const parsed = Number(String(value ?? "").replace(",", "."));
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function uniqueValues(values = []) {
+  return [...new Set((Array.isArray(values) ? values : []).filter(Boolean))];
 }
 
 const CATEGORY_RULES = [
@@ -40,8 +46,176 @@ const BRAND_RULES = [
   { brand: "JBL", terms: ["jbl"] },
 ];
 
+const TOOL_QUERY_MARKERS = [
+  "ferramenta",
+  "ferramentas",
+  "furadeira",
+  "parafusadeira",
+  "serra",
+  "chave",
+  "alicate",
+  "martelete",
+  "martelo",
+  "ferragem",
+  "ferragens",
+  "casa",
+  "construcao",
+];
+
+const FLOWER_QUERY_MARKERS = [
+  "flor",
+  "flores",
+  "buque",
+  "bouquet",
+  "rosa",
+  "cesta",
+  "presente",
+  "presentes",
+  "aniversario",
+];
+
+const PHONE_QUERY_MARKERS = [
+  "iphone",
+  "apple iphone",
+  "samsung",
+  "galaxy",
+  "galaxy a",
+  "galaxy s",
+  "redmi",
+  "poco",
+  "motorola",
+  "moto",
+];
+
+function matchesAnyMarker(text = "", markers = []) {
+  const normalized = normalizeText(text);
+  return Array.isArray(markers) && markers.some((marker) => normalized.includes(normalizeText(marker)));
+}
+
+function canonicalSearchCategory(rawCategory = "", text = "") {
+  const category = normalizeText(rawCategory);
+  const query = normalizeText(text);
+  const toolLike = matchesAnyMarker(`${category} ${query}`, TOOL_QUERY_MARKERS);
+  const flowerLike = matchesAnyMarker(`${category} ${query}`, FLOWER_QUERY_MARKERS);
+  if (toolLike) return "ferramenta";
+  if (flowerLike) return "flores e presentes";
+  return String(rawCategory || "").trim();
+}
+
+function buildSearchVariants(intent = {}) {
+  const base = uniqueValues([
+    intent.searchText,
+    intent.query,
+  ].map((value) => String(value || "").trim()).filter(Boolean));
+  const normalized = `${normalizeText(intent.searchText || "")} ${normalizeText(intent.query || "")} ${normalizeText(intent.category || "")}`;
+  const variants = [...base];
+
+  const pushVariants = (items = []) => {
+    for (const item of items) {
+      const value = String(item || "").trim();
+      if (value && !variants.includes(value)) variants.push(value);
+    }
+  };
+
+  if (matchesAnyMarker(normalized, TOOL_QUERY_MARKERS)) {
+    pushVariants([
+      "ferramenta",
+      "ferramentas",
+      "furadeira",
+      "parafusadeira",
+      "serra",
+      "chave",
+      "alicate",
+      "martelete",
+      "martelo",
+      "ferragem",
+      "ferragens",
+    ]);
+  }
+
+  if (matchesAnyMarker(normalized, FLOWER_QUERY_MARKERS)) {
+    pushVariants([
+      "flores",
+      "flor",
+      "buque",
+      "bouquet",
+      "rosa",
+      "cesta",
+      "presente",
+      "presentes",
+      "aniversario",
+      "flores e presentes",
+    ]);
+  }
+
+  return variants;
+}
+
+function buildSupplementalVariants(intent = {}) {
+  const normalized = normalizeText([intent.query, intent.searchText, intent.category].filter(Boolean).join(" "));
+  const variants = [];
+  const push = (items = []) => {
+    for (const item of items) {
+      const value = String(item || "").trim();
+      if (value && !variants.includes(value)) variants.push(value);
+    }
+  };
+
+  if (matchesAnyMarker(normalized, TOOL_QUERY_MARKERS)) {
+    push(["furadeira", "parafusadeira", "martelete", "serra", "alicate", "ferramenta"]);
+  }
+
+  if (matchesAnyMarker(normalized, FLOWER_QUERY_MARKERS)) {
+    push(["buque", "bouquet", "flores", "flor", "cesta", "presente", "rosa", "aniversario"]);
+  }
+
+  push([intent.searchText, intent.query]);
+  return variants.slice(0, 6);
+}
+
+function shouldUseSupplementalCatalog(intent = {}) {
+  const normalized = normalizeText([intent.query, intent.searchText, intent.category].filter(Boolean).join(" "));
+  return matchesAnyMarker(normalized, TOOL_QUERY_MARKERS) || matchesAnyMarker(normalized, FLOWER_QUERY_MARKERS);
+}
+
+function isPhoneFamilyQuery(text = "") {
+  return matchesAnyMarker(text, PHONE_QUERY_MARKERS);
+}
+
+function isPhoneFamilyProduct(product = {}, intelligence = {}) {
+  const text = normalizeText([
+    product.displayTitle,
+    product.originalTitle,
+    product.title,
+    product.description,
+    product.brand,
+    product.model,
+    product.category,
+    product.normalizedCategory,
+    intelligence.department,
+    intelligence.category,
+    intelligence.subcategory,
+  ].filter(Boolean).join(" "));
+  return /(celular|smartphone|iphone|phone|galaxy|redmi|poco|moto|motorola)/.test(text);
+}
+
+function isPrincipalProduct(product = {}, intelligence = {}) {
+  const productType = normalizeText(intelligence.productType || product.productType || "");
+  return !Boolean(intelligence.isAccessory ?? product.isAccessory) && (productType === "principal" || productType === "product");
+}
+
+const SUPPLEMENTAL_CATALOG_PATH = resolveProjectPath("src", "data", "products.seed.json");
 let productIntelligenceEngineInstance = null;
 let seoIntelligenceEngineInstance = null;
+let supplementalCatalogManagerInstance = null;
+
+function getSupplementalCatalogManager() {
+  if (!supplementalCatalogManagerInstance) {
+    supplementalCatalogManagerInstance = new CatalogManager({ seedPath: SUPPLEMENTAL_CATALOG_PATH });
+  }
+  return supplementalCatalogManagerInstance;
+}
+
 
 function getProductIntelligenceEngine() {
   if (!productIntelligenceEngineInstance) {
@@ -201,6 +375,78 @@ function rankSearchMatch(product = {}, query = "") {
   return Math.max(scoreProductMatch(product, query), normalizeText(text).includes(normalizeText(query)) ? 1 : 0);
 }
 
+function rankPreparedProduct(product = {}, intent = {}) {
+  const searchText = normalizeText(intent.searchText || intent.query || "");
+  const intelligence = product.intelligence || getProductIntelligenceEngine().enrichProduct(product);
+  const titleText = normalizeText([product.displayTitle, product.originalTitle, product.title].filter(Boolean).join(" "));
+  const categoryText = normalizeText([intelligence.department, intelligence.category, intelligence.subcategory, product.department, product.category, product.normalizedCategory].filter(Boolean).join(" "));
+  const sourceText = normalizeText([product.marketplace, product.source, product.sourceType, product.seller, product.store].filter(Boolean).join(" "));
+  const queryTokens = searchText.split(/\s+/).filter(Boolean);
+  const titleMatches = queryTokens.filter((token) => titleText.includes(token)).length;
+  const categoryMatches = queryTokens.filter((token) => categoryText.includes(token)).length;
+  const exactQueryBonus = searchText && titleText.includes(searchText) ? 3 : 0;
+  const categoryBonus = intent.category && categoryText.includes(normalizeText(intent.category)) ? 2 : 0;
+  const brandBonus = intent.brand && normalizeText([product.brand, product.displayTitle, product.originalTitle, product.title].filter(Boolean).join(" ")).includes(normalizeText(intent.brand)) ? 2 : 0;
+  const typeBonus = intelligence.productType === "principal" ? 1 : -1;
+  const sourceBonus = sourceText.includes("saldao") || sourceText.includes("info store") || sourceText.includes("actionpay") || sourceText.includes("awin") ? 1 : 0;
+  const imageBonus = String(product.image || product.thumbnail || "").trim() ? 0.25 : 0;
+  const linkBonus = String(product.affiliateUrl || product.productUrl || product.permalink || product.url || "").trim() ? 0.35 : 0;
+  const quality = Number(product.qualityScore || intelligence.qualityScore || 0) / 100;
+  const searchMatch = Number(product.oqc?.searchMatchScore || rankSearchMatch(product, searchText) || 0);
+  const phoneFamilyQuery = isPhoneFamilyQuery(searchText);
+  const phoneFamilyProduct = isPhoneFamilyProduct(product, intelligence);
+  const principalProduct = isPrincipalProduct(product, intelligence);
+  const cellularText = normalizeText([intelligence.department, intelligence.category, intelligence.subcategory, product.department, product.category, product.normalizedCategory].filter(Boolean).join(" "));
+  const cellularProduct = /(celular|smartphone|iphone|phone)/.test(cellularText);
+  const brandText = normalizeText([product.brand, product.displayTitle, product.originalTitle, product.title].filter(Boolean).join(" "));
+  const accessoryPenalty = Boolean(intelligence.isAccessory ?? product.isAccessory) ? -4 : 0;
+  const phoneDeviceBonus = phoneFamilyQuery && cellularProduct ? 16 : 0;
+  const phonePrincipalBonus = phoneFamilyQuery && principalProduct && cellularProduct ? 8 : 0;
+  const phoneBrandBonus = phoneFamilyQuery && phoneFamilyProduct && cellularProduct ? 6 : 0;
+  const iphoneSamsungBonus = /iphone|apple iphone|samsung|galaxy|redmi|poco|motorola|moto/.test(searchText) && phoneFamilyProduct ? 3 : 0;
+  const nonPhonePenalty = phoneFamilyQuery && !cellularProduct && phoneFamilyProduct ? -12 : 0;
+  const accessoryQueryPenalty = phoneFamilyQuery && /capa|case|pelicula|carregador|cabo|fone|headphone|airpods|earbud|strap|pulseira|suporte/.test(brandText) ? -4 : 0;
+  return (
+    (searchMatch * 8)
+    + (titleMatches * 2.5)
+    + (categoryMatches * 1.5)
+    + exactQueryBonus
+    + categoryBonus
+    + brandBonus
+    + typeBonus
+    + sourceBonus
+    + imageBonus
+    + linkBonus
+    + quality
+    + phoneDeviceBonus
+    + phonePrincipalBonus
+    + phoneBrandBonus
+    + iphoneSamsungBonus
+    + accessoryPenalty
+    + nonPhonePenalty
+    + accessoryQueryPenalty
+  );
+}
+
+function filterCandidateList(list = [], intent = {}) {
+  return (Array.isArray(list) ? list : [])
+    .map((product) => (product?.intelligence ? product : getProductIntelligenceEngine().enrichProduct(product)))
+    .filter((product) => {
+      if (!classifyVisibility(product)) return false;
+      if (!matchProductType(product, intent.category || "", intent.accessoryIntent)) return false;
+      if (intent.brand) {
+        const brandText = normalizeText([product.brand, product.title, product.displayTitle, product.originalTitle].filter(Boolean).join(" "));
+        if (!brandText.includes(normalizeText(intent.brand))) return false;
+      }
+      if (intent.category) {
+        const categoryText = normalizeText([product.department, product.subcategory, product.normalizedCategory, product.category, product.productType].filter(Boolean).join(" "));
+        if (!categoryText.includes(normalizeText(intent.category))) return false;
+      }
+      if (!intent.category && !intent.brand && !hasQueryRelevance(product, intent)) return false;
+      return true;
+    });
+}
+
 export default class SearchOrchestrator {
   constructor({ catalogManager } = {}) {
     this.catalogManager = catalogManager;
@@ -210,9 +456,13 @@ export default class SearchOrchestrator {
     const text = String(query || "").trim();
     const budgetHints = parseBudgetNumber(text);
     const seoIntent = getSEOIntelligenceEngine().resolveQueryIntent(text) || {};
-    const category = seoIntent.category || detectCategory(text) || "";
     const brand = detectBrand(text) || seoIntent.intent?.brand || "";
-    const accessoryIntent = detectAccessoryIntent(text) || Boolean(seoIntent.intent?.attributes?.some((attribute) => /capa|pel|cabo|carreg|suporte/i.test(String(attribute || ""))));
+    const normalizedText = normalizeText(text);
+    const brandOnlyQuery = Boolean(brand) && normalizedText === normalizeText(brand);
+    const directCategory = detectCategory(text) || "";
+    const rawCategory = brandOnlyQuery ? directCategory : (directCategory || seoIntent.category || "");
+    const category = canonicalSearchCategory(rawCategory, text);
+    const accessoryIntent = detectAccessoryIntent(text) || Boolean(seoIntent.intent?.attributes?.some((attribute) => /capa|pel|cabo|carreg/i.test(String(attribute || ""))));
     const searchText = budgetHints.searchText || text;
     const normalizedMode = String(mode || budgetHints.mode || "monthly").toLowerCase() === "total" ? "total" : "monthly";
     const normalizedMonths = Math.max(1, toNumber(budgetHints.months || months, 12));
@@ -237,37 +487,59 @@ export default class SearchOrchestrator {
   }
 
   listCandidates(intent = {}, products = []) {
-    let list = Array.isArray(products) && products.length
-      ? products
-      : (this.catalogManager?.search
-        ? this.catalogManager.search({
-            q: intent.searchText || intent.query || "",
-            category: intent.category || "",
-            brand: intent.brand || "",
-            marketplace: intent.marketplace || "",
-            status: intent.status || "",
-          })
-        : this.catalogManager?.list?.() || []);
-    if (!Array.isArray(list) || !list.length) {
-      list = this.catalogManager?.list?.() || [];
+    const baseList = Array.isArray(products) && products.length ? products : [];
+    if (baseList.length) {
+      return filterCandidateList(baseList, intent);
     }
 
-    return list
-      .map((product) => (product?.intelligence ? product : getProductIntelligenceEngine().enrichProduct(product)))
-      .filter((product) => {
-        if (!classifyVisibility(product)) return false;
-        if (!matchProductType(product, intent.category || "", intent.accessoryIntent)) return false;
-        if (intent.brand) {
-          const brandText = normalizeText([product.brand, product.title, product.displayTitle, product.originalTitle].filter(Boolean).join(" "));
-          if (!brandText.includes(normalizeText(intent.brand))) return false;
+    const attempts = buildSearchVariants(intent);
+    const collected = [];
+    const seen = new Set();
+    const searchManagers = shouldUseSupplementalCatalog(intent)
+      ? [getSupplementalCatalogManager(), this.catalogManager]
+      : [this.catalogManager];
+    const addUnique = (list = [], attemptIntent = intent) => {
+      const filtered = filterCandidateList(list, attemptIntent);
+      for (const product of filtered) {
+        const key = String(product.id || product.externalId || product.title || product.displayTitle || "").trim();
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        collected.push(product);
+        if (collected.length >= 50) return true;
+      }
+      return false;
+    };
+
+    for (const [managerIndex, manager] of searchManagers.entries()) {
+      if (!manager?.search) continue;
+      const managerAttempts = managerIndex === 0 && shouldUseSupplementalCatalog(intent)
+        ? buildSupplementalVariants(intent)
+        : attempts;
+      for (const queryText of managerAttempts) {
+        const list = manager.search({
+          q: queryText,
+          brand: intent.brand || "",
+          marketplace: intent.marketplace || "",
+          status: intent.status || "",
+        });
+        if (addUnique(list, {
+          ...intent,
+          searchText: queryText,
+          query: queryText,
+        })) {
+          break;
         }
-        if (intent.category) {
-          const categoryText = normalizeText([product.department, product.subcategory, product.normalizedCategory, product.category, product.productType].filter(Boolean).join(" "));
-          if (!categoryText.includes(normalizeText(intent.category))) return false;
-        }
-        if (!intent.category && !intent.brand && !hasQueryRelevance(product, intent)) return false;
-        return true;
-      });
+      }
+      if (shouldUseSupplementalCatalog(intent) && managerIndex === 0 && collected.length >= 20) {
+        break;
+      }
+    }
+
+    if (!collected.length) {
+      addUnique(this.catalogManager?.list?.() || [], intent);
+    }
+
+    return collected;
   }
 
   prepareProducts(products = [], intent = {}) {
@@ -354,6 +626,16 @@ export default class SearchOrchestrator {
         },
       });
     }
+
+    prepared.sort((left, right) => {
+      const scoreDelta = rankPreparedProduct(right, intent) - rankPreparedProduct(left, intent);
+      if (Math.abs(scoreDelta) > 1e-9) return scoreDelta;
+      const titleLeft = normalizeText(left.displayTitle || left.originalTitle || left.title || "");
+      const titleRight = normalizeText(right.displayTitle || right.originalTitle || right.title || "");
+      if (titleLeft === normalizeText(intent.searchText || intent.query || "")) return -1;
+      if (titleRight === normalizeText(intent.searchText || intent.query || "")) return 1;
+      return titleLeft.localeCompare(titleRight, "pt-BR");
+    });
 
     const dataMode = prepared.some((item) => String(item.dataMode || item.mode || "").toLowerCase().startsWith("real") || String(item.dataMode || item.mode || "").toLowerCase() === "seed")
       ? "real"

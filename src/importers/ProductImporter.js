@@ -16,6 +16,7 @@ import {
   sanitizeCategory,
   normalizeText,
 } from "../catalog/ProductNormalizer.js";
+import { normalizeInstallmentData } from "../catalog/installments.js";
 
 const root = projectRoot;
 const seedPath = resolveCatalogSeedPath(path.join(root, "data", "products.seed.json"));
@@ -26,6 +27,10 @@ const canonicalSeedPaths = new Set(
     resolveProjectPath("public", "data", "products.seed.json"),
   ].map((value) => String(value || "").replace(/\\/g, "/")),
 );
+
+function cleanText(value = "") {
+  return String(value ?? "").replace(/\s+/g, " ").trim();
+}
 
 function readJson(filePath, fallback) {
   try {
@@ -58,12 +63,84 @@ function inferCategory(text = "") {
   return inferCategoryFromFields({ title: text }, text) || "";
 }
 
+const FLOWER_SOURCE_MARKERS = [
+  "flores online",
+  "floresonline",
+  "isabela flores",
+  "isabelaflores",
+  "flores_flores",
+  "flores online & presentes",
+  "buque de flores",
+  "buquê de flores",
+  "floricultura",
+  "flores",
+];
+
+function parsePriceValue(value) {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  const text = cleanText(value);
+  if (!text) return 0;
+
+  const numeric = text.replace(/[^\d.,-]/g, "");
+  if (!numeric) return 0;
+
+  const hasComma = numeric.includes(",");
+  const hasDot = numeric.includes(".");
+  let normalized = numeric;
+
+  if (hasComma && hasDot) {
+    normalized = numeric.lastIndexOf(",") > numeric.lastIndexOf(".")
+      ? numeric.replace(/\./g, "").replace(",", ".")
+      : numeric.replace(/,/g, "");
+  } else if (hasComma) {
+    normalized = /,\d{1,2}$/.test(numeric)
+      ? numeric.replace(/\./g, "").replace(",", ".")
+      : numeric.replace(/,/g, "");
+  } else if (hasDot) {
+    normalized = /\.\d{1,2}$/.test(numeric) ? numeric : numeric.replace(/\./g, "");
+  }
+
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function isFlowerSource(raw = {}) {
+  const haystack = normalizeText([
+    raw.source,
+    raw.sourceType,
+    raw.marketplace,
+    raw.seller,
+    raw.store,
+    raw.brand,
+    raw.title,
+    raw.originalTitle,
+    raw.category,
+    raw.normalizedCategory,
+    raw.description,
+  ].filter(Boolean).join(" "));
+  return FLOWER_SOURCE_MARKERS.some((marker) => haystack.includes(normalizeText(marker)));
+}
+
+function normalizePrice(raw = {}) {
+  const rawPrice = raw.price ?? raw.salePrice ?? raw.regularPrice ?? 0;
+  let price = parsePriceValue(rawPrice);
+
+  if (isFlowerSource(raw) && Number.isFinite(price) && price >= 1000 && Number.isInteger(price)) {
+    price = Number((price / 100).toFixed(2));
+  }
+
+  return price;
+}
+
 export function normalizeImportedProduct(raw = {}) {
   const title = String(raw.title || raw.name || raw.productName || "").trim();
   const productUrl = String(raw.affiliateUrl || raw.productUrl || raw.permalink || raw.url || "").trim();
   if (!title || !isValidProductUrl(productUrl)) return null;
 
-  const price = Number(raw.price || raw.salePrice || raw.regularPrice || 0);
+  const price = normalizePrice(raw);
   if (!Number.isFinite(price) || price <= 0) return null;
 
   const marketplace = String(raw.marketplace || raw.store || "Mercado Livre").trim() || "Mercado Livre";
@@ -88,6 +165,7 @@ export function normalizeImportedProduct(raw = {}) {
   const normalizationWarnings = Array.isArray(raw.normalizationWarnings) && raw.normalizationWarnings.length
     ? [...new Set(raw.normalizationWarnings.filter(Boolean).map((item) => String(item).trim()))]
     : [];
+  const installmentInfo = normalizeInstallmentData(raw, { months: 12, price });
 
   return {
     id: String(raw.id || raw.externalId || raw.gtin || raw.ean || raw.upc || slugify(title) || `oqc-${Date.now()}`),
@@ -120,6 +198,11 @@ export function normalizeImportedProduct(raw = {}) {
     lastCheckedAt: raw.lastCheckedAt || importedAt,
     importedAt,
     dataMode: String(raw.dataMode || raw.mode || "seed"),
+    installments: installmentInfo.installments,
+    estimatedInstallment: installmentInfo.estimatedInstallment,
+    installmentConfidence: installmentInfo.installmentConfidence,
+    installmentSource: installmentInfo.installmentSource,
+    installmentWarning: installmentInfo.installmentWarning,
     priceHistory: Array.isArray(raw.priceHistory) ? raw.priceHistory : [],
     description: raw.description || raw.summary || "",
     source: raw.source || sourceValue || "seed",

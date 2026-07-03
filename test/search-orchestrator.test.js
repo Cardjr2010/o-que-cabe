@@ -29,7 +29,7 @@ test("Parse de intenÃ§Ã£o entende orÃ§amento total", () => {
   const intent = orchestrator.parseIntent({ query: "notebook ate 2500", mode: "total" });
 
   assert.equal(intent.mode, "total");
-  assert.equal(intent.category, "notebooks");
+  assert.equal(intent.category, "notebook");
   assert.equal(intent.totalBudget, 2500);
 });
 
@@ -40,12 +40,12 @@ test("Parse de intenÃ§Ã£o usa SEO para monitor gamer, notebook e celular", (
   const notebookIntent = orchestrator.parseIntent({ query: "notebook bom ate 2500", mode: "total" });
   const cellphoneIntent = orchestrator.parseIntent({ query: "celular ate 1000 reais 128gb", mode: "total" });
 
-  assert.equal(monitorIntent.category, "monitores");
+  assert.equal(monitorIntent.category, "monitor");
   assert.ok(monitorIntent.seoIntent);
   assert.ok(monitorIntent.seoKeywords.includes("144HZ"));
-  assert.equal(notebookIntent.category, "notebooks");
+  assert.equal(notebookIntent.category, "notebook");
   assert.equal(notebookIntent.totalBudget, 2500);
-  assert.equal(cellphoneIntent.category, "celulares");
+  assert.equal(cellphoneIntent.category, "celular");
   assert.ok(cellphoneIntent.seoKeywords.includes("128GB"));
 });
 
@@ -118,5 +118,95 @@ test("Orquestrador preserva parcelamento e dados de orçamento", () => {
   assert.ok(prepared.products[0]);
   assert.ok(prepared.products[0].budgetContext);
   assert.ok("installmentSource" in prepared.products[0]);
+});
+
+
+test("iPhone prioriza aparelho principal sobre acess?rio", () => {
+  const orchestrator = new SearchOrchestrator({
+    catalogManager: createCatalogManager([
+      {
+        title: "Capa para iPhone 15",
+        brand: "Apple",
+        category: "capa",
+        normalizedCategory: "capa",
+        productType: "accessory",
+        isAccessory: true,
+        marketplace: "saldao_informatica",
+        dataMode: "real",
+        sourceType: "csv_feed",
+        price: 79.9,
+      },
+      {
+        title: "iPhone 15 128GB",
+        brand: "Apple",
+        category: "celular",
+        normalizedCategory: "celular",
+        productType: "principal",
+        isAccessory: false,
+        marketplace: "saldao_informatica",
+        dataMode: "real",
+        sourceType: "csv_feed",
+        price: 4999.9,
+      },
+    ]),
+  });
+
+  const result = orchestrator.search({ query: "iphone", mode: "total", totalBudget: 5000 });
+
+  assert.equal(result.dataMode, "real");
+  assert.ok(result.products.length > 0);
+  assert.match(String(result.products[0].displayTitle || result.products[0].title), /iPhone 15/i);
+  assert.ok(!/Capa/i.test(String(result.products[0].displayTitle || result.products[0].title)));
+});
+
+test("Samsung e Galaxy priorizam smartphone principal", () => {
+  const orchestrator = new SearchOrchestrator({
+    catalogManager: createCatalogManager([
+      {
+        title: "Capa para Samsung Galaxy A15",
+        brand: "Samsung",
+        category: "capa",
+        normalizedCategory: "capa",
+        productType: "accessory",
+        isAccessory: true,
+        marketplace: "saldao_informatica",
+        dataMode: "real",
+        sourceType: "csv_feed",
+        price: 49.9,
+      },
+      {
+        title: "Smartphone Samsung Galaxy A15 128GB",
+        brand: "Samsung",
+        category: "celular",
+        normalizedCategory: "celular",
+        productType: "principal",
+        isAccessory: false,
+        marketplace: "saldao_informatica",
+        dataMode: "real",
+        sourceType: "csv_feed",
+        price: 1299.9,
+      },
+      {
+        title: "Monitor Samsung 19",
+        brand: "Samsung",
+        category: "monitor",
+        normalizedCategory: "monitor",
+        productType: "principal",
+        isAccessory: false,
+        marketplace: "saldao_informatica",
+        dataMode: "real",
+        sourceType: "csv_feed",
+        price: 199.9,
+      },
+    ]),
+  });
+
+  const samsung = orchestrator.search({ query: "samsung", mode: "total", totalBudget: 3000 });
+  const galaxy = orchestrator.search({ query: "galaxy a15", mode: "total", totalBudget: 1500 });
+
+  assert.equal(samsung.dataMode, "real");
+  assert.equal(galaxy.dataMode, "real");
+  assert.match(String(samsung.products[0].displayTitle || samsung.products[0].title), /Galaxy A15/i);
+  assert.match(String(galaxy.products[0].displayTitle || galaxy.products[0].title), /Galaxy A15/i);
 });
 

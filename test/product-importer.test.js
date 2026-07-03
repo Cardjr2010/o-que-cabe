@@ -47,6 +47,39 @@ test("produto importado normaliza corretamente", () => {
   assert.equal(normalized.affiliateUrl, "");
 });
 
+test("pre?o de flores em centavos vira valor real", () => {
+  const normalized = normalizeImportedProduct({
+    id: "flowers-1",
+    title: "Buqu? de Flores do Campo Amarelas e Laranjas",
+    category: "flores e presentes",
+    price: 16100,
+    image: "https://example.com/flores.png",
+    productUrl: "https://www.floresonline.com.br/buque-de-flores-do-campo-amarelas-e-laranjas",
+    marketplace: "Flores Online",
+    source: "flores_online",
+    seller: "Flores Online",
+  });
+
+  assert.ok(normalized);
+  assert.equal(normalized.price, 161);
+});
+
+test("eletr?nicos n?o s?o divididos por 100", () => {
+  const normalized = normalizeImportedProduct({
+    id: "elec-1",
+    title: "Notebook Gamer",
+    category: "notebook",
+    price: 16100,
+    image: "https://example.com/notebook.png",
+    productUrl: "https://example.com/notebook-gamer",
+    marketplace: "Sald?o da Inform?tica",
+    source: "saldao_informatica",
+  });
+
+  assert.ok(normalized);
+  assert.equal(normalized.price, 16100);
+});
+
 test("produto sem link real é rejeitado", () => {
   const normalized = normalizeImportedProduct({
     id: "wc-2",
