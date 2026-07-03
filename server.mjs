@@ -16,6 +16,7 @@ import actionpayYmlImporterDefault, { ActionpayYmlImporter } from "./src/importe
 import CatalogManager from "./src/catalog/CatalogManager.js";
 import { resolveCatalogSeedPath } from "./src/runtime/catalog-path.js";
 import { projectRoot } from "./src/runtime/project-root.js";
+import { buildHomeCatalogData } from "./src/runtime/home-data.js";
 
 import travelMockAdapter from "./src/adapters/travel.mock.js";
 import BudgetEngine from "./src/engines/BudgetEngine.js";
@@ -1189,6 +1190,11 @@ function renderCollectionPage() {
 export async function requestHandler(req, res) {
   const requestUrl = new URL(req.url, `http://localhost:${port}`);
   const method = String(req.method || "GET").toUpperCase();
+
+  if (requestUrl.pathname === "/api/home-data") {
+    sendJson(res, 200, buildHomeCatalogData());
+    return;
+  }
 
   if (requestUrl.pathname === "/api/search") {
     const query = requestUrl.searchParams.get("q") || "";

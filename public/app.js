@@ -252,7 +252,11 @@ function renderProducts(products) {
     return;
   }
 
-  results.innerHTML = products.map((product) => buildProductCardHtml(product)).join("");
+  const visibleProducts = products.slice(0, 9).map((product) => buildProductCardHtml(product)).join("");
+  const moreProducts = products.length > 9
+    ? `<details class="oqc-more-results"><summary>Ver mais resultados (${products.length - 9})</summary><div class="grid">${products.slice(9, 18).map((product) => buildProductCardHtml(product)).join("")}</div></details>`
+    : "";
+  results.innerHTML = visibleProducts + moreProducts;
 }
 
 function renderBreakdown(breakdown = []) {
@@ -363,20 +367,21 @@ function renderGroupedProducts(groups = null, products = []) {
   const markup = sections
     .filter((section) => Array.isArray(section.items) && section.items.length)
     .map((section) => `
-      <section class="oqc-product-group oqc-product-group-${section.key}">
-        <div class="oqc-product-group-head">
+        <section class="oqc-product-group oqc-product-group-${section.key}">
+          <div class="oqc-product-group-head">
           <div>
             <strong>${section.title}</strong>
             <p>${section.description}</p>
           </div>
           <span>${section.items.length} itens</span>
-        </div>
-        <div class="grid">
-          ${section.items.map((product) => buildProductCardHtml(product)).join("")}
-        </div>
-      </section>
-    `)
-    .join("");
+          </div>
+          <div class="grid">
+            ${section.items.slice(0, 3).map((product) => buildProductCardHtml(product)).join("")}
+          </div>
+          ${section.items.length > 3 ? `<details class="oqc-more-results"><summary>Ver mais resultados (${section.items.length - 3})</summary><div class="grid">${section.items.slice(3, 6).map((product) => buildProductCardHtml(product)).join("")}</div></details>` : ""}
+        </section>
+      `)
+      .join("");
 
   return markup || "";
 }
@@ -559,7 +564,7 @@ function renderDepartmentMenu(items = [], placeholder = false) {
   const entries = (Array.isArray(items) ? items : []).filter((item) => {
     const category = String(item?.category || "").toLowerCase();
     return category && !category.includes("outros") && !category.includes("pecas");
-  });
+  }).slice(0, 6);
   departmentsMenu.innerHTML = entries.length
     ? entries.map((item) => `
       <button type="button" class="department-link" data-category="${escapeHtml(item.category || "")}">
@@ -589,7 +594,7 @@ function renderDecisionHighlights(items = []) {
   if (!decisionHighlightsSection || !decisionHighlightsGrid) return;
   const entries = (Array.isArray(items) ? items : [])
     .filter((item) => item && item.category && !String(item.category).toLowerCase().includes("outros") && !String(item.category).toLowerCase().includes("pecas"))
-    .slice(0, 3);
+    .slice(0, 4);
 
   if (!entries.length) {
     decisionHighlightsSection.hidden = true;

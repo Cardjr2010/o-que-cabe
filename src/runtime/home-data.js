@@ -1,3 +1,4 @@
+﻿import fs from "node:fs";
 import CatalogManager from "../catalog/CatalogManager.js";
 import ProductIntelligenceEngine from "../catalog/ProductIntelligenceEngine.js";
 import SEOIntelligenceEngine from "../seo/SEOIntelligenceEngine.js";
@@ -8,13 +9,19 @@ let catalogManagerInstance = null;
 let productIntelligenceEngineInstance = null;
 let seoIntelligenceEngineInstance = null;
 
+function resolveOfficialCatalogSeedPath() {
+  const officialSeedPath = resolveProjectPath("src", "data", "products.seed.json");
+  if (fs.existsSync(officialSeedPath)) return officialSeedPath;
+  return resolveCatalogSeedPath(officialSeedPath);
+}
+
 function getCatalogManager() {
   if (!catalogManagerInstance) {
     catalogManagerInstance = new CatalogManager({
       seedPath: process.env.ACTIONPAY_CATALOG_SEED_PATH
         || process.env.AWIN_CATALOG_SEED_PATH
         || process.env.CATALOG_SEED_PATH
-        || resolveCatalogSeedPath(resolveProjectPath("data", "products.seed.json")),
+        || resolveOfficialCatalogSeedPath(),
     });
   }
   return catalogManagerInstance;
@@ -42,6 +49,60 @@ function getSEOIntelligenceEngine() {
     });
   }
   return seoIntelligenceEngineInstance;
+}
+
+const HOME_CATEGORY_PRIORITY = [
+  "monitores",
+  "celulares",
+  "notebooks",
+  "tvs",
+  "tablets",
+  "audio",
+  "ferramentas",
+  "casa e construcao",
+  "flores",
+];
+
+function buildCuratedHomeItems(primaryItems = [], fallbackItems = []) {
+  const combined = new Map();
+  for (const item of Array.isArray(primaryItems) ? primaryItems : []) {
+    const key = normalizedCatalogCategoryKey(item?.category || "");
+    if (key) combined.set(key, item);
+  }
+  for (const item of Array.isArray(fallbackItems) ? fallbackItems : []) {
+    const key = normalizedCatalogCategoryKey(item?.category || "");
+    if (key && !combined.has(key)) combined.set(key, item);
+  }
+
+  const selected = [];
+  for (const key of HOME_CATEGORY_PRIORITY) {
+    const item = combined.get(key);
+    if (item) {
+      selected.push({
+        ...item,
+        category: item.category || key,
+        label: item.label || item.name || item.title || key,
+        query: item.query || item.intent?.query || item.category || key,
+        intent: item.intent || { category: item.category || key },
+      });
+    }
+  }
+
+  for (const item of combined.values()) {
+    const key = normalizedCatalogCategoryKey(item?.category || "");
+    if (!selected.find((entry) => normalizedCatalogCategoryKey(entry.category || "") === key)) {
+      selected.push({
+        ...item,
+        category: item.category || key,
+        label: item.label || item.name || item.title || item.category || key,
+        query: item.query || item.intent?.query || item.category || key,
+        intent: item.intent || { category: item.category || key },
+      });
+    }
+    if (selected.length >= 6) break;
+  }
+
+  return selected.slice(0, 6);
 }
 
 function normalizedCatalogCategoryKey(value = "") {
@@ -93,12 +154,15 @@ export function buildHomeCatalogData() {
     const analysis = getProductIntelligenceEngine().buildHomeData(catalogForHome);
     const seoEngine = getSEOIntelligenceEngine();
     const seoHotSearches = seoEngine.buildSeoHotSearches(6);
-    const homeButtons = seoEngine.buildHomeButtons(catalogForHome);
+    const seoHomeButtons = seoEngine.buildHomeButtons(catalogForHome);
     const menu = seoEngine.buildMenu();
 
     const departments = Array.isArray(analysis.departments) ? analysis.departments : [];
-    const categories = homeButtons;
-    const topCategories = Array.isArray(analysis.categories) ? analysis.categories : [];
+    const curatedHomeButtons = buildCuratedHomeItems(analysis.categories, departments);
+    const curatedDepartments = buildCuratedHomeItems(departments, analysis.categories);
+    const categories = curatedHomeButtons;
+    const homeButtons = curatedHomeButtons.length ? curatedHomeButtons : seoHomeButtons;
+    const topCategories = curatedHomeButtons;
     const shortcuts = Array.isArray(analysis.shortcuts) ? analysis.shortcuts : [];
     const activeSources = Array.isArray(analysis.activeSources)
       ? analysis.activeSources.map((item) => ({
@@ -118,12 +182,12 @@ export function buildHomeCatalogData() {
       menu,
       categories,
       homeButtons,
-      departments,
-      topDepartments: departments,
+      departments: curatedDepartments,
+      topDepartments: curatedDepartments,
       topCategories,
       topSources: activeSources,
-      searchCategories: homeButtons.length ? homeButtons : departments,
-      departmentCategories: departments,
+      searchCategories: homeButtons.length ? homeButtons : curatedDepartments,
+      departmentCategories: curatedDepartments,
       pechinchas: shortcuts,
       shortcuts,
       seoHotSearches,
@@ -200,3 +264,4 @@ export function buildHomeCatalogData() {
 export function primarySourceLabel() {
   return "Catálogo real";
 }
+
