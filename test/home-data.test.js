@@ -8,7 +8,7 @@ test("home data expõe catálogo real e departamentos coerentes", () => {
   const categoryKeys = categories.map((entry) => String(entry.category || ""));
 
   assert.equal(data.ok, true);
-  assert.equal(data.focusLabel, "Catálogo real");
+  assert.equal(data.focusLabel, "Consultor de compras");
   assert.ok(Array.isArray(data.menu));
   assert.ok(Array.isArray(data.homeButtons));
   assert.ok(data.homeButtons.length <= 6);

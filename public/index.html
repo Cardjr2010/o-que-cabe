@@ -34,10 +34,10 @@
     <main>
       <section class="hero">
         <div class="hero-copy">
-          <h1>Você diz quanto pode pagar.<br />A gente mostra <em>o que cabe.</em></h1>
+          <h1>Você diz quanto pode pagar.<br />O OQC encontra a melhor compra.</h1>
           <p>
-            Seu orçamento. Sua escolha. Sem complicação.
-            <strong>Analisamos 15.999 produtos reais para encontrar opções que cabem no seu orçamento.</strong>
+            Pesquisamos 15.999 produtos reais em diferentes lojas para encontrar opções que cabem no seu orçamento.
+            <strong>Compra inteligente pelo seu orçamento, sem empurrar produto que não cabe.</strong>
           </p>
         </div>
 
@@ -80,7 +80,7 @@
           <button class="submit-button" type="submit">Descobrir o que cabe</button>
         </form>
         <p class="seo-muted search-categories-hint" id="searchCategoriesHint">
-          Categorias para pesquisar: Celulares, Notebooks, Monitores, TVs, Tablets e Fones.
+          Busque por intenção de compra: celulares, notebooks, monitores gamer, TVs, fones, presentes, casa e flores.
         </p>
       </section>
 
@@ -103,16 +103,20 @@
         </article>
       </section>
 
-      <section class="departments-showcase" id="departmentsShowcase">
+      <section class="intentions-section" id="intentionsSection">
         <div class="section-head section-head-tight">
           <div>
-            <p class="panel-label">Departamentos em destaque</p>
-            <h2>Departamentos reais, organizados com visual de produto</h2>
+            <p class="panel-label">O que você procura?</p>
+            <h2>Comece pela intenção de compra, não pelo fornecedor</h2>
           </div>
-          <p class="section-note">Navegue pelos grupos mais fortes do catálogo sem abrir uma lista crua.</p>
+          <p class="section-note">Escolha o que você quer comprar e o OQC cruza orçamento, qualidade e catálogo real.</p>
         </div>
-        <div class="departments-menu-shell">
-          <div class="departments-menu-panel" id="departmentsMenu" aria-live="polite"></div>
+        <div class="intent-grid" id="intentGrid" aria-live="polite">
+          <div class="skeleton skeleton-intent" aria-hidden="true">
+            <span class="skeleton-badge"></span>
+            <span class="skeleton-line skeleton-line-lg"></span>
+            <span class="skeleton-line skeleton-line-sm"></span>
+          </div>
         </div>
       </section>
 
@@ -131,7 +135,7 @@
         <div class="section-head section-head-tight">
           <div>
             <p class="panel-label">Atalhos reais</p>
-            <h2>Comece por uma busca que já faz sentido</h2>
+            <h2>Buscas populares para ir direto ao ponto</h2>
           </div>
           <p class="section-note">Os atalhos vêm do catálogo real e ajudam a entrar direto em categorias úteis.</p>
         </div>
@@ -162,7 +166,7 @@
       </section>
 
       <section class="categories" id="departments">
-        <h2><span>↗</span> Departamentos em Alta</h2>
+        <h2><span>↗</span> Departamentos principais</h2>
         <p class="seo-muted" id="homeCatalogState">15.999 produtos reais analisados</p>
         <div class="category-grid" id="categoryGrid" aria-live="polite">
           <div class="skeleton skeleton-card" aria-hidden="true">
@@ -175,7 +179,7 @@
 
       <section class="seo-searches">
         <h2>Buscas em alta</h2>
-        <p class="seo-muted">Os termos mais fortes do SEO ajudam a mostrar o que o usuário realmente procura.</p>
+        <p class="seo-muted">Os termos mais fortes do SEO ajudam o OQC a entender a intenção de compra.</p>
         <div class="seo-hot-grid" id="seoHotSearchesGrid" aria-live="polite">
           <div class="skeleton skeleton-chip" aria-hidden="true">
             <span class="skeleton-line skeleton-line-lg"></span>
@@ -184,11 +188,24 @@
         </div>
       </section>
 
+      <section class="departments-showcase" id="departmentsShowcase">
+        <div class="section-head section-head-tight">
+          <div>
+            <p class="panel-label">Departamentos reais</p>
+            <h2>Organização compacta para decidir sem ruído</h2>
+          </div>
+          <p class="section-note">Os grupos mais fortes aparecem aqui como apoio à busca, não como vitrine de fornecedor.</p>
+        </div>
+        <div class="departments-menu-shell">
+          <div class="departments-menu-panel" id="departmentsMenu" aria-live="polite"></div>
+        </div>
+      </section>
+
       <section class="utility-panels">
         <article id="blog">
           <span class="utility-label">Blog</span>
-          <strong>Dicas para comprar melhor</strong>
-          <p>Conteúdos rápidos para decidir com mais clareza e menos impulso.</p>
+          <strong>Aprenda antes de comprar</strong>
+          <p>Guias curtos para decidir com mais clareza e menos impulso.</p>
         </article>
         <article id="conta">
           <span class="utility-label">Conta</span>
@@ -198,29 +215,29 @@
       </section>
 
       <section class="how">
-          <h2>Como fazemos a mágica acontecer</h2>
+        <h2>Como o OQC decide</h2>
         <div class="how-grid">
           <article>
             <div><svg viewBox="0 0 24 24"><path d="m21 21-5-5"/><circle cx="10" cy="10" r="7"/></svg></div>
-            <h3>1. Você dita as regras</h3>
-            <p>Esqueça ver produtos que não pode pagar. Diga exatamente o seu limite mensal ou total.</p>
+            <h3>1. Analisa milhares de produtos</h3>
+            <p>O OQC cruza o catálogo real para não depender de uma única loja nem de uma vitrine fixa.</p>
           </article>
           <article>
             <div><svg viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4 2v-8L3 5Z"/></svg></div>
-            <h3>2. Filtramos as armadilhas</h3>
-            <p>A curadoria corta juros abusivos, fretes absurdos e vendedores com má reputação.</p>
+            <h3>2. Compara preço, orçamento e qualidade</h3>
+            <p>Mostramos apenas o que cabe, o que aperta e o que fica fora do orçamento sem mascarar a decisão.</p>
           </article>
           <article>
             <div><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z"/><path d="m8 12 2 2 5-5"/></svg></div>
-            <h3>3. Compra segura</h3>
-            <p>Direcionamos você para a oferta real validada no catálogo quando houver produto confirmado.</p>
+            <h3>3. Mostra o que realmente faz sentido</h3>
+            <p>Quando existe produto real, a oferta aparece com clareza. Quando não existe, o OQC não inventa.</p>
           </article>
         </div>
       </section>
 
       <footer>
         <strong>O Que Cabe</strong>
-        <span>Ajudamos pessoas a comprar melhor todos os meses. Sem endividamento, sem stress.</span>
+        <span>Pesquisamos milhares de produtos de diferentes lojas para ajudar você a comprar melhor, não comprar mais.</span>
       </footer>
     </main>
 

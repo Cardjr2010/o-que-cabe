@@ -21,6 +21,7 @@ const categoryGrid = document.querySelector("#categoryGrid");
 const seoHotSearchesGrid = document.querySelector("#seoHotSearchesGrid");
 const homeCatalogState = document.querySelector("#homeCatalogState");
 const searchCategoriesHint = document.querySelector("#searchCategoriesHint");
+const intentGrid = document.querySelector("#intentGrid");
 const departmentsMenu = document.querySelector("#departmentsMenu");
 const decisionHighlightsSection = document.querySelector("#decisions");
 const decisionHighlightsGrid = document.querySelector("#decisionHighlightsGrid");
@@ -559,6 +560,108 @@ const DEFAULT_HOME_DEPARTMENTS = [
   { category: "fone", label: "Fones", count: 16 },
 ];
 
+const HOME_INTENTIONS = [
+  { category: "celular", label: "Quero um celular", query: "celular", mode: "monthly" },
+  { category: "notebook", label: "Quero um notebook", query: "notebook", mode: "monthly" },
+  { category: "monitor", label: "Quero um monitor gamer", query: "monitor gamer", mode: "monthly" },
+  { category: "tv", label: "Quero uma TV", query: "tv", mode: "monthly" },
+  { category: "fone", label: "Quero um fone", query: "fone bluetooth", mode: "total" },
+  { category: "presente", label: "Quero um presente", query: "presente", mode: "total" },
+  { category: "casa", label: "Quero melhorar minha casa", query: "casa", mode: "total" },
+  { category: "flores", label: "Quero flores", query: "flores", mode: "total" },
+];
+
+function normalizedCategoryTokens(value = "") {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase()
+    .split(/[^a-z0-9]+/g)
+    .filter(Boolean);
+}
+
+function normalizedCategoryString(value = "") {
+  return normalizedCategoryTokens(value).join(" ");
+}
+
+function matchesCategoryIntent(item = {}, intent = {}) {
+  const haystack = [
+    item?.category,
+    item?.label,
+    item?.query,
+  ]
+    .map(normalizedCategoryString)
+    .filter(Boolean)
+    .join(" ");
+
+  if (!haystack) return false;
+
+  const needles = [intent.category, intent.query, intent.label]
+    .map(normalizedCategoryString)
+    .filter(Boolean);
+
+  return needles.some((needle) => haystack.includes(needle) || needle.includes(haystack));
+}
+
+function buildIntentCardItems(items = []) {
+  const pool = Array.isArray(items) ? items : [];
+  const used = new Set();
+  const entries = [];
+
+  for (const intent of HOME_INTENTIONS) {
+    const match = pool.find((item) => !used.has(item) && matchesCategoryIntent(item, intent));
+    if (!match) continue;
+    used.add(match);
+    entries.push({
+      ...match,
+      category: match.category || intent.category,
+      label: intent.label || match.label || normalizeHomeCategoryLabel(match.category),
+      query: intent.query || match.query || match.category || intent.category,
+      intent: {
+        mode: intent.mode || match.intent?.mode || "monthly",
+        monthly: match.intent?.monthly || match.intent?.totalBudget || undefined,
+        totalBudget: match.intent?.totalBudget || match.intent?.monthly || undefined,
+        months: match.intent?.months || 12,
+      },
+    });
+    if (entries.length >= 8) break;
+  }
+
+  return entries;
+}
+
+function renderPurchaseIntentions(items = []) {
+  if (!intentGrid) return;
+  const entries = buildIntentCardItems(items);
+  intentGrid.innerHTML = entries.length
+    ? entries.map((item) => `
+      <button type="button" class="intent-card" data-category="${escapeHtml(item.category)}" data-query="${escapeHtml(item.query || item.category || "")}" data-mode="${escapeHtml(item.intent?.mode || "monthly")}" data-monthly="${escapeHtml(String(item.intent?.monthly || item.intent?.totalBudget || 0))}" data-total-budget="${escapeHtml(String(item.intent?.totalBudget || item.intent?.monthly || 0))}" data-months="${escapeHtml(String(item.intent?.months || 12))}">
+        <div class="intent-card-icon">${categoryIconSvg(item.category)}</div>
+        <div class="intent-card-copy">
+          <strong>${escapeHtml(item.label || `Quero ${normalizeHomeCategoryLabel(item.category).toLowerCase()}`)}</strong>
+          <span>${escapeHtml(`${Number(item.count || 0)} itens reais`)}</span>
+        </div>
+      </button>
+    `).join("")
+    : "";
+
+  intentGrid.querySelectorAll(".intent-card").forEach((button) => {
+    button.addEventListener("click", () => {
+      const category = button.dataset.category || "";
+      const preset = presetForCategory(category);
+      productInput.value = button.dataset.query || category || productInput.value || "";
+      searchMode = button.dataset.mode === "total" ? "total" : (preset.mode === "total" ? "total" : "monthly");
+      monthlyInput.value = button.dataset.monthly || preset.monthly || monthlyInput.value || "100";
+      monthsInput.value = button.dataset.months || preset.months || monthsInput.value || "12";
+      if (totalBudgetInput) totalBudgetInput.value = button.dataset.totalBudget || preset.totalBudget || totalBudgetInput.value || "500";
+      modeButtons.forEach((item) => item.classList.toggle("active", item.dataset.mode === searchMode));
+      setMode(searchMode);
+      form.requestSubmit();
+    });
+  });
+}
+
 function renderDepartmentMenu(items = [], placeholder = false) {
   if (!departmentsMenu) return;
   const entries = (Array.isArray(items) ? items : []).filter((item) => {
@@ -670,6 +773,17 @@ function renderLoadingSkeletons(container, variant = "card", count = 3) {
         </div>
       `;
     }
+    if (variant === "intent") {
+      return `
+        <div class="skeleton skeleton-intent" aria-hidden="true">
+          <span class="skeleton-badge"></span>
+          <div>
+            <span class="skeleton-line skeleton-line-lg"></span>
+            <span class="skeleton-line skeleton-line-sm"></span>
+          </div>
+        </div>
+      `;
+    }
     if (variant === "decision") {
       return `
         <div class="skeleton skeleton-decision" aria-hidden="true">
@@ -711,13 +825,14 @@ function renderTrustBand(data = {}) {
 async function loadHomeCatalogData() {
   if (appView !== "home") return;
 
+  renderLoadingSkeletons(intentGrid, "intent", 8);
   renderLoadingSkeletons(decisionHighlightsGrid, "decision", 3);
   renderLoadingSkeletons(pechinchaGrid, "chip", 6);
   renderLoadingSkeletons(categoryGrid, "card", 6);
   renderLoadingSkeletons(seoHotSearchesGrid, "chip", 6);
   renderDepartmentMenu(DEFAULT_HOME_DEPARTMENTS, true);
   if (searchCategoriesHint) {
-    searchCategoriesHint.textContent = "Categorias para pesquisar: Celulares, Notebooks, Monitores, TVs, Tablets e Fones.";
+    searchCategoriesHint.textContent = "Intenções de compra: celular, notebook, monitor gamer, TV, fone, presente, casa e flores.";
   }
 
   try {
@@ -733,10 +848,11 @@ async function loadHomeCatalogData() {
         .slice(0, 6)
         .map((item) => item.label || normalizeHomeCategoryLabel(item.category));
       searchCategoriesHint.textContent = labels.length
-        ? `Categorias para pesquisar: ${labels.join(", ")}.`
-        : "Categorias para pesquisar: Celulares, Notebooks, Monitores, TVs, Tablets e Fones.";
+        ? `Intenções de compra: ${labels.join(", ")}.`
+        : "Intenções de compra: Celulares, Notebooks, Monitores, TVs, Tablets e Fones.";
     }
     renderDepartmentMenu(departments);
+    renderPurchaseIntentions(Array.isArray(data.homeButtons) && data.homeButtons.length ? data.homeButtons : categories);
     renderDecisionHighlights(Array.isArray(data.homeButtons) && data.homeButtons.length ? data.homeButtons : categories);
     renderSeoHotSearches(Array.isArray(data.seoHotSearches) ? data.seoHotSearches : []);
     renderTrustBand(data);

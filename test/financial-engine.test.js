@@ -1,4 +1,4 @@
-import test from "node:test";
+﻿import test from "node:test";
 import assert from "node:assert/strict";
 import RiskEngine from "../src/engines/RiskEngine.js";
 import ExplanationEngine from "../src/engines/ExplanationEngine.js";
@@ -34,7 +34,7 @@ test("home-data expõe categorias, atalhos e fontes reais", () => {
   const data = buildHomeCatalogData();
 
   assert.equal(data.ok, true);
-  assert.equal(data.focusLabel, "Saldão da Informática");
+  assert.equal(data.focusLabel, "Consultor de compras");
   assert.ok(Array.isArray(data.shortcuts));
   assert.ok(Array.isArray(data.activeSources));
   assert.ok(data.totalProducts > 0);

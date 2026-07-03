@@ -34,7 +34,7 @@ function getProductIntelligenceEngine() {
       maxHomeButtons: 6,
       maxDepartments: 14,
       maxCategories: 6,
-      focusLabel: "Catálogo real",
+      focusLabel: "Consultor de compras",
     });
   }
   return productIntelligenceEngineInstance;
@@ -178,7 +178,7 @@ export function buildHomeCatalogData() {
       totalPublishedProducts: catalogDiagnostics.publishedCount ?? items.length,
       hiddenProducts: catalogDiagnostics.hiddenProducts ?? 0,
       analyzedProducts: analysis.analyzedProducts || catalogForHome.length,
-      focusLabel: analysis.focusLabel || "Cat??logo real",
+      focusLabel: analysis.focusLabel || "Consultor de compras",
       menu,
       categories,
       homeButtons,
@@ -225,7 +225,7 @@ export function buildHomeCatalogData() {
       totalPublishedProducts: 0,
       hiddenProducts: 0,
       analyzedProducts: 0,
-      focusLabel: "Cat??logo real",
+      focusLabel: "Consultor de compras",
       menu: getSEOIntelligenceEngine().buildMenu(),
       categories: [],
       homeButtons: [],
