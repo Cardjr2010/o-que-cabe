@@ -38,7 +38,11 @@ async function callApi(url) {
 
 test("home comunica as métricas oficiais sem presumir orçamento", () => {
   const html = readProjectFile("public/index.html");
+  const rootHtml = readProjectFile("index.html");
+  const bundledHtml = readProjectFile("api/static/index.html");
 
+  assert.equal(rootHtml.replace(/\r\n/g, "\n"), html.replace(/\r\n/g, "\n"), "o index da raiz deve acompanhar a home pública canônica");
+  assert.equal(bundledHtml.replace(/\r\n/g, "\n"), html.replace(/\r\n/g, "\n"), "o HTML empacotado pela função deve acompanhar a home pública canônica");
   assert.match(html, /15\.999<\/strong>\s*<span>produtos publicados/);
   assert.match(html, /16\.740<\/strong>\s*<span>produtos analisados/);
   assert.match(html, /741<\/strong>\s*<span>produtos ocultos por qualidade ou fonte/);
