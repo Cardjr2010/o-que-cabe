@@ -143,6 +143,9 @@ function formatSourceName(value = "") {
     awin: "Awin",
     mercadolivre: "Mercado Livre",
     mercado_livre: "Mercado Livre",
+    amazon: "Amazon",
+    magalu: "Magalu",
+    magazine_voce: "Magazine Você",
   };
   return sourceMap[normalized] || "";
 }

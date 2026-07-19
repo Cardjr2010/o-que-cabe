@@ -39,6 +39,30 @@ function hasValidLink(product = {}) {
   return Boolean(String(product.affiliateUrl || product.productUrl || product.permalink || product.url || "").trim());
 }
 
+function installmentConfidence(product = {}) {
+  const oqc = product.oqc || {};
+  const installments = product.installments || {};
+  const estimated = product.estimatedInstallment || {};
+  return Math.max(
+    toNumber(oqc.installmentConfidence, 0),
+    toNumber(product.installmentConfidence, 0),
+    toNumber(installments.confidence, 0),
+    toNumber(estimated.confidence, 0),
+  );
+}
+
+function dataCompletenessScore(product = {}) {
+  const oqc = product.oqc || {};
+  return [
+    hasValidLink(product),
+    Boolean(String(product.image || product.thumbnail || "").trim()),
+    Boolean(String(product.availability || "").trim()),
+    Boolean(String(product.seller?.name || product.seller || product.store || "").trim()),
+    Boolean(installmentConfidence(product) >= 0.8),
+    Boolean(toNumber(oqc.dataCompletenessScore, 0) >= 0.8),
+  ].reduce((score, flag) => score + (flag ? 1 : 0), 0) / 6;
+}
+
 function isDemo(product = {}) {
   return String(product.dataMode || product.mode || "").toLowerCase() === "demo";
 }
@@ -78,6 +102,16 @@ function relevanceScore(product = {}, query = "") {
   return Math.max(0.1, Math.min(1, hits / terms.length));
 }
 
+function searchIntentStrength(product = {}) {
+  const oqc = product.oqc || {};
+  const raw = Math.max(
+    toNumber(oqc.searchMatchScore, 0),
+    toNumber(product.searchMatchScore, 0),
+  );
+  if (raw <= 0) return 0;
+  return Math.max(0.05, Math.min(1, raw / 200));
+}
+
 function sortWithinGroup(products = []) {
   return [...products].sort((a, b) => {
     const byFinal = toNumber(b.oqc?.finalScore, 0) - toNumber(a.oqc?.finalScore, 0);
@@ -88,6 +122,12 @@ function sortWithinGroup(products = []) {
 
     const byValue = toNumber(b.oqc?.valueScore, 0) - toNumber(a.oqc?.valueScore, 0);
     if (byValue !== 0) return byValue;
+
+    const byInstallments = installmentConfidence(b) - installmentConfidence(a);
+    if (byInstallments !== 0) return byInstallments;
+
+    const byCompleteness = dataCompletenessScore(b) - dataCompletenessScore(a);
+    if (byCompleteness !== 0) return byCompleteness;
 
     const byScore = toNumber(b.score, 0) - toNumber(a.score, 0);
     if (byScore !== 0) return byScore;
@@ -178,12 +218,14 @@ function attachOqc(product, siblings = [], query = "") {
   const relevance = product.oqc?.relevanceScore != null
     ? toNumber(product.oqc.relevanceScore, 0)
     : relevanceScore(product, query);
+  const searchIntent = searchIntentStrength(product);
   const budgetScore = budget?.budgetScore != null ? toNumber(budget.budgetScore, 0) : (normalizeStatus(product) === "CABE" ? 1 : normalizeStatus(product) === "APERTADO" ? 0.55 : 0.05);
   const finalScore = Math.max(0, Math.min(1,
-    (budgetScore * 0.4) +
-    (trust * 0.3) +
-    (value * 0.2) +
-    (relevance * 0.1) -
+    (budgetScore * 0.35) +
+    (trust * 0.25) +
+    (value * 0.15) +
+    (relevance * 0.1) +
+    (searchIntent * 0.15) -
     (normalizeStatus(product) === "NÃO CABE" ? 0.35 : 0) -
     (normalizeStatus(product) === "APERTADO" ? 0.08 : 0)
   ));
@@ -239,6 +281,10 @@ function groupProducts(products = []) {
     if (byGroup !== 0) return byGroup;
     const byFinal = toNumber(b.oqc?.finalScore, 0) - toNumber(a.oqc?.finalScore, 0);
     if (byFinal !== 0) return byFinal;
+    const byInstallments = installmentConfidence(b) - installmentConfidence(a);
+    if (byInstallments !== 0) return byInstallments;
+    const byCompleteness = dataCompletenessScore(b) - dataCompletenessScore(a);
+    if (byCompleteness !== 0) return byCompleteness;
     return toNumber(b.score, 0) - toNumber(a.score, 0);
   });
 

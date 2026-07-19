@@ -6,6 +6,7 @@ import CatalogManager from "../catalog/CatalogManager.js";
 import SEOIntelligenceEngine from "../seo/SEOIntelligenceEngine.js";
 import MercadoLivreSearchProvider from "../providers/MercadoLivreSearchProvider.js";
 import AmazonRapidApiSearchProvider from "../providers/AmazonRapidApiSearchProvider.js";
+import VerifiedAffiliateOfferProvider from "../providers/VerifiedAffiliateOfferProvider.js";
 import { buildOfferPricing } from "../pricing/CouponProvider.js";
 import { resolveProjectPath } from "../runtime/project-root.js";
 
@@ -388,6 +389,7 @@ let seoIntelligenceEngineInstance = null;
 let supplementalCatalogManagerInstance = null;
 let mercadoLivreSearchProviderInstance = null;
 let amazonSearchProviderInstance = null;
+let verifiedAffiliateOfferProviderInstance = null;
 
 function getSupplementalCatalogManager() {
   if (!supplementalCatalogManagerInstance) {
@@ -435,10 +437,19 @@ function getAmazonSearchProvider() {
   return amazonSearchProviderInstance;
 }
 
+function getVerifiedAffiliateOfferProvider() {
+  if (!verifiedAffiliateOfferProviderInstance) {
+    verifiedAffiliateOfferProviderInstance = new VerifiedAffiliateOfferProvider();
+  }
+  return verifiedAffiliateOfferProviderInstance;
+}
+
 function canUseMarketplaceProvider(provider) {
   if (!provider) return false;
   const diagnostics = typeof provider.getDiagnostics === "function" ? provider.getDiagnostics() : null;
   if (!diagnostics) return true;
+  if (diagnostics.configured) return true;
+  if (diagnostics.hasCatalog) return true;
   if (diagnostics.hasAccessToken) return true;
   if (diagnostics.hasRefreshToken) return true;
   if (diagnostics.hasSearchEndpoint) return true;
@@ -449,6 +460,7 @@ function canUseMarketplaceProvider(provider) {
 function providerDisplayLabel(source = "") {
   if (source === "mercado_livre") return "Mercado Livre";
   if (source === "amazon") return "Amazon";
+  if (source === "verified_partner_offers") return "fontes parceiras verificadas";
   return source;
 }
 
@@ -1019,6 +1031,7 @@ export default class SearchOrchestrator {
     }
 
     const providerEntries = [
+      { source: "verified_partner_offers", provider: getVerifiedAffiliateOfferProvider() },
       { source: "mercado_livre", provider: this.marketplaceSearchProvider || getMercadoLivreSearchProvider() },
       { source: "amazon", provider: getAmazonSearchProvider() },
     ];
