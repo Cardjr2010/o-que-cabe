@@ -1051,6 +1051,37 @@ async function loadHomeCatalogData() {
   }
 }
 
+function initSearchFromUrl() {
+  if (appView !== "home") return;
+  const params = new URLSearchParams(window.location.search);
+  const query = (params.get("q") || "").trim();
+  if (!query) return;
+
+  const nextMode = (params.get("mode") || "monthly").toLowerCase() === "total" ? "total" : "monthly";
+  const monthly = params.get("monthly") || "";
+  const months = params.get("months") || "12";
+  const totalBudget = params.get("totalBudget") || "";
+
+  if (productInput) productInput.value = query;
+  if (monthlyInput && monthly) monthlyInput.value = monthly;
+  if (monthsInput && months) monthsInput.value = months;
+  if (totalBudgetInput && totalBudget) totalBudgetInput.value = totalBudget;
+  setMode(nextMode);
+
+  const readyBudget = nextMode === "total"
+    ? Number(totalBudgetInput?.value || 0) > 0
+    : Number(monthlyInput?.value || 0) > 0;
+
+  if (!readyBudget) {
+    if (nextMode === "total" && totalBudgetInput) totalBudgetInput.value = "5000";
+    if (nextMode !== "total" && monthlyInput) monthlyInput.value = "500";
+  }
+
+  requestAnimationFrame(() => {
+    form?.requestSubmit();
+  });
+}
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const button = form.querySelector(".submit-button");
@@ -1210,6 +1241,7 @@ if (appView === "home") {
     });
   });
   loadHomeCatalogData();
+  initSearchFromUrl();
 }
 
 setMode(searchMode);
