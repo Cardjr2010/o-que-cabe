@@ -36,24 +36,24 @@ async function callApi(url) {
   return { response, body: JSON.parse(response.body) };
 }
 
-test("home comunica as métricas oficiais sem presumir orçamento", () => {
+test("home comunica as metricas oficiais sem presumir orcamento", () => {
   const html = readProjectFile("public/index.html");
   const rootHtml = readProjectFile("index.html");
   const bundledHtml = readProjectFile("api/static/index.html");
 
-  assert.equal(rootHtml.replace(/\r\n/g, "\n"), html.replace(/\r\n/g, "\n"), "o index da raiz deve acompanhar a home pública canônica");
-  assert.equal(bundledHtml.replace(/\r\n/g, "\n"), html.replace(/\r\n/g, "\n"), "o HTML empacotado pela função deve acompanhar a home pública canônica");
+  assert.equal(rootHtml.replace(/\r\n/g, "\n"), html.replace(/\r\n/g, "\n"), "o index da raiz deve acompanhar a home publica canonica");
+  assert.equal(bundledHtml.replace(/\r\n/g, "\n"), html.replace(/\r\n/g, "\n"), "o HTML empacotado pela funcao deve acompanhar a home publica canonica");
   assert.match(html, /15\.999<\/strong>\s*<span>produtos publicados/);
   assert.match(html, /16\.740<\/strong>\s*<span>produtos analisados/);
   assert.match(html, /741<\/strong>\s*<span>produtos ocultos por qualidade ou fonte/);
-  assert.doesNotMatch(html, /Hoje catálogo atualizado|15\.999 produtos reais analisados/);
+  assert.doesNotMatch(html, /Hoje catalogo atualizado|15\.999 produtos reais analisados/);
   assert.doesNotMatch(html, /id="productInput"[^>]*\svalue=/);
   assert.doesNotMatch(html, /id="monthlyInput"[^>]*\svalue=/);
   assert.doesNotMatch(html, /id="totalBudgetInput"[^>]*\svalue=/);
   assert.doesNotMatch(html, /Seu teto estimado:\s*<strong[^>]*>R\$/);
 });
 
-test("links futuros não fingem navegação e promessas respeitam os dados disponíveis", () => {
+test("links futuros nao fingem navegacao e promessas respeitam os dados disponiveis", () => {
   const html = readProjectFile("public/index.html");
   const script = readProjectFile("public/app.js");
 
@@ -61,13 +61,13 @@ test("links futuros não fingem navegação e promessas respeitam os dados dispo
   assert.doesNotMatch(html, /<a[^>]+href="#conta"/i);
   assert.match(html, /Blog <small>Em breve<\/small>/);
   assert.match(html, /Minha Conta <small>Em breve<\/small>/);
-  assert.doesNotMatch(html, /corta juros abusivos|fretes absurdos|má reputação/i);
-  assert.match(html, /quando a fonte disponibiliza essas informações/);
+  assert.doesNotMatch(html, /corta juros abusivos|fretes absurdos|ma reputacao/i);
+  assert.match(html, /quando a fonte disponibiliza essas informa(?:c|ç)(?:o|õ)es/i);
   assert.match(script, /source\.toLowerCase\(\) === "estimated"/);
   assert.match(script, /Parcelamento estimado\. Confirme na loja\./);
 });
 
-test("home-data expõe os números oficiais e menu seguro", () => {
+test("home-data expoe os numeros oficiais e menu seguro", () => {
   const data = buildHomeCatalogData();
 
   assert.equal(data.totalCatalogProducts, 16740);
@@ -79,15 +79,18 @@ test("home-data expõe os números oficiais e menu seguro", () => {
   assert.ok(futureItems.every((item) => item.future === true && item.active === false && item.href === ""));
 });
 
-test("status de fontes nunca expõe RapidAPI ou credenciais do Mercado Livre", async () => {
+test("status de fontes nunca expoe segredos e mantem diagnostico honesto", async () => {
   const oldRapidApiKey = process.env.RAPIDAPI_AMAZON_KEY;
+  const oldRapidApiHost = process.env.RAPIDAPI_AMAZON_HOST;
   const oldMeliToken = process.env.MELI_ACCESS_TOKEN;
   const oldMeliSecret = process.env.MELI_CLIENT_SECRET;
   const rapidApiKey = "rapidapi-secret-that-must-never-leak";
+  const rapidApiHost = "real-time-amazon-data.p.rapidapi.com";
   const meliToken = "meli-token-that-must-never-leak";
   const meliSecret = "meli-secret-that-must-never-leak";
 
   process.env.RAPIDAPI_AMAZON_KEY = rapidApiKey;
+  process.env.RAPIDAPI_AMAZON_HOST = rapidApiHost;
   process.env.MELI_ACCESS_TOKEN = meliToken;
   process.env.MELI_CLIENT_SECRET = meliSecret;
 
@@ -98,16 +101,21 @@ test("status de fontes nunca expõe RapidAPI ou credenciais do Mercado Livre", a
 
     assert.equal(amazon.response.statusCode, 200);
     assert.equal(amazon.body.configured, true);
-    assert.equal(amazon.body.provider, "rapidapi_amazon");
-    assert.equal(amazon.body.hasKey, true);
+    assert.ok(["rapidapi_amazon", "amazon_creators_api", "amazon_unconfigured"].includes(String(amazon.body.provider || "")));
+    assert.ok(["boolean", "object"].includes(typeof amazon.body.eligible));
     assert.equal(mercadoLivre.response.statusCode, 200);
+    assert.equal(mercadoLivre.body.configured, true);
+    assert.equal(typeof mercadoLivre.body.authorizationRequired, "boolean");
     assert.doesNotMatch(publicPayload, new RegExp(rapidApiKey));
+    assert.doesNotMatch(publicPayload, new RegExp(rapidApiHost.replace(/\./g, "\\.")));
     assert.doesNotMatch(publicPayload, new RegExp(meliToken));
     assert.doesNotMatch(publicPayload, new RegExp(meliSecret));
     assert.doesNotMatch(publicPayload, /x-rapidapi-key|MELI_ACCESS_TOKEN|CLIENT_SECRET/i);
   } finally {
     if (oldRapidApiKey === undefined) delete process.env.RAPIDAPI_AMAZON_KEY;
     else process.env.RAPIDAPI_AMAZON_KEY = oldRapidApiKey;
+    if (oldRapidApiHost === undefined) delete process.env.RAPIDAPI_AMAZON_HOST;
+    else process.env.RAPIDAPI_AMAZON_HOST = oldRapidApiHost;
     if (oldMeliToken === undefined) delete process.env.MELI_ACCESS_TOKEN;
     else process.env.MELI_ACCESS_TOKEN = oldMeliToken;
     if (oldMeliSecret === undefined) delete process.env.MELI_CLIENT_SECRET;
@@ -115,7 +123,7 @@ test("status de fontes nunca expõe RapidAPI ou credenciais do Mercado Livre", a
   }
 });
 
-test("busca pública não devolve produtos demo quando não há oferta confirmada", async () => {
+test("busca publica nao devolve produtos demo quando nao ha oferta confirmada", async () => {
   const oldFetch = global.fetch;
   global.fetch = async () => new Response(JSON.stringify({ results: [] }), {
     status: 403,

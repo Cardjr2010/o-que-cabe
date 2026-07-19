@@ -20,6 +20,7 @@ import { ActionpayProvider } from "../src/providers/ActionpayProvider.js";
 import { ActionpayYmlImporter } from "../src/importers/ActionpayYmlImporter.js";
 import MercadoLivreSearchProvider from "../src/providers/MercadoLivreSearchProvider.js";
 import AmazonRapidApiSearchProvider from "../src/providers/AmazonRapidApiSearchProvider.js";
+import { createOAuthTokenStore } from "../src/auth/VercelKvOAuthTokenStore.js";
 import CatalogManager from "../src/catalog/CatalogManager.js";
 import SearchOrchestrator from "../src/search/SearchOrchestrator.js";
 import { GoogleMerchantProductsAdapter } from "../src/adapters/GoogleMerchantProductsAdapter.js";
@@ -76,6 +77,7 @@ let infoStoreFeedProvider = null;
 let searchOrchestratorInstance = null;
 let mercadoLivreSearchProviderInstance = null;
 let amazonSearchProviderInstance = null;
+let oauthTokenStoreInstance = null;
 function createFeedProvider(providerName = "mi_shop", options = {}) {
   const name = String(providerName || "").trim().toLowerCase();
   const baseOptions = {
@@ -158,7 +160,10 @@ function getFeedProviderNames() {
 
 function getSearchOrchestrator() {
   if (!searchOrchestratorInstance) {
-    searchOrchestratorInstance = new SearchOrchestrator({ catalogManager: getCatalogManager() });
+    searchOrchestratorInstance = new SearchOrchestrator({
+      catalogManager: getCatalogManager(),
+      marketplaceSearchProvider: getMercadoLivreSearchProvider(),
+    });
   }
   return searchOrchestratorInstance;
 }
@@ -197,7 +202,10 @@ function getMercadoLivreProvider() {
 
 function getMercadoLivreSearchProvider() {
   if (!mercadoLivreSearchProviderInstance) {
-    mercadoLivreSearchProviderInstance = new MercadoLivreSearchProvider();
+    mercadoLivreSearchProviderInstance = new MercadoLivreSearchProvider({
+      tokenStore: getOAuthTokenStore(),
+      accountId: "default",
+    });
   }
   return mercadoLivreSearchProviderInstance;
 }
@@ -207,6 +215,13 @@ function getAmazonSearchProvider() {
     amazonSearchProviderInstance = new AmazonRapidApiSearchProvider();
   }
   return amazonSearchProviderInstance;
+}
+
+function getOAuthTokenStore() {
+  if (!oauthTokenStoreInstance) {
+    oauthTokenStoreInstance = createOAuthTokenStore();
+  }
+  return oauthTokenStoreInstance;
 }
 
 function isSaldaoCatalogProduct(item = {}) {
@@ -336,6 +351,16 @@ function mercadolivreClientSecret() {
 function mercadolivreConfigured() {
   return Boolean(mercadolivreClientId() && mercadolivreClientSecret());
 }
+
+function isPlaceholderToken(value = "") {
+  const token = String(value || "").trim().toLowerCase();
+  if (!token) return false;
+  return token === "novo-token"
+    || token === "refresh-token-test"
+    || token.includes("token-test")
+    || token.includes("token-falso");
+}
+
 function mercadolivreStateSecret() {
   return process.env.MELI_STATE_SECRET || mercadolivreClientSecret() || mercadolivreClientId() || "oqc-mercadolivre-state";
 }
@@ -363,6 +388,70 @@ function validateMercadoLivreState(value) {
   if (!crypto.timingSafeEqual(expectedBuffer, signatureBuffer)) return false;
   const ageMs = Date.now() - Number.parseInt(issuedAt, 36);
   return Number.isFinite(ageMs) && ageMs >= 0 && ageMs <= 15 * 60 * 1000;
+}
+
+function mercadolivreRedirectUri() {
+  return process.env.MELI_REDIRECT_URI || "https://o-que-cabe.vercel.app/api/ml/oauth/callback";
+}
+
+function adminSecret() {
+  return process.env.OQC_ADMIN_TOKEN || process.env.ADMIN_API_SECRET || "";
+}
+
+function getAdminCredential(req, url) {
+  const authHeader = String(req?.headers?.authorization || req?.headers?.Authorization || "").trim();
+  if (/^Bearer\s+/i.test(authHeader)) return authHeader.replace(/^Bearer\s+/i, "").trim();
+  const internalHeader = String(req?.headers?.["x-oqc-admin-token"] || req?.headers?.["X-OQC-ADMIN-TOKEN"] || "").trim();
+  if (internalHeader) return internalHeader;
+  return String(url?.searchParams?.get("adminToken") || "").trim();
+}
+
+function requireAdminAuth(req, url) {
+  const secret = adminSecret();
+  if (!secret) {
+    return { ok: false, status: 503, body: { ok: false, message: "Admin token do OQC nao configurado." } };
+  }
+  const provided = getAdminCredential(req, url);
+  if (!provided || provided !== secret) {
+    return { ok: false, status: 401, body: { ok: false, message: "Autorizacao administrativa necessaria." } };
+  }
+  return { ok: true };
+}
+
+async function readMercadoLivreAuthRecord() {
+  const tokenStore = getOAuthTokenStore();
+  if (tokenStore?.isConfigured?.()) {
+    try {
+      const stored = await tokenStore.get("mercado_livre", "default");
+      if (stored?.access_token || stored?.refresh_token) {
+        return stored;
+      }
+    } catch {
+      /* ignore token store read failure here */
+    }
+  }
+  const legacy = readMercadoLivreOAuth();
+  if (!legacy) return null;
+  if (isPlaceholderToken(legacy.access_token) && isPlaceholderToken(legacy.refresh_token)) return null;
+  return legacy;
+}
+
+async function clearMercadoLivreAuthRecord() {
+  const tokenStore = getOAuthTokenStore();
+  if (tokenStore?.isConfigured?.()) {
+    try {
+      await tokenStore.delete("mercado_livre", "default");
+    } catch {
+      /* ignore store delete failure */
+    }
+  }
+  for (const filePath of oauthPaths) {
+    try {
+      fs.rmSync(filePath, { force: true });
+    } catch {
+      /* ignore local cleanup failures */
+    }
+  }
 }
 
 function getFeedProviderStatus(providerName = "") {
@@ -1337,17 +1426,13 @@ function renderMercadoLivrePage() {
   );
 }
 
-function mercadolivreRedirectUri() {
-  return process.env.MELI_REDIRECT_URI || "https://o-que-cabe.vercel.app/auth/mercadolivre/callback";
-}
-
-function mercadolivreAuthUrl() {
+function mercadolivreAuthUrl(state = buildMercadoLivreState()) {
   const clientId = mercadolivreClientId();
   const params = new URLSearchParams({
     response_type: "code",
     client_id: clientId,
     redirect_uri: mercadolivreRedirectUri(),
-    state: buildMercadoLivreState(),
+    state,
   });
   return `https://auth.mercadolibre.com.br/authorization?${params.toString()}`;
 }
@@ -1556,10 +1641,14 @@ export default async function handler(req, res) {
     const diagnostics = shouldProbe
       ? await provider.probe(url.searchParams.get("q") || "iphone 17")
       : provider.getDiagnostics();
+    const normalizedErrorType = String(diagnostics.lastErrorType || "").toLowerCase();
+    const associateNotEligible = normalizedErrorType.includes("associatenoteligible")
+      || normalizedErrorType.includes("associate_not_eligible");
     sendJson(res, 200, {
       configured: Boolean(diagnostics.configured),
       authenticated: diagnostics.authenticated ?? null,
       reachable: diagnostics.reachable ?? null,
+      eligible: associateNotEligible ? false : (diagnostics.authenticated ?? null),
       operational: diagnostics.operational ?? null,
       provider: diagnostics.provider || "amazon_unconfigured",
       authMode: diagnostics.authMode || "none",
@@ -1569,7 +1658,8 @@ export default async function handler(req, res) {
       hasClientSecret: Boolean(diagnostics.hasClientSecret),
       hasAssociateTag: Boolean(diagnostics.hasAssociateTag),
       lastStatus: diagnostics.lastStatus ?? null,
-      lastErrorType: diagnostics.lastErrorType ?? null,
+      lastHttpStatus: diagnostics.lastStatus ?? null,
+      lastErrorType: associateNotEligible ? "ASSOCIATE_NOT_ELIGIBLE" : (diagnostics.lastErrorType ?? null),
       lastSuccessAt: diagnostics.lastSuccessAt ?? null,
       received: diagnostics.received ?? null,
       accepted: diagnostics.accepted ?? null,
@@ -1581,8 +1671,8 @@ export default async function handler(req, res) {
   if (pathname === "/api/ml/status") {
     const provider = getMercadoLivreSearchProvider();
     const diagnostics = provider.getDiagnostics();
-    const token = readMercadoLivreOAuth();
-    const authenticated = Boolean(diagnostics.hasAccessToken || diagnostics.hasRefreshToken);
+    const token = await readMercadoLivreAuthRecord();
+    const authenticated = Boolean(token?.access_token || token?.refresh_token || diagnostics.hasAccessToken || diagnostics.hasRefreshToken);
     const tokenExpired = Boolean(token?.access_token && mercadolivreTokenExpired(token));
     const lastStatus = diagnostics.lastStatus ?? null;
     const lastErrorType = diagnostics.lastErrorType ?? null;
@@ -1593,16 +1683,135 @@ export default async function handler(req, res) {
       authenticated,
       reachable: lastStatus != null,
       operational,
+      authorizationRequired: !authenticated,
+      reauthorizationRequired: Boolean(authenticated && tokenExpired),
       tokenState: !authenticated ? "not_authenticated" : tokenExpired ? "expired" : (diagnostics.tokenState || "available"),
       authMode: diagnostics.authMode || "anonymous",
+      hasTokenStore: Boolean(getOAuthTokenStore()?.isConfigured?.()),
       hasClientId: Boolean(mercadolivreClientId()),
       hasClientSecret: Boolean(mercadolivreClientSecret()),
-      hasRefreshToken: Boolean(diagnostics.hasRefreshToken),
+      hasRefreshToken: Boolean(token?.refresh_token || diagnostics.hasRefreshToken),
       lastStatus,
       lastErrorType,
       lastCheckedAt: diagnostics.lastCheckedAt ?? null,
       lastValidatedAt: diagnostics.lastValidatedAt ?? null,
     });
+    return;
+  }
+
+  if (pathname === "/api/ml/oauth/start") {
+    const auth = requireAdminAuth(req, url);
+    if (!auth.ok) {
+      sendJson(res, auth.status, auth.body);
+      return;
+    }
+    if (!mercadolivreConfigured()) {
+      sendJson(res, 400, { ok: false, message: "Mercado Livre OAuth nao configurado." });
+      return;
+    }
+    const tokenStore = getOAuthTokenStore();
+    if (!tokenStore?.isConfigured?.()) {
+      sendJson(res, 503, {
+        ok: false,
+        message: "Armazenamento persistente de OAuth nao configurado.",
+        provider: "mercado_livre",
+      });
+      return;
+    }
+    const state = buildMercadoLivreState();
+    await tokenStore.saveState("mercado_livre", state, {
+      createdAt: new Date().toISOString(),
+      redirectUri: mercadolivreRedirectUri(),
+    }, 900);
+    const authUrl = mercadolivreAuthUrl(state);
+    if (["1", "true", "yes"].includes(String(url.searchParams.get("json") || "").toLowerCase())) {
+      sendJson(res, 200, {
+        ok: true,
+        provider: "mercado_livre",
+        authUrl,
+        redirectUri: mercadolivreRedirectUri(),
+      });
+      return;
+    }
+    res.statusCode = 302;
+    res.setHeader("Location", authUrl);
+    res.end();
+    return;
+  }
+
+  if (pathname === "/api/ml/oauth/callback") {
+    const oauthError = url.searchParams.get("error");
+    const errorDescription = url.searchParams.get("error_description");
+    if (oauthError) {
+      sendJson(res, 400, { ok: false, message: errorDescription || oauthError });
+      return;
+    }
+    const state = String(url.searchParams.get("state") || "").trim();
+    const code = String(url.searchParams.get("code") || "").trim();
+    if (!state || !code) {
+      sendJson(res, 400, { ok: false, message: "Callback OAuth incompleto." });
+      return;
+    }
+    const tokenStore = getOAuthTokenStore();
+    if (!tokenStore?.isConfigured?.()) {
+      sendJson(res, 503, { ok: false, message: "Armazenamento persistente de OAuth nao configurado." });
+      return;
+    }
+    const consumedState = await tokenStore.consumeState("mercado_livre", state);
+    if (!consumedState || !validateMercadoLivreState(state)) {
+      sendJson(res, 400, { ok: false, message: "Estado OAuth invalido, expirado ou reutilizado." });
+      return;
+    }
+    try {
+      const tokenResponse = await fetch("https://api.mercadolibre.com/oauth/token", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          grant_type: "authorization_code",
+          client_id: mercadolivreClientId(),
+          client_secret: mercadolivreClientSecret(),
+          code,
+          redirect_uri: mercadolivreRedirectUri(),
+        }),
+      });
+      const payload = await tokenResponse.json().catch(() => ({}));
+      if (!tokenResponse.ok || !payload?.access_token) {
+        sendJson(res, 400, {
+          ok: false,
+          message: payload?.message || payload?.error_description || payload?.error || `HTTP ${tokenResponse.status}`,
+        });
+        return;
+      }
+      await tokenStore.save("mercado_livre", "default", {
+        access_token: payload.access_token,
+        refresh_token: payload.refresh_token || "",
+        token_type: payload.token_type || "bearer",
+        expires_in: Number(payload.expires_in || 0),
+        expires_at: Number(payload.expires_in || 0) ? Date.now() + Number(payload.expires_in) * 1000 : null,
+        scope: payload.scope || null,
+        user_id: payload.user_id || null,
+        created_at: new Date().toISOString(),
+      });
+      res.statusCode = 302;
+      res.setHeader("Location", "/mercadolivre-manual?auth=ok");
+      res.end();
+    } catch (error) {
+      sendJson(res, 400, { ok: false, message: error?.message || "Falha ao autenticar Mercado Livre." });
+    }
+    return;
+  }
+
+  if (pathname === "/api/ml/oauth/disconnect") {
+    const auth = requireAdminAuth(req, url);
+    if (!auth.ok) {
+      sendJson(res, auth.status, auth.body);
+      return;
+    }
+    await clearMercadoLivreAuthRecord();
+    sendJson(res, 200, { ok: true, provider: "mercado_livre", disconnected: true });
     return;
   }
 
@@ -2007,14 +2216,15 @@ export default async function handler(req, res) {
   }
 
     if (pathname === "/api/ml-auth-status") {
-      const token = readMercadoLivreOAuth();
+      const token = await readMercadoLivreAuthRecord();
       sendJson(res, 200, {
         configured: mercadolivreConfigured(),
-        authenticated: Boolean(token && token.access_token),
+        authenticated: Boolean(token && (token.access_token || token.refresh_token)),
         token_expired: Boolean(token && mercadolivreTokenExpired(token)),
         redirectUri: mercadolivreRedirectUri(),
         hasClientId: Boolean(process.env.MELI_CLIENT_ID),
         hasClientSecret: Boolean(process.env.MELI_CLIENT_SECRET),
+        hasTokenStore: Boolean(getOAuthTokenStore()?.isConfigured?.()),
       });
       return;
   }
@@ -2167,69 +2377,18 @@ export default async function handler(req, res) {
   }
 
     if (pathname === "/auth/mercadolivre") {
-      if (!mercadolivreConfigured()) {
-        sendJson(res, 400, { ok: false, message: "CLIENT_ID/CLIENT_SECRET do Mercado Livre não configurados." });
-        return;
-      }
       res.statusCode = 302;
-      res.setHeader("Location", mercadolivreAuthUrl());
+      res.setHeader("Location", "/api/ml/oauth/start");
       res.end();
       return;
     }
 
     if (pathname === "/auth/mercadolivre/callback") {
-      const error = url.searchParams.get("error");
-      const errorDescription = url.searchParams.get("error_description");
-      const state = url.searchParams.get("state") || "";
-      if (error) {
-        sendJson(res, 400, { ok: false, message: errorDescription || error });
-        return;
-      }
-      if (!validateMercadoLivreState(state)) {
-        sendJson(res, 400, { ok: false, message: "Estado OAuth inválido ou expirado." });
-        return;
-      }
-      const code = url.searchParams.get("code") || "";
-      if (!code) {
-        sendJson(res, 400, { ok: false, message: "Código OAuth ausente." });
-        return;
-      }
-      try {
-        const token = await fetch("https://api.mercadolibre.com/oauth/token", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Accept: "application/json" },
-          body: JSON.stringify({
-            grant_type: "authorization_code",
-            client_id: mercadolivreClientId(),
-            client_secret: mercadolivreClientSecret(),
-            code,
-            redirect_uri: mercadolivreRedirectUri(),
-          }),
-        }).then(async (response) => {
-          const body = await response.json().catch(() => ({}));
-          if (!response.ok) {
-            const message = body.message || body.error_description || body.error || `HTTP ${response.status}`;
-            throw new Error(message);
-          }
-          return body;
-        });
-        const payload = {
-          access_token: token.access_token,
-          refresh_token: token.refresh_token,
-          token_type: token.token_type || "bearer",
-          expires_in: token.expires_in,
-          expires_at: Date.now() + Number(token.expires_in || 0) * 1000,
-          scope: token.scope || null,
-          user_id: token.user_id || null,
-          created_at: new Date().toISOString(),
-        };
-        writeMercadoLivreOAuth(payload);
-        res.statusCode = 302;
-        res.setHeader("Location", "/mercadolivre-manual?auth=ok");
-        res.end();
-      } catch (err) {
-        sendJson(res, 400, { ok: false, message: err.message || "Falha ao autenticar Mercado Livre." });
-      }
+      const nextUrl = new URL("/api/ml/oauth/callback", "http://localhost");
+      nextUrl.search = url.search;
+      res.statusCode = 302;
+      res.setHeader("Location", nextUrl.pathname + nextUrl.search);
+      res.end();
       return;
     }
 

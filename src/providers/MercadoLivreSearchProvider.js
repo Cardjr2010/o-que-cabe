@@ -12,6 +12,15 @@ const oauthPaths = [
 ];
 let refreshPromise = null;
 
+function isPlaceholderToken(value = "") {
+  const token = String(value || "").trim().toLowerCase();
+  if (!token) return false;
+  return token === "novo-token"
+    || token === "refresh-token-test"
+    || token.includes("token-test")
+    || token.includes("token-falso");
+}
+
 function readStoredOAuth() {
   for (const filePath of oauthPaths) {
     const oauth = readJson(filePath, null);
@@ -58,12 +67,14 @@ function envValue(...keys) {
 
 function readStoredAccessToken() {
   const oauth = readStoredOAuth();
-  return String(oauth?.access_token || "").trim();
+  const token = String(oauth?.access_token || "").trim();
+  return isPlaceholderToken(token) ? "" : token;
 }
 
 function readStoredRefreshToken() {
   const oauth = readStoredOAuth();
-  return String(oauth?.refresh_token || "").trim();
+  const token = String(oauth?.refresh_token || "").trim();
+  return isPlaceholderToken(token) ? "" : token;
 }
 
 function configuredAccessToken(explicitToken = "") {
@@ -110,16 +121,23 @@ async function refreshAccessToken(provider, refreshToken) {
     method: "POST",
     headers: {
       Accept: "application/json",
-      "Content-Type": "application/json",
+      "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: JSON.stringify({
+    body: new URLSearchParams({
       grant_type: "refresh_token",
       client_id: clientId,
       client_secret: clientSecret,
       refresh_token: token,
     }),
   });
-  if (!response.ok) return null;
+  if (!response.ok) {
+    writeStoredOAuthMetadata({
+      last_status: response.status,
+      last_error_type: response.status === 401 || response.status === 403 ? "refresh_failed" : "refresh_http_error",
+      last_checked_at: new Date().toISOString(),
+    });
+    return null;
+  }
   const payload = await response.json().catch(() => null);
   if (!payload?.access_token) return null;
   const stored = {
@@ -128,15 +146,24 @@ async function refreshAccessToken(provider, refreshToken) {
     expires_at: payload.expires_in ? Date.now() + (Number(payload.expires_in) * 1000) : undefined,
     created_at: new Date().toISOString(),
   };
-  for (const filePath of oauthPaths) {
-    try {
-      fs.mkdirSync(path.dirname(filePath), { recursive: true });
-      fs.writeFileSync(filePath, JSON.stringify(stored, null, 2), "utf8");
-      break;
-    } catch {
-      /* ignore write failures in serverless */
+  const persisted = await provider?.persistTokenData?.(stored, token);
+  if (!persisted) {
+    for (const filePath of oauthPaths) {
+      try {
+        fs.mkdirSync(path.dirname(filePath), { recursive: true });
+        fs.writeFileSync(filePath, JSON.stringify(stored, null, 2), "utf8");
+        break;
+      } catch {
+        /* ignore write failures in serverless */
+      }
     }
   }
+  writeStoredOAuthMetadata({
+    last_status: 200,
+    last_error_type: null,
+    last_checked_at: new Date().toISOString(),
+    last_validated_at: new Date().toISOString(),
+  });
   return stored.access_token;
 }
 
@@ -315,6 +342,8 @@ export class MercadoLivreSearchProvider {
     this.clientId = clientId;
     this.clientSecret = clientSecret;
     this.searchEndpoint = searchEndpoint;
+    this.tokenStore = arguments[0]?.tokenStore || null;
+    this.accountId = arguments[0]?.accountId || "default";
   }
 
   getToken() {
@@ -333,10 +362,36 @@ export class MercadoLivreSearchProvider {
     return mercadolivreClientSecret(this.clientSecret);
   }
 
+  async getStoredTokenData() {
+    if (!this.tokenStore || typeof this.tokenStore.get !== "function" || !this.tokenStore.isConfigured?.()) {
+      return null;
+    }
+    try {
+      return await this.tokenStore.get("mercado_livre", this.accountId);
+    } catch {
+      return null;
+    }
+  }
+
+  async persistTokenData(tokenData = {}, expectedRefreshToken = "") {
+    if (!this.tokenStore || typeof this.tokenStore.save !== "function" || !this.tokenStore.isConfigured?.()) {
+      return false;
+    }
+    try {
+      if (expectedRefreshToken && typeof this.tokenStore.replaceAtomically === "function") {
+        return await this.tokenStore.replaceAtomically("mercado_livre", this.accountId, expectedRefreshToken, tokenData);
+      }
+      return await this.tokenStore.save("mercado_livre", this.accountId, tokenData);
+    } catch {
+      return false;
+    }
+  }
+
   async resolveToken({ forceRefresh = false } = {}) {
-    const accessToken = this.getToken();
+    const storedToken = await this.getStoredTokenData();
+    const accessToken = this.getToken() || String(storedToken?.access_token || "").trim();
     if (accessToken && !forceRefresh) return accessToken;
-    const refreshToken = this.getRefreshToken();
+    const refreshToken = this.getRefreshToken() || String(storedToken?.refresh_token || "").trim();
     if (!refreshToken) return "";
     return await ensureRefreshedAccessToken(this, refreshToken);
   }
@@ -364,7 +419,8 @@ export class MercadoLivreSearchProvider {
       limit,
       searchEndpoint: options.searchEndpoint || this.searchEndpoint,
     });
-    let accessToken = String(options.accessToken || this.getToken() || "").trim();
+    const storedToken = await this.getStoredTokenData();
+    let accessToken = String(options.accessToken || this.getToken() || storedToken?.access_token || "").trim();
     const headers = {
       Accept: "application/json",
       "User-Agent": "OQueCabe/1.0",
@@ -481,6 +537,7 @@ export class MercadoLivreSearchProvider {
       configured: Boolean(configuredToken || configuredRefresh || configuredSearchEndpoint || mercadolivreConfigured(this.getClientId(), this.getClientSecret())),
       hasAccessToken: Boolean(configuredToken),
       hasRefreshToken: Boolean(configuredRefresh),
+      hasTokenStore: Boolean(this.tokenStore?.isConfigured?.()),
       hasSearchEndpoint: Boolean(configuredSearchEndpoint),
       tokenState: configuredToken ? "available" : "TOKEN_MISSING_OR_REQUIRED",
       authMode: configuredToken ? "bearer" : (configuredRefresh ? "refresh-token" : (configuredSearchEndpoint ? "proxy" : "anonymous")),
