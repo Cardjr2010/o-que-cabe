@@ -114,4 +114,23 @@ Durante a suíte, o arquivo OAuth local ignorado pelo Git foi temporariamente re
 
 - Revogar a chave RapidAPI que apareceu na captura/PDF.
 - Criar uma chave nova somente quando o plano, limite, URL direta e termos de uso da Amazon forem validados.
-- Validar este hotfix novamente no domínio principal após a Vercel publicar o commit correspondente.
+- A revogação da chave RapidAPI continua sendo uma ação manual no painel do provedor; a validação do hotfix no domínio principal foi concluída.
+
+## Validação final em produção
+
+O domínio `https://o-que-cabe.vercel.app` foi validado após a publicação dos commits do hotfix.
+
+- `/api/health`: HTTP 200 e build novo confirmado.
+- `/api/catalog/health`: 16.740 produtos analisados, 15.999 publicados e 741 ocultos.
+- `/api/home-data`: métricas oficiais, timestamp real e menu sem links falsos.
+- `/api/market/stats`: HTTP 200.
+- `/api/ml/status`: Mercado Livre configurado, porém não autenticado nem operacional; nenhum segredo exposto.
+- `/api/amazon/status`: Amazon desativada e sem chave exposta.
+- Busca por flores com R$ 500: oferta real da Flores Online, preço de R$ 179,49 no primeiro card validado, condição Novo, link direto e parcelamento identificado como estimativa.
+- Busca por iPhone com R$ 5.000: apenas o iPhone confirmado existente no catálogo, acompanhado do aviso de poucas opções.
+- Busca por Samsung com R$ 3.000: smartphone principal antes de acessórios.
+- Busca por produto inexistente: zero card, nenhum demo e mensagem pública neutra.
+
+A inspeção no navegador confirmou que Blog e Minha Conta aparecem como itens futuros não navegáveis, Departamentos leva à seção correta e nenhum orçamento é presumido antes do preenchimento. Também foi corrigido o encaixe dos grupos de produtos na grade: cada grupo agora ocupa a largura total da área de resultados, sem comprimir três cards dentro de uma única coluna.
+
+Nenhuma resposta pública inspecionada contém `x-rapidapi-key`, `MELI_ACCESS_TOKEN`, `CLIENT_SECRET` ou `RAPIDAPI_AMAZON_KEY`.

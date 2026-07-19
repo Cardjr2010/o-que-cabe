@@ -950,6 +950,43 @@ h2 {
   gap: 18px;
 }
 
+.grid > .oqc-product-group {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.oqc-product-group + .oqc-product-group {
+  margin-top: 22px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+}
+
+.oqc-product-group-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 14px;
+}
+
+.oqc-product-group-head strong {
+  color: var(--ink);
+  font-size: 18px;
+}
+
+.oqc-product-group-head p,
+.oqc-product-group-head span {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.oqc-product-group-head span {
+  flex: 0 0 auto;
+  margin: 0;
+  font-weight: 850;
+}
+
 .card {
   min-height: 334px;
   display: flex;
