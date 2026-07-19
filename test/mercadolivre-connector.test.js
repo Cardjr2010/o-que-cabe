@@ -1,6 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import MercadoLivreConnector from "../src/connectors/MercadoLivreConnector.js";
+
+const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const oauthPath = path.join(projectRoot, "data", "mercadolivre-oauth.json");
 
 function withEnv(overrides, fn) {
   const keys = Object.keys(overrides);
@@ -26,6 +32,19 @@ function withEnv(overrides, fn) {
     });
 }
 
+function withOAuthTemporarilyRemoved(fn) {
+  const exists = fs.existsSync(oauthPath);
+  const backup = exists ? fs.readFileSync(oauthPath, "utf8") : null;
+  if (exists) fs.unlinkSync(oauthPath);
+  return Promise.resolve()
+    .then(fn)
+    .finally(() => {
+      if (backup != null) {
+        fs.writeFileSync(oauthPath, backup, "utf8");
+      }
+    });
+}
+
 test("token ausente retorna erro controlado sem expor segredo", async () => {
   const originalFetch = global.fetch;
   global.fetch = async () => ({
@@ -42,7 +61,7 @@ test("token ausente retorna erro controlado sem expor segredo", async () => {
     MELI_CLIENT_ID: "",
     MELI_CLIENT_SECRET: "",
     MELI_REDIRECT_URI: "",
-  }, async () => MercadoLivreConnector.searchProducts("celular", { limit: 5 }));
+  }, async () => withOAuthTemporarilyRemoved(() => MercadoLivreConnector.searchProducts("celular", { limit: 5 })));
 
   assert.equal(result.strategyUsed, "demo");
   assert.equal(result.dataMode, "demo");
@@ -102,12 +121,15 @@ test("normalizacao de produto real preserva campos principais", () => {
   });
 
   assert.equal(normalized.id, "MLB123");
+  assert.equal(normalized.itemId, "MLB123");
   assert.equal(normalized.title, "Samsung Galaxy A15");
   assert.equal(normalized.price, 999);
   assert.equal(normalized.image, "https://img.example/a.jpg");
   assert.equal(normalized.permalink, "https://produto.mercadolivre.com.br/MLB123");
-  assert.equal(normalized.marketplace, "mercadolivre");
+  assert.equal(normalized.marketplace, "mercado_livre");
   assert.equal(normalized.dataMode, "real-authenticated");
+  assert.equal(normalized.freeShipping, true);
+  assert.equal(normalized.sellerReputation.level_id, "gold");
 });
 
 test("fallback seguro mantém demo coerente", async () => {
@@ -177,7 +199,7 @@ test("getProduct com item mock retorna item normalizado", async () => {
       assert.equal(result.statusHttp, 200);
       assert.equal(result.item.id, "MLB999");
       assert.equal(result.item.title, "Notebook teste");
-      assert.equal(result.item.marketplace, "mercadolivre");
+      assert.equal(result.item.marketplace, "mercado_livre");
     });
   } finally {
     global.fetch = originalFetch;

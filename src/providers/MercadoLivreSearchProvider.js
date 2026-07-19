@@ -10,6 +10,7 @@ const oauthPaths = [
   resolveProjectPath("data", "mercadolivre-oauth.cache.json"),
   path.join(os.tmpdir(), "mercadolivre-oauth.json"),
 ];
+let refreshPromise = null;
 
 function readStoredOAuth() {
   for (const filePath of oauthPaths) {
@@ -19,6 +20,24 @@ function readStoredOAuth() {
     }
   }
   return null;
+}
+
+function writeStoredOAuthMetadata(patch = {}) {
+  if (!patch || typeof patch !== "object" || !Object.keys(patch).length) return;
+  const base = readStoredOAuth() || {};
+  const nextValue = {
+    ...base,
+    ...patch,
+  };
+  for (const filePath of oauthPaths) {
+    try {
+      fs.mkdirSync(path.dirname(filePath), { recursive: true });
+      fs.writeFileSync(filePath, JSON.stringify(nextValue, null, 2), "utf8");
+      return;
+    } catch {
+      /* ignore write failures in serverless */
+    }
+  }
 }
 
 function readJson(filePath, fallback = null) {
@@ -119,6 +138,18 @@ async function refreshAccessToken(provider, refreshToken) {
     }
   }
   return stored.access_token;
+}
+
+async function ensureRefreshedAccessToken(provider, refreshToken) {
+  if (refreshPromise) {
+    return refreshPromise;
+  }
+  refreshPromise = refreshAccessToken(provider, refreshToken)
+    .catch(() => null)
+    .finally(() => {
+      refreshPromise = null;
+    });
+  return refreshPromise;
 }
 
 function buildSearchEndpoint({ siteId = "MLB", query = "", limit = 20, searchEndpoint = "" } = {}) {
@@ -302,12 +333,12 @@ export class MercadoLivreSearchProvider {
     return mercadolivreClientSecret(this.clientSecret);
   }
 
-  async resolveToken() {
+  async resolveToken({ forceRefresh = false } = {}) {
     const accessToken = this.getToken();
-    if (accessToken) return accessToken;
+    if (accessToken && !forceRefresh) return accessToken;
     const refreshToken = this.getRefreshToken();
     if (!refreshToken) return "";
-    return await refreshAccessToken(this, refreshToken);
+    return await ensureRefreshedAccessToken(this, refreshToken);
   }
 
   async searchProducts(query = "", options = {}) {
@@ -351,9 +382,9 @@ export class MercadoLivreSearchProvider {
       body = {};
     }
 
-    if (!response.ok && response.status === 403) {
-      const refreshedToken = await this.resolveToken();
-      if (refreshedToken && refreshedToken !== accessToken) {
+    if (!response.ok && (response.status === 401 || response.status === 403)) {
+      const refreshedToken = await this.resolveToken({ forceRefresh: true });
+      if (refreshedToken) {
         accessToken = refreshedToken;
         response = await fetchImpl(endpoint, {
           headers: {
@@ -371,6 +402,13 @@ export class MercadoLivreSearchProvider {
     }
 
     if (!response.ok) {
+      writeStoredOAuthMetadata({
+        last_status: response.status,
+        last_error_type: response.status === 401 || response.status === 403
+          ? "auth_failed"
+          : "search_failed",
+        last_checked_at: new Date().toISOString(),
+      });
       return {
         products: [],
         dataMode: "demo",
@@ -404,6 +442,12 @@ export class MercadoLivreSearchProvider {
       .slice(0, limit);
 
     const hasDirectItems = normalized.length > 0;
+    writeStoredOAuthMetadata({
+      last_status: response.status,
+      last_error_type: hasDirectItems ? null : "no_direct_items",
+      last_checked_at: new Date().toISOString(),
+      last_validated_at: hasDirectItems ? new Date().toISOString() : (readStoredOAuth()?.last_validated_at || null),
+    });
     return {
       products: normalized,
       dataMode: hasDirectItems ? "real" : "demo",
@@ -432,6 +476,7 @@ export class MercadoLivreSearchProvider {
     const configuredToken = this.getToken();
     const configuredRefresh = this.getRefreshToken();
     const configuredSearchEndpoint = String(this.searchEndpoint || envValue("MERCADOLIVRE_SEARCH_ENDPOINT", "MELI_SEARCH_ENDPOINT") || "").trim();
+    const storedOAuth = readStoredOAuth() || {};
     return {
       configured: Boolean(configuredToken || configuredRefresh || configuredSearchEndpoint || mercadolivreConfigured(this.getClientId(), this.getClientSecret())),
       hasAccessToken: Boolean(configuredToken),
@@ -440,6 +485,10 @@ export class MercadoLivreSearchProvider {
       tokenState: configuredToken ? "available" : "TOKEN_MISSING_OR_REQUIRED",
       authMode: configuredToken ? "bearer" : (configuredRefresh ? "refresh-token" : (configuredSearchEndpoint ? "proxy" : "anonymous")),
       searchEndpoint: configuredSearchEndpoint || "",
+      lastStatus: Number.isFinite(Number(storedOAuth.last_status)) ? Number(storedOAuth.last_status) : null,
+      lastErrorType: storedOAuth.last_error_type ? String(storedOAuth.last_error_type) : null,
+      lastCheckedAt: storedOAuth.last_checked_at ? String(storedOAuth.last_checked_at) : null,
+      lastValidatedAt: storedOAuth.last_validated_at ? String(storedOAuth.last_validated_at) : null,
     };
   }
 }

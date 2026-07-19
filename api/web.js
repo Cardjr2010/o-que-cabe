@@ -18,6 +18,8 @@ import { AwinFeedProvider } from "../src/providers/AwinFeedProvider.js";
 import { ActionpayFeedProvider } from "../src/providers/ActionpayFeedProvider.js";
 import { ActionpayProvider } from "../src/providers/ActionpayProvider.js";
 import { ActionpayYmlImporter } from "../src/importers/ActionpayYmlImporter.js";
+import MercadoLivreSearchProvider from "../src/providers/MercadoLivreSearchProvider.js";
+import AmazonRapidApiSearchProvider from "../src/providers/AmazonRapidApiSearchProvider.js";
 import CatalogManager from "../src/catalog/CatalogManager.js";
 import SearchOrchestrator from "../src/search/SearchOrchestrator.js";
 import { GoogleMerchantProductsAdapter } from "../src/adapters/GoogleMerchantProductsAdapter.js";
@@ -72,6 +74,8 @@ let actionpayYmlImporter = null;
 let mercadoLivreProviderInstance = null;
 let infoStoreFeedProvider = null;
 let searchOrchestratorInstance = null;
+let mercadoLivreSearchProviderInstance = null;
+let amazonSearchProviderInstance = null;
 function createFeedProvider(providerName = "mi_shop", options = {}) {
   const name = String(providerName || "").trim().toLowerCase();
   const baseOptions = {
@@ -189,6 +193,20 @@ function getMercadoLivreProvider() {
     mercadoLivreProviderInstance = new MercadoLivreProvider();
   }
   return mercadoLivreProviderInstance;
+}
+
+function getMercadoLivreSearchProvider() {
+  if (!mercadoLivreSearchProviderInstance) {
+    mercadoLivreSearchProviderInstance = new MercadoLivreSearchProvider();
+  }
+  return mercadoLivreSearchProviderInstance;
+}
+
+function getAmazonSearchProvider() {
+  if (!amazonSearchProviderInstance) {
+    amazonSearchProviderInstance = new AmazonRapidApiSearchProvider();
+  }
+  return amazonSearchProviderInstance;
 }
 
 function isSaldaoCatalogProduct(item = {}) {
@@ -1533,28 +1551,33 @@ export default async function handler(req, res) {
   }
 
   if (pathname === "/api/amazon/status") {
+    const diagnostics = getAmazonSearchProvider().getDiagnostics();
     sendJson(res, 200, {
-      configured: false,
-      provider: "rapidapi_amazon",
-      hasKey: Boolean(process.env.RAPIDAPI_AMAZON_KEY),
-      lastStatus: null,
-      lastErrorType: null,
+      configured: Boolean(diagnostics.configured),
+      provider: diagnostics.provider || "rapidapi_amazon",
+      hasKey: Boolean(diagnostics.hasKey),
+      lastStatus: diagnostics.lastStatus ?? null,
+      lastErrorType: diagnostics.lastErrorType ?? null,
     });
     return;
   }
 
   if (pathname === "/api/ml/status") {
+    const diagnostics = getMercadoLivreSearchProvider().getDiagnostics();
     const token = readMercadoLivreOAuth();
-    const authenticated = Boolean(token?.access_token);
-    const tokenExpired = Boolean(authenticated && mercadolivreTokenExpired(token));
+    const authenticated = Boolean(diagnostics.hasAccessToken || diagnostics.hasRefreshToken);
+    const tokenExpired = Boolean(token?.access_token && mercadolivreTokenExpired(token));
+    const lastStatus = diagnostics.lastStatus ?? null;
+    const lastErrorType = diagnostics.lastErrorType ?? null;
+    const operational = Boolean(authenticated && !tokenExpired && lastStatus === 200);
     sendJson(res, 200, {
-      configured: mercadolivreConfigured(),
+      configured: Boolean(diagnostics.configured || mercadolivreConfigured()),
       provider: "mercado_livre",
       authenticated,
-      operational: authenticated && !tokenExpired,
-      tokenState: !authenticated ? "not_authenticated" : tokenExpired ? "expired" : "available",
-      lastStatus: null,
-      lastErrorType: null,
+      operational,
+      tokenState: !authenticated ? "not_authenticated" : tokenExpired ? "expired" : (diagnostics.tokenState || "available"),
+      lastStatus,
+      lastErrorType,
     });
     return;
   }
@@ -1630,6 +1653,7 @@ export default async function handler(req, res) {
         fallbackCount: Number(searchResult.fallbackCount || 0),
         returnedCount: searchResult.returnedCount,
         searchIntent: searchResult.intent,
+        refinementSuggestions: Array.isArray(searchResult.refinementSuggestions) ? searchResult.refinementSuggestions : [],
         installmentWarnings: searchResult.warnings,
         warning: publicWarning,
       });

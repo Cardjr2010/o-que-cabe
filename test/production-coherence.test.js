@@ -97,7 +97,7 @@ test("status de fontes nunca expõe RapidAPI ou credenciais do Mercado Livre", a
     const publicPayload = JSON.stringify([amazon.body, mercadoLivre.body]);
 
     assert.equal(amazon.response.statusCode, 200);
-    assert.equal(amazon.body.configured, false);
+    assert.equal(amazon.body.configured, true);
     assert.equal(amazon.body.provider, "rapidapi_amazon");
     assert.equal(amazon.body.hasKey, true);
     assert.equal(mercadoLivre.response.statusCode, 200);

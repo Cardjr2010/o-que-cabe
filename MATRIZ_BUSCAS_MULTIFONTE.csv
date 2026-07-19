@@ -1,0 +1,8 @@
+query,environment,catalog_result,mercado_livre_status,amazon_status,fallback_used,first_result,source,price,link_direct,notes
+"flores ate 500","local","SIM","NAO","NAO","NAO","Buquê De Flores Com Rosas Vermelhas E Alstromérias Para Entrega","flores_online","250.38","SIM","catalogo interno real continua funcional"
+"iphone","local","SIM (1 item)","NAO","NAO","NAO","iPhone 7 32GB Ouro Rosa","saldao_informatica","605.82","SIM","catalogo tem cobertura baixa e externa ainda nao comprovada"
+"samsung","local","SIM","NAO","NAO","NAO","Smartphone Samsung Galaxy J2 Prime - Dourado - 8GB - RAM 1GB - Quad Core - 4G - 8MP - Tela 5"" - Android 6","saldao_informatica","213.66","SIM","catalogo interno cobre samsung antigo"
+"xiaomi be6500 ate 700","local","NAO","NAO","NAO","NAO","","","","","sem cobertura no catalogo; ML ainda bloqueado por 403; Amazon sem chave"
+"iphone 17 pro max ate 10000","producao","SIM (resultado inadequado)","NAO","NAO","NAO","iPhone 7 32GB Ouro Rosa","saldao_informatica","605.82","SIM","producao atual nao usa fallback externo real"
+"casa ate 50","producao","SIM (resultado inadequado)","NAO","NAO","NAO","Escovas de carvão/pecas industriais","ccp","varios","SIM","producao atual ainda precisa do parser refinado"
+"produto inexistente xyz987","local","NAO","NAO","NAO","NAO","","","","","sem resultado confirmado"

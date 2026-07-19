@@ -121,7 +121,7 @@ test("Orquestrador preserva parcelamento e dados de orçamento", () => {
 });
 
 
-test("iPhone prioriza aparelho principal sobre acess?rio", () => {
+test("iPhone prioriza aparelho principal sobre acess?rio", async () => {
   const orchestrator = new SearchOrchestrator({
     catalogManager: createCatalogManager([
       {
@@ -151,7 +151,7 @@ test("iPhone prioriza aparelho principal sobre acess?rio", () => {
     ]),
   });
 
-  const result = orchestrator.search({ query: "iphone", mode: "total", totalBudget: 5000 });
+  const result = await orchestrator.search({ query: "iphone", mode: "total", totalBudget: 5000 });
 
   assert.equal(result.dataMode, "real");
   assert.ok(result.products.length > 0);
@@ -159,7 +159,7 @@ test("iPhone prioriza aparelho principal sobre acess?rio", () => {
   assert.ok(!/Capa/i.test(String(result.products[0].displayTitle || result.products[0].title)));
 });
 
-test("Samsung e Galaxy priorizam smartphone principal", () => {
+test("Samsung e Galaxy priorizam smartphone principal", async () => {
   const orchestrator = new SearchOrchestrator({
     catalogManager: createCatalogManager([
       {
@@ -201,12 +201,220 @@ test("Samsung e Galaxy priorizam smartphone principal", () => {
     ]),
   });
 
-  const samsung = orchestrator.search({ query: "samsung", mode: "total", totalBudget: 3000 });
-  const galaxy = orchestrator.search({ query: "galaxy a15", mode: "total", totalBudget: 1500 });
+  const samsung = await orchestrator.search({ query: "samsung", mode: "total", totalBudget: 3000 });
+  const galaxy = await orchestrator.search({ query: "galaxy a15", mode: "total", totalBudget: 1500 });
 
   assert.equal(samsung.dataMode, "real");
   assert.equal(galaxy.dataMode, "real");
   assert.match(String(samsung.products[0].displayTitle || samsung.products[0].title), /Galaxy A15/i);
   assert.match(String(galaxy.products[0].displayTitle || galaxy.products[0].title), /Galaxy A15/i);
+});
+
+test("Consulta curta sem cobertura aciona fallback do Mercado Livre com itemId e permalink", async () => {
+  let providerCalls = 0;
+  const orchestrator = new SearchOrchestrator({
+    catalogManager: createCatalogManager([
+      {
+        title: "Capa para iPhone 15",
+        brand: "Apple",
+        category: "capa",
+        normalizedCategory: "capa",
+        productType: "accessory",
+        isAccessory: true,
+        marketplace: "saldao_informatica",
+        dataMode: "real",
+        sourceType: "csv_feed",
+        price: 79.9,
+      },
+      {
+        title: "Cabo para iPhone 15",
+        brand: "Apple",
+        category: "cabo",
+        normalizedCategory: "cabo",
+        productType: "accessory",
+        isAccessory: true,
+        marketplace: "saldao_informatica",
+        dataMode: "real",
+        sourceType: "csv_feed",
+        price: 49.9,
+      },
+    ]),
+    marketplaceSearchProvider: {
+      async searchProducts(query) {
+        providerCalls += 1;
+        assert.match(String(query), /iphone 17 pro max/i);
+        return {
+          products: [
+            {
+              itemId: "MLB123",
+              id: "MLB123",
+              title: "iPhone 17 Pro Max 256GB",
+              price: 8999.9,
+              image: "https://http2.mlstatic.com/item.jpg",
+              permalink: "https://www.mercadolivre.com.br/item/MLB123",
+              condition: "new",
+              seller: { id: 1, nickname: "loja oficial" },
+              sellerReputation: { level_id: "5_green" },
+              availableQuantity: 3,
+              source: "mercado_livre",
+              marketplace: "mercado_livre",
+              dataMode: "real",
+            },
+            {
+              itemId: "MLB456",
+              id: "MLB456",
+              title: "Capa para iPhone 17 Pro Max",
+              price: 99.9,
+              image: "https://http2.mlstatic.com/item2.jpg",
+              permalink: "https://www.mercadolivre.com.br/item/MLB456",
+              condition: "new",
+              seller: { id: 2, nickname: "acessorios" },
+              sellerReputation: null,
+              availableQuantity: 10,
+              source: "mercado_livre",
+              marketplace: "mercado_livre",
+              dataMode: "real",
+            },
+            {
+              itemId: "MLB789",
+              id: "MLB789",
+              title: "Resultado sem permalink",
+              price: 100,
+              image: "https://http2.mlstatic.com/item3.jpg",
+              permalink: "",
+              condition: "new",
+              seller: { id: 3, nickname: "sem link" },
+              availableQuantity: 1,
+              source: "mercado_livre",
+              marketplace: "mercado_livre",
+              dataMode: "real",
+            },
+          ],
+          rawCount: 3,
+          returnedCount: 3,
+          fallbackText: "Não encontramos no catálogo principal do OQC, mas encontramos estas ofertas no Mercado Livre.",
+          statusHttp: 200,
+        };
+      },
+    },
+  });
+
+  const result = await orchestrator.search({ query: "iphone 17 pro max", mode: "total", totalBudget: 12000 });
+
+  assert.equal(providerCalls, 1);
+  assert.equal(result.fallbackUsed, true);
+  assert.equal(result.fallbackSource, "mercado_livre");
+  assert.match(result.fallbackWarning, /Nao encontramos opcoes suficientes no catalogo principal do OQC/i);
+  assert.ok(result.products.length > 0);
+  assert.equal(result.dataMode, "real");
+  assert.equal(result.strategyUsed, "catalog-search+mercado-livre-fallback");
+  const mlProducts = result.products.filter((product) => String(product.source || product.marketplace || "").includes("mercado_livre"));
+  assert.ok(mlProducts.length > 0);
+  assert.ok(mlProducts.every((product) => String(product.itemId || "").length > 0));
+  assert.ok(mlProducts.every((product) => String(product.permalink || product.productUrl || "").length > 0));
+  assert.ok(!result.products.some((product) => String(product.itemId || "") === "MLB789"));
+  assert.ok(result.products.some((product) => /iPhone 17 Pro Max/i.test(String(product.title || product.displayTitle || ""))));
+});
+
+test("Catálogo OQC forte não chama fallback do Mercado Livre", async () => {
+  let providerCalls = 0;
+  const orchestrator = new SearchOrchestrator({
+    catalogManager: createCatalogManager([
+      {
+        title: "iPhone 15 128GB",
+        brand: "Apple",
+        category: "celular",
+        normalizedCategory: "celular",
+        productType: "principal",
+        isAccessory: false,
+        marketplace: "saldao_informatica",
+        dataMode: "real",
+        sourceType: "csv_feed",
+        price: 4999.9,
+      },
+      {
+        title: "iPhone 14 128GB",
+        brand: "Apple",
+        category: "celular",
+        normalizedCategory: "celular",
+        productType: "principal",
+        isAccessory: false,
+        marketplace: "saldao_informatica",
+        dataMode: "real",
+        sourceType: "csv_feed",
+        price: 4299.9,
+      },
+      {
+        title: "iPhone 13 128GB",
+        brand: "Apple",
+        category: "celular",
+        normalizedCategory: "celular",
+        productType: "principal",
+        isAccessory: false,
+        marketplace: "saldao_informatica",
+        dataMode: "real",
+        sourceType: "csv_feed",
+        price: 3299.9,
+      },
+    ]),
+    marketplaceSearchProvider: {
+      async searchProducts() {
+        providerCalls += 1;
+        return { products: [], rawCount: 0, returnedCount: 0, fallbackText: "", statusHttp: 200 };
+      },
+    },
+  });
+
+  const result = await orchestrator.search({ query: "iphone", mode: "total", totalBudget: 5000 });
+
+  assert.equal(providerCalls, 0);
+  assert.equal(result.fallbackUsed, false);
+  assert.equal(result.strategyUsed, "catalog-search");
+  assert.equal(result.dataMode, "real");
+  assert.ok(result.products.length >= 3);
+  assert.match(String(result.products[0].title || result.products[0].displayTitle || ""), /iPhone/i);
+});
+
+test("Sem token ou proxy configurado, o fallback do Mercado Livre nao eh acionado", async () => {
+  let providerCalls = 0;
+  const orchestrator = new SearchOrchestrator({
+    catalogManager: createCatalogManager([
+      {
+        title: "Capa para iPhone 15",
+        brand: "Apple",
+        category: "capa",
+        normalizedCategory: "capa",
+        productType: "accessory",
+        isAccessory: true,
+        marketplace: "saldao_informatica",
+        dataMode: "real",
+        sourceType: "csv_feed",
+        price: 79.9,
+      },
+    ]),
+    marketplaceSearchProvider: {
+      getDiagnostics() {
+        return {
+          configured: false,
+          hasAccessToken: false,
+          hasSearchEndpoint: false,
+          tokenState: "TOKEN_MISSING_OR_REQUIRED",
+          authMode: "anonymous",
+        };
+      },
+      async searchProducts() {
+        providerCalls += 1;
+        return { products: [], rawCount: 0, returnedCount: 0, fallbackText: "", statusHttp: 403 };
+      },
+    },
+  });
+
+  const result = await orchestrator.search({ query: "iphone 17 pro max", mode: "total", totalBudget: 12000 });
+
+  assert.equal(providerCalls, 0);
+  assert.equal(result.fallbackUsed, false);
+  assert.equal(result.fallbackAttempted, false);
+  assert.equal(result.fallbackSource, "mercado_livre");
+  assert.match(result.fallbackWarning, /Mercado Livre indisponivel sem autenticacao configurada/i);
 });
 

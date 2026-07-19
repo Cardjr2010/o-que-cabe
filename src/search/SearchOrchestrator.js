@@ -5,6 +5,8 @@ import ProductIntelligenceEngine from "../catalog/ProductIntelligenceEngine.js";
 import CatalogManager from "../catalog/CatalogManager.js";
 import SEOIntelligenceEngine from "../seo/SEOIntelligenceEngine.js";
 import MercadoLivreSearchProvider from "../providers/MercadoLivreSearchProvider.js";
+import AmazonRapidApiSearchProvider from "../providers/AmazonRapidApiSearchProvider.js";
+import { buildOfferPricing } from "../pricing/CouponProvider.js";
 import { resolveProjectPath } from "../runtime/project-root.js";
 
 function toNumber(value, fallback = 0) {
@@ -22,6 +24,7 @@ const CATEGORY_RULES = [
   { category: "tablet", terms: ["tablet", "ipad", "galaxy tab", "redmi pad", "xiaomi pad"] },
   { category: "tv", terms: ["tv", "televisor", "smart tv", "oled", "qled", "roku"] },
   { category: "monitor", terms: ["monitor"] },
+  { category: "roteador", terms: ["roteador", "router", "wi-fi", "wifi", "mesh", "deco", "tp-link"] },
   { category: "fone", terms: ["fone", "headphone", "earbud", "buds", "airpods", "jbl"] },
   { category: "relogio", terms: ["relogio", "relógio", "smartwatch", "watch", "band"] },
   { category: "casa", terms: ["casa", "cozinha", "banheiro", "limpeza", "organizador", "utensilio", "utilidade"] },
@@ -45,6 +48,7 @@ const BRAND_RULES = [
   { brand: "TCL", terms: ["tcl"] },
   { brand: "Philips", terms: ["philips"] },
   { brand: "JBL", terms: ["jbl"] },
+  { brand: "TP-Link", terms: ["tp-link", "tplink", "deco", "archer"] },
 ];
 
 const TOOL_QUERY_MARKERS = [
@@ -59,8 +63,22 @@ const TOOL_QUERY_MARKERS = [
   "martelo",
   "ferragem",
   "ferragens",
+];
+
+const HOME_QUERY_MARKERS = [
   "casa",
-  "construcao",
+  "cozinha",
+  "decoracao",
+  "decoração",
+  "organizacao",
+  "organização",
+  "limpeza",
+  "utilidade",
+  "utilidades",
+  "iluminacao",
+  "iluminação",
+  "banheiro",
+  "quarto",
 ];
 
 const FLOWER_QUERY_MARKERS = [
@@ -86,6 +104,77 @@ const PHONE_QUERY_MARKERS = [
   "poco",
   "motorola",
   "moto",
+];
+
+const HOME_PRODUCT_INCLUDE_MARKERS = [
+  "casa",
+  "cozinha",
+  "decoracao",
+  "organizacao",
+  "limpeza",
+  "utilidade",
+  "utensilio",
+  "iluminacao",
+  "banheiro",
+  "quarto",
+  "lar",
+  "air fryer",
+  "fritadeira",
+  "cafeteira",
+  "espremedor",
+  "aspirador",
+  "liquidificador",
+  "ventilador",
+  "luminaria",
+  "prateleira",
+  "organizador",
+];
+
+const HOME_PRODUCT_EXCLUDE_MARKERS = [
+  "furadeira",
+  "parafusadeira",
+  "serra",
+  "alicate",
+  "martelete",
+  "martelo",
+  "parafuso",
+  "porca",
+  "arruela",
+  "bucha",
+  "ferragem",
+  "ferramenta",
+  "peca",
+  "peça",
+  "escova de carvao",
+  "escova de carvão",
+  "reposição",
+  "reposicao",
+  "industrial",
+  "componente",
+];
+
+const HOME_REFINEMENT_SUGGESTIONS = [
+  "organizacao",
+  "cozinha",
+  "decoracao",
+  "iluminacao",
+  "utilidades",
+  "limpeza",
+];
+
+const COMMERCIAL_QUERY_MARKERS = [
+  "celular",
+  "iphone",
+  "galaxy",
+  "notebook",
+  "monitor",
+  "tv",
+  "roteador",
+  "router",
+  "mesh",
+  "fone",
+  "furadeira",
+  "parafusadeira",
 ];
 
 function matchesAnyMarker(text = "", markers = []) {
@@ -166,6 +255,10 @@ function buildSupplementalVariants(intent = {}) {
     push(["furadeira", "parafusadeira", "martelete", "serra", "alicate", "ferramenta"]);
   }
 
+  if (matchesAnyMarker(normalized, HOME_QUERY_MARKERS)) {
+    push(["organizacao", "cozinha", "decoracao", "iluminacao", "utilidades", "limpeza", "casa"]);
+  }
+
   if (matchesAnyMarker(normalized, FLOWER_QUERY_MARKERS)) {
     push(["buque", "bouquet", "flores", "flor", "cesta", "presente", "rosa", "aniversario"]);
   }
@@ -216,6 +309,9 @@ function buildMercadoLivreFallbackVariants(intent = {}) {
 
 function shouldUseSupplementalCatalog(intent = {}) {
   const normalized = normalizeText([intent.query, intent.searchText, intent.category].filter(Boolean).join(" "));
+  if (matchesAnyMarker(normalized, HOME_QUERY_MARKERS) && !matchesAnyMarker(normalized, TOOL_QUERY_MARKERS)) {
+    return false;
+  }
   return matchesAnyMarker(normalized, TOOL_QUERY_MARKERS) || matchesAnyMarker(normalized, FLOWER_QUERY_MARKERS);
 }
 
@@ -258,6 +354,16 @@ function shouldUseMercadoLivreFallback(intent = {}, products = []) {
   return principalCount < 3;
 }
 
+function shouldEnrichWithExternal(intent = {}, products = []) {
+  if (isHomeIntent(intent)) return false;
+  if (shouldUseMercadoLivreFallback(intent, products)) return true;
+  const normalizedQuery = normalizeText(intent.query || intent.searchText || "");
+  const termCount = normalizedQuery.split(/\s+/).filter(Boolean).length;
+  if (intent.model) return true;
+  if (intent.brand && termCount >= 3) return true;
+  return false;
+}
+
 function looksLikeGenericMercadoLivreUrl(value = "") {
   const url = String(value || "").trim().toLowerCase();
   if (!url) return true;
@@ -281,6 +387,7 @@ let productIntelligenceEngineInstance = null;
 let seoIntelligenceEngineInstance = null;
 let supplementalCatalogManagerInstance = null;
 let mercadoLivreSearchProviderInstance = null;
+let amazonSearchProviderInstance = null;
 
 function getSupplementalCatalogManager() {
   if (!supplementalCatalogManagerInstance) {
@@ -321,14 +428,57 @@ function getMercadoLivreSearchProvider() {
   return mercadoLivreSearchProviderInstance;
 }
 
-function canUseMercadoLivreFallback(provider) {
+function getAmazonSearchProvider() {
+  if (!amazonSearchProviderInstance) {
+    amazonSearchProviderInstance = new AmazonRapidApiSearchProvider();
+  }
+  return amazonSearchProviderInstance;
+}
+
+function canUseMarketplaceProvider(provider) {
   if (!provider) return false;
   const diagnostics = typeof provider.getDiagnostics === "function" ? provider.getDiagnostics() : null;
   if (!diagnostics) return true;
   if (diagnostics.hasAccessToken) return true;
   if (diagnostics.hasRefreshToken) return true;
   if (diagnostics.hasSearchEndpoint) return true;
+  if (diagnostics.hasKey) return true;
   return false;
+}
+
+function providerDisplayLabel(source = "") {
+  if (source === "mercado_livre") return "Mercado Livre";
+  if (source === "amazon") return "Amazon";
+  return source;
+}
+
+function extractModel(text = "") {
+  const normalized = String(text || "").trim();
+  const patterns = [
+    /\bBE\d{3,5}\b/i,
+    /\bS\d{2}\b/i,
+    /\bA\d{2}\b/i,
+    /\bM\d{2}\b/i,
+    /\bi\d\b/i,
+    /\bRTX\s?\d{3,4}\b/i,
+    /\bGTX\s?\d{3,4}\b/i,
+  ];
+  for (const pattern of patterns) {
+    const match = normalized.match(pattern);
+    if (match) return String(match[0]).trim();
+  }
+  return "";
+}
+
+function isHomeIntent(intent = {}) {
+  return normalizeText(intent.category || "") === "casa";
+}
+
+function isBroadCommercialIntent(intent = {}) {
+  const haystack = normalizeText([intent.query, intent.searchText, intent.category, intent.brand, intent.model].filter(Boolean).join(" "));
+  if (isHomeIntent(intent)) return false;
+  if (intent.brand || intent.model) return true;
+  return matchesAnyMarker(haystack, COMMERCIAL_QUERY_MARKERS) || isPhoneFamilyQuery(haystack);
 }
 
 function stripBudgetLanguage(value = "") {
@@ -382,6 +532,24 @@ function detectAccessoryIntent(text = "") {
   return /\b(capa|case|pelicula|pel[íi]cula|carregador|cabo|fone|headphone|earbud|airpods|strap|pulseira|acessorio|acess[óo]rio|suporte|power bank|powerbank|protector|protetor|controle remoto|remote control|remote)\b/i.test(String(text || ""));
 }
 
+function isHomeLivingProduct(product = {}, intelligence = {}) {
+  const text = normalizeText([
+    product.displayTitle,
+    product.originalTitle,
+    product.title,
+    product.description,
+    product.category,
+    product.normalizedCategory,
+    intelligence.department,
+    intelligence.category,
+    intelligence.subcategory,
+  ].filter(Boolean).join(" "));
+
+  const hasInclude = HOME_PRODUCT_INCLUDE_MARKERS.some((term) => text.includes(normalizeText(term)));
+  const hasExclude = HOME_PRODUCT_EXCLUDE_MARKERS.some((term) => text.includes(normalizeText(term)));
+  return hasInclude && !hasExclude;
+}
+
 function classifyVisibility(product = {}) {
   const source = normalizeText([product.marketplace, product.source, product.sourceType, product.seller, product.store].filter(Boolean).join(" "));
   return !(source.includes("mi_shop") || source.includes("mi shop") || source.includes("mishop") || source.includes("mercadolivre") || source.includes("mercado livre"));
@@ -410,6 +578,18 @@ function matchProductType(product = {}, queryCategory = "", accessoryIntent = fa
 
   if (!accessoryIntent && isAccessory) {
     return false;
+  }
+  if (queryKey === "casa") {
+    return isHomeLivingProduct(product, intelligence);
+  }
+  if (queryKey === "roteador") {
+    return /\b(roteador|router|mesh|wifi|wi-fi|tp-link|deco|archer)\b/.test(`${text} ${productCategory} ${productDepartment} ${productSubcategory}`);
+  }
+  if (queryKey === "ferramenta") {
+    return !isAccessory && /\b(ferramenta|furadeira|parafusadeira|serra|alicate|martelete|martelo)\b/.test(`${text} ${productCategory} ${productDepartment} ${productSubcategory}`);
+  }
+  if (queryKey === "flores e presentes" || queryKey === "presente") {
+    return /\b(flor|flores|buque|buquê|bouquet|rosa|cesta|presente|presentes|chocolate)\b/.test(`${text} ${productCategory} ${productDepartment} ${productSubcategory}`);
   }
   if (queryCategory) {
     return [
@@ -530,11 +710,78 @@ function filterCandidateList(list = [], intent = {}) {
       }
       if (intent.category) {
         const categoryText = normalizeText([product.department, product.subcategory, product.normalizedCategory, product.category, product.productType].filter(Boolean).join(" "));
-        if (!categoryText.includes(normalizeText(intent.category))) return false;
+        if (normalizeText(intent.category) !== "casa" && !categoryText.includes(normalizeText(intent.category))) return false;
       }
       if (!intent.category && !intent.brand && !hasQueryRelevance(product, intent)) return false;
       return true;
     });
+}
+
+function dedupeProducts(products = []) {
+  const seen = new Set();
+  const deduped = [];
+  for (const product of Array.isArray(products) ? products : []) {
+    const key = [
+      String(product.source || product.marketplace || "").trim().toLowerCase(),
+      String(product.itemId || product.asin || product.id || product.sourceProductId || "").trim().toLowerCase(),
+      String(product.permalink || product.productUrl || product.url || "").trim().toLowerCase(),
+      normalizeText(product.displayTitle || product.originalTitle || product.title || ""),
+    ].join("|");
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(product);
+  }
+  return deduped;
+}
+
+function buildRefinementSuggestions(intent = {}) {
+  if (isHomeIntent(intent)) {
+    return HOME_REFINEMENT_SUGGESTIONS.map((term) => ({
+      label: term.charAt(0).toUpperCase() + term.slice(1),
+      query: term,
+    }));
+  }
+  return [];
+}
+
+async function searchProviderVariants({ provider, intent, source }) {
+  const queries = source === "mercado_livre"
+    ? buildMercadoLivreFallbackVariants(intent)
+    : uniqueValues([intent.searchText, intent.query, `${intent.brand || ""} ${intent.model || ""}`.trim()]).filter(Boolean);
+  let lastResult = { products: [], rawCount: 0, returnedCount: 0, statusHttp: 200, error: "" };
+  let accepted = [];
+
+  for (const variantQuery of queries) {
+    lastResult = await provider.searchProducts(variantQuery, {
+      limit: 12,
+      mode: intent.mode,
+      monthly: intent.monthly,
+      months: intent.months,
+      totalBudget: intent.totalBudget,
+      maxPrice: intent.totalBudget || 0,
+      category: intent.category || "",
+      brand: intent.brand || "",
+      model: intent.model || "",
+      marketplace: "BR",
+    });
+    accepted = filterCandidateList(lastResult.products || [], intent).filter((product) => {
+      if (source === "mercado_livre") {
+        return isDirectMercadoLivreProduct(product);
+      }
+      return Boolean(
+        String(product.asin || product.itemId || product.id || "").trim()
+        && String(product.permalink || product.productUrl || product.url || "").trim()
+        && Number(product.price || 0) > 0
+      );
+    });
+    if (accepted.length) break;
+  }
+
+  return {
+    source,
+    products: accepted,
+    result: lastResult,
+  };
 }
 
 export default class SearchOrchestrator {
@@ -548,6 +795,7 @@ export default class SearchOrchestrator {
     const budgetHints = parseBudgetNumber(text);
     const seoIntent = getSEOIntelligenceEngine().resolveQueryIntent(text) || {};
     const brand = detectBrand(text) || seoIntent.intent?.brand || "";
+    const model = extractModel(text) || "";
     const normalizedText = normalizeText(text);
     const brandOnlyQuery = Boolean(brand) && normalizedText === normalizeText(brand);
     const directCategory = detectCategory(text) || "";
@@ -569,7 +817,9 @@ export default class SearchOrchestrator {
       totalBudget: inferredTotal,
       category,
       brand,
+      model,
       accessoryIntent,
+      refinementSuggestions: buildRefinementSuggestions({ category, query: text }),
       seoIntent,
       seoKeywords: Array.isArray(seoIntent.intent?.attributes) ? seoIntent.intent.attributes : [],
       marketplace: "",
@@ -656,6 +906,7 @@ export default class SearchOrchestrator {
       const effectiveInstallment = installmentData.installments?.available
         ? installmentData.installments
         : installmentData.estimatedInstallment;
+      const pricing = buildOfferPricing(richProduct);
       const searchText = intent.searchText || intent.query || "";
       const matchScore = rankSearchMatch(richProduct, searchText);
       const sourceText = normalizeText([richProduct.marketplace, richProduct.source, richProduct.sourceType, richProduct.seller, richProduct.store].filter(Boolean).join(" "));
@@ -672,6 +923,11 @@ export default class SearchOrchestrator {
         ...richProduct,
         installments: installmentData.installments,
         estimatedInstallment: installmentData.estimatedInstallment,
+        coupon: pricing.coupon,
+        shipping: pricing.shipping,
+        couponDiscount: pricing.couponDiscount,
+        verifiedCashback: pricing.verifiedCashback,
+        finalPrice: pricing.finalPrice,
         installmentConfidence: installmentData.installmentConfidence,
         installmentSource: installmentData.installmentSource,
         installmentWarning: installmentData.installmentWarning,
@@ -746,9 +1002,9 @@ export default class SearchOrchestrator {
     const intent = this.parseIntent(options);
     const candidates = this.listCandidates(intent);
     const prepared = this.prepareProducts(candidates, intent);
-    const fallbackNeeded = shouldUseMercadoLivreFallback(intent, prepared.products);
+    const externalLookupNeeded = shouldEnrichWithExternal(intent, prepared.products);
 
-    if (!fallbackNeeded) {
+    if (!externalLookupNeeded) {
       return {
         ...prepared,
         strategyUsed: "catalog-search",
@@ -758,64 +1014,101 @@ export default class SearchOrchestrator {
         fallbackUsed: false,
         fallbackAttempted: false,
         fallbackWarning: "",
+        refinementSuggestions: intent.refinementSuggestions || [],
       };
     }
 
-    const marketplaceProvider = this.marketplaceSearchProvider || getMercadoLivreSearchProvider();
-    const marketplaceDiagnostics = typeof marketplaceProvider.getDiagnostics === "function" ? marketplaceProvider.getDiagnostics() : null;
-    const marketplaceFallbackAllowed = canUseMercadoLivreFallback(marketplaceProvider);
-    if (!marketplaceFallbackAllowed) {
+    const providerEntries = [
+      { source: "mercado_livre", provider: this.marketplaceSearchProvider || getMercadoLivreSearchProvider() },
+      { source: "amazon", provider: getAmazonSearchProvider() },
+    ];
+    const enabledProviders = providerEntries.filter(({ provider }) => canUseMarketplaceProvider(provider));
+    const potentialSources = providerEntries
+      .filter(({ source, provider }) => {
+        if (source === "mercado_livre" && this.marketplaceSearchProvider) return true;
+        const diagnostics = typeof provider?.getDiagnostics === "function" ? provider.getDiagnostics() : null;
+        if (!diagnostics) return true;
+        return Boolean(
+          diagnostics.hasAccessToken
+          || diagnostics.hasRefreshToken
+          || diagnostics.hasSearchEndpoint
+          || diagnostics.hasKey,
+        );
+      })
+      .map((entry) => entry.source);
+
+    if (!enabledProviders.length) {
+      const hasMercadoLivre = potentialSources.includes("mercado_livre");
       return {
         ...prepared,
         strategyUsed: "catalog-search",
-        tokenState: marketplaceDiagnostics?.tokenState || "TOKEN_MISSING_OR_REQUIRED",
+        tokenState: "unavailable",
         statusHttp: 200,
         firstFive: prepared.products.slice(0, 5),
         fallbackUsed: false,
         fallbackAttempted: false,
-        fallbackSource: "mercado_livre",
-        fallbackWarning: "Mercado Livre indisponível sem autenticação configurada. Configure um token OAuth ou endpoint/proxy autenticado para ativar o fallback.",
+        fallbackSource: potentialSources.join(","),
+        fallbackWarning: hasMercadoLivre
+          ? "Mercado Livre indisponivel sem autenticacao configurada."
+          : "Nao encontramos fontes externas operacionais para complementar esta busca no momento.",
         fallbackCount: 0,
         fallbackRawCount: 0,
         fallbackStatusHttp: 0,
+        refinementSuggestions: intent.refinementSuggestions || [],
       };
     }
-    try {
-      const variantQueries = buildMercadoLivreFallbackVariants(intent);
-      let marketplaceResult = { products: [], rawCount: 0, returnedCount: 0, statusHttp: 200, fallbackText: "" };
-      let marketplaceProducts = [];
 
-      for (const variantQuery of variantQueries) {
-        marketplaceResult = await marketplaceProvider.searchProducts(variantQuery, {
-          limit: 20,
-          mode: intent.mode,
-          monthly: intent.monthly,
-          months: intent.months,
-          totalBudget: intent.totalBudget,
-        });
-        marketplaceProducts = filterCandidateList(marketplaceResult.products || [], intent)
-          .filter((product) => isDirectMercadoLivreProduct(product));
-        if (marketplaceProducts.length) break;
+    try {
+      const settled = await Promise.allSettled(
+        enabledProviders.map(({ source, provider }) => searchProviderVariants({ source, provider, intent })),
+      );
+
+      const externalProducts = [];
+      const successfulSources = [];
+      let fallbackRawCount = 0;
+
+      for (const result of settled) {
+        if (result.status !== "fulfilled") continue;
+        fallbackRawCount += Number(result.value?.result?.rawCount || 0);
+        if (Array.isArray(result.value?.products) && result.value.products.length) {
+          externalProducts.push(...result.value.products);
+          successfulSources.push(result.value.source);
+        }
       }
 
-      if (marketplaceProducts.length) {
-        const combinedProducts = [...candidates, ...marketplaceProducts];
+      const dedupedExternal = dedupeProducts(externalProducts);
+
+      if (dedupedExternal.length) {
+        const combinedProducts = dedupeProducts([...candidates, ...dedupedExternal]);
         const combinedPrepared = this.prepareProducts(combinedProducts, intent);
+        const strategyUsed = successfulSources.length === 1
+          ? successfulSources[0] === "mercado_livre"
+            ? "catalog-search+mercado-livre-fallback"
+            : successfulSources[0] === "amazon"
+              ? "catalog-search+amazon-fallback"
+              : "catalog-search+external-fallback"
+          : "catalog-search+external-fallback";
+        const warningPrefix = "Nao encontramos opcoes suficientes no catalogo principal do OQC.";
+        const fallbackWarning = successfulSources.length === 1
+          ? `${warningPrefix} Tambem encontramos anuncios diretos em ${providerDisplayLabel(successfulSources[0])}.`
+          : `${warningPrefix} Tambem encontramos anuncios diretos em fontes externas.`;
         return {
           ...combinedPrepared,
-          strategyUsed: "catalog-search+mercado-livre-fallback",
+          strategyUsed,
           tokenState: "n/a",
           statusHttp: 200,
           firstFive: combinedPrepared.products.slice(0, 5),
           fallbackUsed: true,
           fallbackAttempted: true,
-          fallbackSource: "mercado_livre",
-          fallbackWarning: "Não encontramos opções suficientes no catálogo principal do OQC. Buscamos anúncios diretos no Mercado Livre.",
-          fallbackCount: marketplaceProducts.length,
-          fallbackRawCount: marketplaceResult.rawCount || 0,
-          fallbackStatusHttp: marketplaceResult.statusHttp || 200,
+          fallbackSource: successfulSources.join(","),
+          fallbackWarning,
+          fallbackCount: dedupedExternal.length,
+          fallbackRawCount,
+          fallbackStatusHttp: 200,
+          refinementSuggestions: intent.refinementSuggestions || [],
         };
       }
+
       return {
         ...prepared,
         strategyUsed: "catalog-search",
@@ -824,11 +1117,12 @@ export default class SearchOrchestrator {
         firstFive: prepared.products.slice(0, 5),
         fallbackUsed: false,
         fallbackAttempted: true,
-        fallbackSource: "mercado_livre",
-        fallbackWarning: "Não encontramos opções suficientes no catálogo principal do OQC. Buscamos anúncios diretos no Mercado Livre, mas nenhum anúncio direto suficiente foi encontrado.",
+        fallbackSource: enabledProviders.map((entry) => entry.source).join(","),
+        fallbackWarning: "Nao encontramos opcoes adicionais suficientes nas fontes externas no momento.",
         fallbackCount: 0,
-        fallbackRawCount: marketplaceResult.rawCount || 0,
-        fallbackStatusHttp: marketplaceResult.statusHttp || 200,
+        fallbackRawCount,
+        fallbackStatusHttp: 200,
+        refinementSuggestions: intent.refinementSuggestions || [],
       };
     } catch (error) {
       return {
@@ -839,12 +1133,13 @@ export default class SearchOrchestrator {
         firstFive: prepared.products.slice(0, 5),
         fallbackUsed: false,
         fallbackAttempted: true,
-        fallbackSource: "mercado_livre",
-        fallbackWarning: "Não encontramos opções suficientes no catálogo principal do OQC. Buscamos anúncios diretos no Mercado Livre, mas a consulta falhou no momento.",
+        fallbackSource: enabledProviders.map((entry) => entry.source).join(","),
+        fallbackWarning: "Nao foi possivel consultar fontes externas adicionais neste momento.",
         fallbackCount: 0,
         fallbackRawCount: 0,
         fallbackStatusHttp: 200,
-        fallbackError: error?.message || "Erro ao consultar Mercado Livre",
+        fallbackError: error?.message || "Erro ao consultar fontes externas",
+        refinementSuggestions: intent.refinementSuggestions || [],
       };
     }
   }
