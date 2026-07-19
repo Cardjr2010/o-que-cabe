@@ -1551,19 +1551,36 @@ export default async function handler(req, res) {
   }
 
   if (pathname === "/api/amazon/status") {
-    const diagnostics = getAmazonSearchProvider().getDiagnostics();
+    const provider = getAmazonSearchProvider();
+    const shouldProbe = ["1", "true", "yes"].includes(String(url.searchParams.get("probe") || "").toLowerCase());
+    const diagnostics = shouldProbe
+      ? await provider.probe(url.searchParams.get("q") || "iphone 17")
+      : provider.getDiagnostics();
     sendJson(res, 200, {
       configured: Boolean(diagnostics.configured),
-      provider: diagnostics.provider || "rapidapi_amazon",
+      authenticated: diagnostics.authenticated ?? null,
+      reachable: diagnostics.reachable ?? null,
+      operational: diagnostics.operational ?? null,
+      provider: diagnostics.provider || "amazon_unconfigured",
+      authMode: diagnostics.authMode || "none",
+      marketplace: diagnostics.marketplace || null,
       hasKey: Boolean(diagnostics.hasKey),
+      hasClientId: Boolean(diagnostics.hasClientId),
+      hasClientSecret: Boolean(diagnostics.hasClientSecret),
+      hasAssociateTag: Boolean(diagnostics.hasAssociateTag),
       lastStatus: diagnostics.lastStatus ?? null,
       lastErrorType: diagnostics.lastErrorType ?? null,
+      lastSuccessAt: diagnostics.lastSuccessAt ?? null,
+      received: diagnostics.received ?? null,
+      accepted: diagnostics.accepted ?? null,
+      firstFive: diagnostics.firstFive ?? [],
     });
     return;
   }
 
   if (pathname === "/api/ml/status") {
-    const diagnostics = getMercadoLivreSearchProvider().getDiagnostics();
+    const provider = getMercadoLivreSearchProvider();
+    const diagnostics = provider.getDiagnostics();
     const token = readMercadoLivreOAuth();
     const authenticated = Boolean(diagnostics.hasAccessToken || diagnostics.hasRefreshToken);
     const tokenExpired = Boolean(token?.access_token && mercadolivreTokenExpired(token));
@@ -1574,10 +1591,17 @@ export default async function handler(req, res) {
       configured: Boolean(diagnostics.configured || mercadolivreConfigured()),
       provider: "mercado_livre",
       authenticated,
+      reachable: lastStatus != null,
       operational,
       tokenState: !authenticated ? "not_authenticated" : tokenExpired ? "expired" : (diagnostics.tokenState || "available"),
+      authMode: diagnostics.authMode || "anonymous",
+      hasClientId: Boolean(mercadolivreClientId()),
+      hasClientSecret: Boolean(mercadolivreClientSecret()),
+      hasRefreshToken: Boolean(diagnostics.hasRefreshToken),
       lastStatus,
       lastErrorType,
+      lastCheckedAt: diagnostics.lastCheckedAt ?? null,
+      lastValidatedAt: diagnostics.lastValidatedAt ?? null,
     });
     return;
   }

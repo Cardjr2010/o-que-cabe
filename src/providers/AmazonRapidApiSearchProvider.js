@@ -1,8 +1,12 @@
 import { normalizeText, scoreProductMatch } from "../catalog/ProductNormalizer.js";
 import { buildOfferPricing } from "../pricing/CouponProvider.js";
 
-const DEFAULT_HOST = "real-time-amazon-data.p.rapidapi.com";
-const DEFAULT_ENDPOINT = `https://${DEFAULT_HOST}/search`;
+const DEFAULT_RAPIDAPI_HOST = "real-time-amazon-data.p.rapidapi.com";
+const DEFAULT_RAPIDAPI_ENDPOINT = `https://${DEFAULT_RAPIDAPI_HOST}/search`;
+const DEFAULT_CREATORS_TOKEN_URL = "https://api.amazon.com/auth/o2/token";
+const DEFAULT_CREATORS_SEARCH_URL = "https://creatorsapi.amazon/catalog/v1/searchItems";
+
+let creatorsTokenCache = null;
 
 function envValue(...keys) {
   for (const key of keys) {
@@ -23,14 +27,56 @@ function configuredRapidApiHost(explicitValue = "") {
   if (explicitValue !== undefined && explicitValue !== null && String(explicitValue).trim()) {
     return String(explicitValue).trim();
   }
-  return envValue("RAPIDAPI_AMAZON_HOST", "AMAZON_RAPIDAPI_HOST") || DEFAULT_HOST;
+  return envValue("RAPIDAPI_AMAZON_HOST", "AMAZON_RAPIDAPI_HOST") || DEFAULT_RAPIDAPI_HOST;
 }
 
-function configuredEndpoint(explicitValue = "") {
+function configuredRapidApiEndpoint(explicitValue = "") {
   if (explicitValue !== undefined && explicitValue !== null && String(explicitValue).trim()) {
     return String(explicitValue).trim();
   }
-  return envValue("AMAZON_SEARCH_ENDPOINT") || DEFAULT_ENDPOINT;
+  return envValue("AMAZON_SEARCH_ENDPOINT") || DEFAULT_RAPIDAPI_ENDPOINT;
+}
+
+function configuredCreatorsClientId(explicitValue = "") {
+  if (explicitValue !== undefined && explicitValue !== null && String(explicitValue).trim()) {
+    return String(explicitValue).trim();
+  }
+  return envValue("AMAZON_CREATORS_CLIENT_ID");
+}
+
+function configuredCreatorsClientSecret(explicitValue = "") {
+  if (explicitValue !== undefined && explicitValue !== null && String(explicitValue).trim()) {
+    return String(explicitValue).trim();
+  }
+  return envValue("AMAZON_CREATORS_CLIENT_SECRET");
+}
+
+function configuredAssociateTag(explicitValue = "") {
+  if (explicitValue !== undefined && explicitValue !== null && String(explicitValue).trim()) {
+    return String(explicitValue).trim();
+  }
+  return envValue("AMAZON_ASSOCIATE_TAG");
+}
+
+function configuredMarketplace(explicitValue = "") {
+  if (explicitValue !== undefined && explicitValue !== null && String(explicitValue).trim()) {
+    return String(explicitValue).trim();
+  }
+  return envValue("AMAZON_MARKETPLACE", "RAPIDAPI_AMAZON_MARKETPLACE") || "www.amazon.com.br";
+}
+
+function configuredCreatorsTokenUrl(explicitValue = "") {
+  if (explicitValue !== undefined && explicitValue !== null && String(explicitValue).trim()) {
+    return String(explicitValue).trim();
+  }
+  return envValue("AMAZON_CREATORS_TOKEN_URL") || DEFAULT_CREATORS_TOKEN_URL;
+}
+
+function configuredCreatorsSearchUrl(explicitValue = "") {
+  if (explicitValue !== undefined && explicitValue !== null && String(explicitValue).trim()) {
+    return String(explicitValue).trim();
+  }
+  return envValue("AMAZON_CREATORS_SEARCH_URL") || DEFAULT_CREATORS_SEARCH_URL;
 }
 
 function toNumber(value, fallback = 0) {
@@ -45,6 +91,8 @@ function toNumber(value, fallback = 0) {
 }
 
 function extractResults(body = {}) {
+  if (Array.isArray(body?.searchResult?.items)) return body.searchResult.items;
+  if (Array.isArray(body?.SearchResult?.Items)) return body.SearchResult.Items;
   if (Array.isArray(body?.data?.products)) return body.data.products;
   if (Array.isArray(body?.data?.results)) return body.data.results;
   if (Array.isArray(body?.products)) return body.products;
@@ -83,11 +131,11 @@ function extractAsin(item = {}) {
 
 function extractUrl(item = {}) {
   const candidates = [
+    item.detailPageURL,
+    item.detailPageUrl,
     item.product_url,
     item.url,
     item.link,
-    item.detail_page_url,
-    item.detailPageURL,
     item.permalink,
   ];
   for (const candidate of candidates) {
@@ -98,19 +146,23 @@ function extractUrl(item = {}) {
 }
 
 function extractImage(item = {}) {
+  const nested = item?.images?.primary;
   return String(
-    item.product_photo
+    nested?.medium?.url
+    || nested?.large?.url
+    || nested?.small?.url
+    || item.product_photo
     || item.thumbnail
     || item.image
     || item.images?.[0]
-    || item.images?.primary
     || "",
   ).trim();
 }
 
 function extractTitle(item = {}) {
   return String(
-    item.product_title
+    item?.itemInfo?.title?.displayValue
+    || item.product_title
     || item.title
     || item.name
     || "",
@@ -119,12 +171,14 @@ function extractTitle(item = {}) {
 
 function extractAvailability(item = {}) {
   const candidates = [
+    item.availability?.message,
     item.product_availability,
     item.availability,
     item.availability_status,
     item.stock_status,
   ];
-  return String(candidates.find((value) => value != null) || "").trim();
+  const value = candidates.find((candidate) => candidate != null);
+  return String(value || "").trim();
 }
 
 function extractCondition(item = {}) {
@@ -133,7 +187,9 @@ function extractCondition(item = {}) {
 
 function extractPrice(item = {}) {
   return toNumber(
-    item.product_price
+    item?.offersV2?.listings?.[0]?.price?.amount
+    ?? item?.offers?.listings?.[0]?.price?.amount
+    ?? item.product_price
     ?? item.price
     ?? item.price_value
     ?? item.current_price
@@ -146,7 +202,9 @@ function extractPrice(item = {}) {
 
 function extractOriginalPrice(item = {}) {
   return toNumber(
-    item.product_original_price
+    item?.offersV2?.listings?.[0]?.savingBasis?.amount
+    ?? item?.offers?.listings?.[0]?.savingBasis?.amount
+    ?? item.product_original_price
     ?? item.original_price
     ?? item.was_price
     ?? item.list_price,
@@ -178,7 +236,7 @@ function isAccessoryItem(item = {}) {
     item.subcategory,
     item.product_byline,
   ].filter(Boolean).join(" "));
-  return /\b(capa|case|pelicula|carregador|cabo|fone|headphone|earbud|airpods|strap|pulseira|suporte|accessory|adapter|adaptador|cover)\b/.test(text);
+  return /\b(capa|case|pelicula|carregador|cabo|fone|headphone|earbud|airpods|strap|pulseira|suporte|accessory|adapter|adaptador|cover|wallet|bumper|skin|replacement|display|tela|bateria)\b/.test(text);
 }
 
 function rankItem(item = {}, query = "") {
@@ -198,7 +256,7 @@ function rankItem(item = {}, query = "") {
   return score + exactBonus + accessoryPenalty + imageBonus + urlBonus;
 }
 
-function normalizeAmazonItem(item = {}, query = "") {
+function normalizeAmazonItem(item = {}, query = "", providerName = "amazon") {
   const asin = extractAsin(item);
   const permalink = extractUrl(item);
   const title = extractTitle(item);
@@ -229,7 +287,7 @@ function normalizeAmazonItem(item = {}, query = "") {
     sourceName: "Amazon",
     sourceLabel: "Amazon",
     marketplace: "amazon",
-    provider: "rapidapi_amazon",
+    provider: providerName,
     sourceProductId: asin,
     asin,
     itemId: asin,
@@ -278,12 +336,45 @@ function normalizeAmazonItem(item = {}, query = "") {
   };
 }
 
+function normalizeErrorType(body = {}, responseStatus = 0, fallback = "") {
+  return String(
+    body?.reason
+    || body?.type
+    || body?.error
+    || body?.code
+    || fallback
+    || `HTTP_${responseStatus || 0}`
+  ).trim();
+}
+
 export class AmazonRapidApiSearchProvider {
-  constructor({ fetchImpl = null, apiKey = "", apiHost = "", searchEndpoint = "" } = {}) {
+  constructor({
+    fetchImpl = null,
+    apiKey = "",
+    apiHost = "",
+    searchEndpoint = "",
+    creatorsClientId = "",
+    creatorsClientSecret = "",
+    creatorsTokenUrl = "",
+    creatorsSearchUrl = "",
+    associateTag = "",
+    marketplace = "",
+    timeoutMs = 12000,
+  } = {}) {
     this.fetchImpl = fetchImpl;
     this.apiKey = apiKey;
     this.apiHost = apiHost;
     this.searchEndpoint = searchEndpoint;
+    this.creatorsClientId = creatorsClientId;
+    this.creatorsClientSecret = creatorsClientSecret;
+    this.creatorsTokenUrl = creatorsTokenUrl;
+    this.creatorsSearchUrl = creatorsSearchUrl;
+    this.associateTag = associateTag;
+    this.marketplace = marketplace;
+    this.timeoutMs = timeoutMs;
+    this.lastStatus = null;
+    this.lastErrorType = null;
+    this.lastSuccessAt = null;
   }
 
   getApiKey() {
@@ -295,10 +386,54 @@ export class AmazonRapidApiSearchProvider {
   }
 
   getEndpoint() {
-    return configuredEndpoint(this.searchEndpoint);
+    return configuredRapidApiEndpoint(this.searchEndpoint);
   }
 
-  buildUrl({ query = "", category = "", brand = "", model = "", maxPrice = 0, limit = 10, marketplace = "BR" } = {}) {
+  getCreatorsClientId() {
+    return configuredCreatorsClientId(this.creatorsClientId);
+  }
+
+  getCreatorsClientSecret() {
+    return configuredCreatorsClientSecret(this.creatorsClientSecret);
+  }
+
+  getCreatorsTokenUrl() {
+    return configuredCreatorsTokenUrl(this.creatorsTokenUrl);
+  }
+
+  getCreatorsSearchUrl() {
+    return configuredCreatorsSearchUrl(this.creatorsSearchUrl);
+  }
+
+  getAssociateTag() {
+    return configuredAssociateTag(this.associateTag);
+  }
+
+  getMarketplace() {
+    return configuredMarketplace(this.marketplace);
+  }
+
+  getProviderMode() {
+    if (this.getCreatorsClientId() && this.getCreatorsClientSecret() && this.getAssociateTag()) {
+      return "creators";
+    }
+    if (this.getApiKey() && this.getApiHost() && this.getEndpoint()) {
+      return "rapidapi";
+    }
+    return "none";
+  }
+
+  providerName() {
+    return this.getProviderMode() === "creators" ? "amazon_creators_api" : "rapidapi_amazon";
+  }
+
+  setDiagnostics({ status = null, errorType = null, success = false } = {}) {
+    if (status !== null) this.lastStatus = Number(status);
+    this.lastErrorType = errorType ? String(errorType) : null;
+    if (success) this.lastSuccessAt = new Date().toISOString();
+  }
+
+  buildRapidApiUrl({ query = "", category = "", brand = "", model = "", maxPrice = 0, limit = 10, marketplace = "BR" } = {}) {
     const url = new URL(this.getEndpoint());
     const searchQuery = [query, brand, model].filter(Boolean).join(" ").trim() || category || query;
     if (!url.searchParams.has("query")) url.searchParams.set("query", searchQuery);
@@ -313,49 +448,90 @@ export class AmazonRapidApiSearchProvider {
     return url.toString();
   }
 
-  async searchProducts(query = "", options = {}) {
-    const q = String(query || "").trim();
-    if (!q) {
-      return {
-        products: [],
-        dataMode: "demo",
-        strategyUsed: "amazon_direct_item_search",
-        statusHttp: 400,
-        error: "QUERY_EMPTY",
-        rawCount: 0,
-        returnedCount: 0,
-      };
-    }
-
-    const apiKey = this.getApiKey();
-    const apiHost = this.getApiHost();
-    if (!apiKey || !apiHost) {
-      return {
-        products: [],
-        dataMode: "demo",
-        strategyUsed: "amazon_direct_item_search",
-        statusHttp: 503,
-        error: "AMAZON_NOT_CONFIGURED",
-        rawCount: 0,
-        returnedCount: 0,
-      };
-    }
-
+  async requestWithTimeout(url, options = {}) {
     const fetchImpl = this.fetchImpl || globalThis.fetch;
-    const response = await fetchImpl(this.buildUrl({
-      query: q,
-      category: options.category || "",
-      brand: options.brand || "",
-      model: options.model || "",
-      maxPrice: Number(options.maxPrice || options.totalBudget || 0),
-      limit: Number(options.limit || 10),
-      marketplace: options.marketplace || "BR",
-    }), {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(new Error("PROVIDER_TIMEOUT")), this.timeoutMs);
+    try {
+      return await fetchImpl(url, {
+        ...options,
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  async getCreatorsToken() {
+    const now = Date.now();
+    if (creatorsTokenCache && creatorsTokenCache.expiresAt > now + 60_000) {
+      return creatorsTokenCache.accessToken;
+    }
+
+    const response = await this.requestWithTimeout(this.getCreatorsTokenUrl(), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        grant_type: "client_credentials",
+        client_id: this.getCreatorsClientId(),
+        client_secret: this.getCreatorsClientSecret(),
+        scope: "creatorsapi::default",
+      }),
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok || !body?.access_token) {
+      this.setDiagnostics({
+        status: response.status,
+        errorType: normalizeErrorType(body, response.status, "AMAZON_TOKEN_FAILED"),
+      });
+      return { ok: false, response, body, accessToken: "" };
+    }
+
+    creatorsTokenCache = {
+      accessToken: body.access_token,
+      expiresAt: now + (Number(body.expires_in || 3600) * 1000),
+    };
+    return { ok: true, response, body, accessToken: body.access_token };
+  }
+
+  async searchViaCreators(query = "", options = {}) {
+    const q = String(query || "").trim();
+    const tokenResult = await this.getCreatorsToken();
+    if (!tokenResult.ok || !tokenResult.accessToken) {
+      return {
+        products: [],
+        dataMode: "demo",
+        strategyUsed: "amazon_direct_item_search",
+        statusHttp: tokenResult.response?.status || 503,
+        error: normalizeErrorType(tokenResult.body, tokenResult.response?.status, "AMAZON_TOKEN_FAILED"),
+        provider: this.providerName(),
+        rawCount: 0,
+        returnedCount: 0,
+        firstFive: [],
+      };
+    }
+
+    const searchQuery = [q, options.brand || "", options.model || ""].filter(Boolean).join(" ").trim();
+    const response = await this.requestWithTimeout(this.getCreatorsSearchUrl(), {
+      method: "POST",
       headers: {
+        Authorization: `Bearer ${tokenResult.accessToken}`,
+        "Content-Type": "application/json",
         Accept: "application/json",
-        "x-rapidapi-key": apiKey,
-        "x-rapidapi-host": apiHost,
+        "x-marketplace": this.getMarketplace(),
       },
+      body: JSON.stringify({
+        partnerTag: this.getAssociateTag(),
+        partnerType: "Associates",
+        keywords: searchQuery,
+        itemCount: Number(options.limit || 10),
+        resources: [
+          "images.primary.medium",
+          "images.primary.large",
+          "itemInfo.title",
+          "offersV2.listings.price",
+        ],
+      }),
     });
     const rawText = await response.text().catch(() => "");
     let body = {};
@@ -365,21 +541,9 @@ export class AmazonRapidApiSearchProvider {
       body = {};
     }
 
-    if (!response.ok) {
-      return {
-        products: [],
-        dataMode: "demo",
-        strategyUsed: "amazon_direct_item_search",
-        statusHttp: response.status,
-        error: body?.message || body?.error || `HTTP ${response.status}`,
-        rawCount: 0,
-        returnedCount: 0,
-      };
-    }
-
     const results = extractResults(body);
     const normalized = results
-      .map((item) => normalizeAmazonItem(item, q))
+      .map((item) => normalizeAmazonItem(item, searchQuery, this.providerName()))
       .filter((item) => item.asin && item.permalink && !looksLikeGenericAmazonUrl(item.permalink) && item.price > 0 && item.title)
       .sort((left, right) => {
         const scoreDelta = Number(right.matchScore || 0) - Number(left.matchScore || 0);
@@ -390,12 +554,92 @@ export class AmazonRapidApiSearchProvider {
       })
       .slice(0, Number(options.limit || 10));
 
+    const errorType = response.ok
+      ? (normalized.length ? null : "NO_DIRECT_ITEMS")
+      : normalizeErrorType(body, response.status, "AMAZON_CREATORS_FAILED");
+    this.setDiagnostics({
+      status: response.status,
+      errorType,
+      success: response.ok && normalized.length > 0,
+    });
+
     return {
       products: normalized,
       dataMode: normalized.length ? "real" : "demo",
       strategyUsed: "amazon_direct_item_search",
       statusHttp: response.status,
-      error: normalized.length ? "" : "NO_DIRECT_ITEMS",
+      error: errorType || "",
+      provider: this.providerName(),
+      rawCount: results.length,
+      returnedCount: normalized.length,
+      firstFive: normalized.slice(0, 5).map((item) => ({
+        asin: item.asin,
+        title: item.title,
+        finalPrice: item.finalPrice,
+        permalink: item.permalink,
+      })),
+      rawResponseSample: response.ok ? undefined : {
+        message: body?.message || null,
+        reason: body?.reason || null,
+        type: body?.type || null,
+      },
+    };
+  }
+
+  async searchViaRapidApi(query = "", options = {}) {
+    const q = String(query || "").trim();
+    const response = await this.requestWithTimeout(this.buildRapidApiUrl({
+      query: q,
+      category: options.category || "",
+      brand: options.brand || "",
+      model: options.model || "",
+      maxPrice: Number(options.maxPrice || options.totalBudget || 0),
+      limit: Number(options.limit || 10),
+      marketplace: options.marketplace || "BR",
+    }), {
+      headers: {
+        Accept: "application/json",
+        "x-rapidapi-key": this.getApiKey(),
+        "x-rapidapi-host": this.getApiHost(),
+      },
+    });
+    const rawText = await response.text().catch(() => "");
+    let body = {};
+    try {
+      body = rawText ? JSON.parse(rawText) : {};
+    } catch {
+      body = {};
+    }
+
+    const results = extractResults(body);
+    const normalized = results
+      .map((item) => normalizeAmazonItem(item, q, this.providerName()))
+      .filter((item) => item.asin && item.permalink && !looksLikeGenericAmazonUrl(item.permalink) && item.price > 0 && item.title)
+      .sort((left, right) => {
+        const scoreDelta = Number(right.matchScore || 0) - Number(left.matchScore || 0);
+        if (scoreDelta !== 0) return scoreDelta;
+        const accessoryDelta = Number(Boolean(isAccessoryItem(right.raw))) - Number(Boolean(isAccessoryItem(left.raw)));
+        if (accessoryDelta !== 0) return accessoryDelta;
+        return Number(left.finalPrice || left.price || 0) - Number(right.finalPrice || right.price || 0);
+      })
+      .slice(0, Number(options.limit || 10));
+
+    const errorType = response.ok
+      ? (normalized.length ? null : "NO_DIRECT_ITEMS")
+      : normalizeErrorType(body, response.status, "AMAZON_RAPIDAPI_FAILED");
+    this.setDiagnostics({
+      status: response.status,
+      errorType,
+      success: response.ok && normalized.length > 0,
+    });
+
+    return {
+      products: normalized,
+      dataMode: normalized.length ? "real" : "demo",
+      strategyUsed: "amazon_direct_item_search",
+      statusHttp: response.status,
+      error: errorType || "",
+      provider: this.providerName(),
       rawCount: results.length,
       returnedCount: normalized.length,
       firstFive: normalized.slice(0, 5).map((item) => ({
@@ -407,15 +651,122 @@ export class AmazonRapidApiSearchProvider {
     };
   }
 
-  getDiagnostics() {
-    const apiKey = this.getApiKey();
+  async searchProducts(query = "", options = {}) {
+    const q = String(query || "").trim();
+    if (!q) {
+      return {
+        products: [],
+        dataMode: "demo",
+        strategyUsed: "amazon_direct_item_search",
+        statusHttp: 400,
+        error: "QUERY_EMPTY",
+        provider: this.providerName(),
+        rawCount: 0,
+        returnedCount: 0,
+        firstFive: [],
+      };
+    }
+
+    const mode = this.getProviderMode();
+    if (mode === "creators") {
+      return this.searchViaCreators(q, options);
+    }
+    if (mode === "rapidapi") {
+      return this.searchViaRapidApi(q, options);
+    }
+    this.setDiagnostics({ status: 503, errorType: "AMAZON_NOT_CONFIGURED" });
     return {
-      configured: Boolean(apiKey && this.getApiHost() && this.getEndpoint()),
-      provider: "rapidapi_amazon",
-      hasKey: Boolean(apiKey),
-      hasHost: Boolean(this.getApiHost()),
-      hasEndpoint: Boolean(this.getEndpoint()),
-      authMode: apiKey ? "rapidapi-key" : "none",
+      products: [],
+      dataMode: "demo",
+      strategyUsed: "amazon_direct_item_search",
+      statusHttp: 503,
+      error: "AMAZON_NOT_CONFIGURED",
+      provider: "amazon_unconfigured",
+      rawCount: 0,
+      returnedCount: 0,
+      firstFive: [],
+    };
+  }
+
+  async probe(query = "iphone 17") {
+    const mode = this.getProviderMode();
+    const diagnostics = this.getDiagnostics();
+    if (mode === "none") {
+      return {
+        ...diagnostics,
+        authenticated: false,
+        reachable: false,
+        operational: false,
+      };
+    }
+    const result = await this.searchProducts(query, { limit: 3, marketplace: "BR" });
+    return {
+      ...this.getDiagnostics(),
+      authenticated: mode === "creators" ? result.statusHttp !== 401 : Boolean(this.getApiKey()),
+      reachable: Boolean(result.statusHttp),
+      operational: result.dataMode === "real" && Number(result.returnedCount || 0) > 0,
+      lastStatus: result.statusHttp,
+      lastErrorType: result.error || null,
+      received: Number(result.rawCount || 0),
+      accepted: Number(result.returnedCount || 0),
+      firstFive: result.firstFive || [],
+    };
+  }
+
+  getDiagnostics() {
+    const mode = this.getProviderMode();
+    const provider = this.providerName();
+    if (mode === "creators") {
+      return {
+        configured: Boolean(this.getCreatorsClientId() && this.getCreatorsClientSecret() && this.getAssociateTag()),
+        provider,
+        authMode: "oauth_client_credentials",
+        hasKey: false,
+        hasHost: false,
+        hasEndpoint: Boolean(this.getCreatorsSearchUrl()),
+        hasClientId: Boolean(this.getCreatorsClientId()),
+        hasClientSecret: Boolean(this.getCreatorsClientSecret()),
+        hasAssociateTag: Boolean(this.getAssociateTag()),
+        marketplace: this.getMarketplace(),
+        lastStatus: this.lastStatus,
+        lastErrorType: this.lastErrorType,
+        lastSuccessAt: this.lastSuccessAt,
+      };
+    }
+
+    if (mode === "rapidapi") {
+      const apiKey = this.getApiKey();
+      return {
+        configured: Boolean(apiKey && this.getApiHost() && this.getEndpoint()),
+        provider,
+        authMode: apiKey ? "rapidapi-key" : "none",
+        hasKey: Boolean(apiKey),
+        hasHost: Boolean(this.getApiHost()),
+        hasEndpoint: Boolean(this.getEndpoint()),
+        hasClientId: false,
+        hasClientSecret: false,
+        hasAssociateTag: false,
+        marketplace: this.getMarketplace(),
+        lastStatus: this.lastStatus,
+        lastErrorType: this.lastErrorType,
+        lastSuccessAt: this.lastSuccessAt,
+      };
+    }
+
+    return {
+      configured: false,
+      provider: "amazon_unconfigured",
+      authMode: "none",
+      hasKey: false,
+      hasHost: false,
+      hasEndpoint: false,
+      hasClientId: false,
+      hasClientSecret: false,
+      hasAssociateTag: false,
+      marketplace: this.getMarketplace(),
+      lastStatus: this.lastStatus,
+      lastErrorType: this.lastErrorType,
+      lastSuccessAt: this.lastSuccessAt,
     };
   }
 }
