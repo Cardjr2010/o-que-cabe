@@ -129,7 +129,7 @@ test("/api/search usa catálogo real antes de demo", async () => {
   }
 });
 
-test("demo continua sem link externo quando nao ha produto real", async () => {
+test("busca sem produto real nao devolve demo nem link externo", async () => {
   const originalFetch = global.fetch;
   global.fetch = async () => {
     throw new Error("offline");
@@ -141,8 +141,8 @@ test("demo continua sem link externo quando nao ha produto real", async () => {
     const body = JSON.parse(res.body);
 
     assert.equal(res.statusCode, 200);
-    assert.equal(body.dataMode, "demo");
-    assert.ok(body.products.every((product) => product.dataMode === "demo"));
+    assert.equal(body.dataMode, "none");
+    assert.ok(body.products.every((product) => product.dataMode !== "demo"));
     assert.ok(body.products.every((product) => !product.productUrl || !product.productUrl.includes("mercadolivre.com.br/")));
   } finally {
     global.fetch = originalFetch;

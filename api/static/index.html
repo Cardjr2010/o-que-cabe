@@ -21,8 +21,8 @@
         <nav class="main-nav" aria-label="Navegação principal">
           <a class="topbar-link active" href="/">Início</a>
           <a class="topbar-link" href="#departments">Departamentos</a>
-          <a class="topbar-link" href="#blog">Blog</a>
-          <a class="topbar-link" href="#conta">Minha Conta</a>
+          <span class="topbar-link nav-future" aria-disabled="true">Blog <small>Em breve</small></span>
+          <span class="topbar-link nav-future" aria-disabled="true">Minha Conta <small>Em breve</small></span>
         </nav>
         <div class="trust-pill">
           <svg viewBox="0 0 24 24"><path d="M12 3 19 6v5c0 5-3 8-7 10-4-2-7-5-7-10V6l7-3Z"/><path d="m9 12 2 2 4-5"/></svg>
@@ -36,7 +36,7 @@
         <div class="hero-copy">
           <h1>Você diz quanto pode pagar.<br />O OQC encontra a melhor compra.</h1>
           <p>
-            Pesquisamos 15.999 produtos reais em diferentes lojas para encontrar opções que cabem no seu orçamento.
+            Pesquisamos 15.999 produtos publicados em diferentes fontes.
             <strong>Compra inteligente pelo seu orçamento, sem empurrar produto que não cabe.</strong>
           </p>
         </div>
@@ -50,14 +50,14 @@
             <label for="productInput">O que procura?</label>
             <div class="input-icon">
               <svg viewBox="0 0 24 24"><path d="m21 21-5-5"/><circle cx="10" cy="10" r="7"/></svg>
-              <input id="productInput" name="product" value="celular" placeholder="Ex: Celular, Notebook..." required />
+              <input id="productInput" name="product" placeholder="Ex: celular, notebook ou flores" autocomplete="off" required />
             </div>
           </div>
           <div class="field">
             <label for="monthlyInput" id="monthlyLabel">Máx. mensal</label>
             <div class="money-input">
               <span>R$</span>
-              <input id="monthlyInput" name="monthly" type="number" min="1" step="1" value="500" required />
+              <input id="monthlyInput" name="monthly" type="number" min="1" step="1" placeholder="Ex: 500" required />
             </div>
           </div>
           <div class="field" id="monthsField">
@@ -74,7 +74,7 @@
             <label for="totalBudgetInput">Orçamento total</label>
             <div class="money-input">
               <span>R$</span>
-              <input id="totalBudgetInput" name="totalBudget" type="number" min="1" step="1" value="500" disabled />
+              <input id="totalBudgetInput" name="totalBudget" type="number" min="1" step="1" placeholder="Ex: 1.500" disabled />
             </div>
           </div>
           <button class="submit-button" type="submit">Descobrir o que cabe</button>
@@ -87,7 +87,7 @@
       <section class="trust-band" id="catalogTrustBand" aria-live="polite">
         <article>
           <strong id="trustTotalCatalog">15.999</strong>
-          <span>produtos reais analisados</span>
+          <span>produtos publicados</span>
         </article>
         <article>
           <strong id="trustDepartments">16.740</strong>
@@ -95,11 +95,11 @@
         </article>
         <article>
           <strong id="trustSources">741</strong>
-          <span>ocultos por qualidade/fonte</span>
+          <span>produtos ocultos por qualidade ou fonte</span>
         </article>
         <article>
-          <strong id="trustUpdated">Hoje</strong>
-          <span>catálogo atualizado</span>
+          <strong id="trustUpdated">Catálogo ativo</strong>
+          <span id="trustUpdatedLabel">status da base</span>
         </article>
       </section>
 
@@ -131,43 +131,27 @@
         <div class="decision-grid" id="decisionHighlightsGrid" aria-live="polite"></div>
       </section>
 
-      <section class="pechinchas" id="pechinchas">
-        <div class="section-head section-head-tight">
-          <div>
-            <p class="panel-label">Atalhos reais</p>
-            <h2>Buscas populares para ir direto ao ponto</h2>
-          </div>
-          <p class="section-note">Os atalhos vêm do catálogo real e ajudam a entrar direto em categorias úteis.</p>
-        </div>
-        <div class="pechincha-grid" id="pechinchaGrid" aria-live="polite">
-          <div class="skeleton skeleton-chip" aria-hidden="true">
-            <span class="skeleton-line skeleton-line-lg"></span>
-            <span class="skeleton-line skeleton-line-sm"></span>
-          </div>
-        </div>
-      </section>
-
-      <section class="results-area">
+      <section class="results-area" hidden>
         <div class="section-head">
           <div>
-            <p class="panel-label">Seu teto estimado: <strong id="budgetTotal">R$ 6.000,00</strong> <span id="budgetLine">R$ 500,00 por mês em até 12x</span></p>
-            <h2 id="summaryTitle">Faça uma busca para começar</h2>
+            <p class="panel-label">Orçamento informado: <strong id="budgetTotal"></strong> <span id="budgetLine"></span></p>
+            <h2 id="summaryTitle">Informe o produto e seu orçamento.</h2>
           </div>
         </div>
-        <p class="marketline" id="marketline">Seu teto estimado: R$ 6.000, considerando R$ 500 por mês em até 12x.</p>
+        <p class="marketline" id="marketline">Informe seu orçamento para ver o que cabe.</p>
 
         <div class="notice" id="notice" hidden></div>
         <div class="grid" id="results">
           <article class="empty-state">
-        <strong>Teste uma busca rápida</strong>
-            <span>O resultado aparece aqui com parcela, total e botão de oferta.</span>
+            <strong>Informe o produto e seu orçamento.</strong>
+            <span>O OQC mostra apenas ofertas confirmadas e coerentes com a busca.</span>
           </article>
         </div>
       </section>
 
       <section class="categories" id="departments">
-        <h2><span>↗</span> Departamentos principais</h2>
-        <p class="seo-muted" id="homeCatalogState">15.999 produtos reais analisados</p>
+        <h2><span>↗</span> Departamentos</h2>
+        <p class="seo-muted" id="homeCatalogState">Categorias com produtos publicados no catálogo.</p>
         <div class="category-grid" id="categoryGrid" aria-live="polite">
           <div class="skeleton skeleton-card" aria-hidden="true">
             <span class="skeleton-badge"></span>
@@ -188,34 +172,8 @@
         </div>
       </section>
 
-      <section class="departments-showcase" id="departmentsShowcase">
-        <div class="section-head section-head-tight">
-          <div>
-            <p class="panel-label">Departamentos reais</p>
-            <h2>Organização compacta para decidir sem ruído</h2>
-          </div>
-          <p class="section-note">Os grupos mais fortes aparecem aqui como apoio à busca, não como vitrine de fornecedor.</p>
-        </div>
-        <div class="departments-menu-shell">
-          <div class="departments-menu-panel" id="departmentsMenu" aria-live="polite"></div>
-        </div>
-      </section>
-
-      <section class="utility-panels">
-        <article id="blog">
-          <span class="utility-label">Blog</span>
-          <strong>Aprenda antes de comprar</strong>
-          <p>Guias curtos para decidir com mais clareza e menos impulso.</p>
-        </article>
-        <article id="conta">
-          <span class="utility-label">Conta</span>
-          <strong>Sua área pessoal</strong>
-          <p>Crie sua conta, salve buscas e acompanhe os produtos que você quer monitorar.</p>
-        </article>
-      </section>
-
       <section class="how">
-        <h2>Como o OQC decide</h2>
+        <h2>Como o OQC funciona</h2>
         <div class="how-grid">
           <article>
             <div><svg viewBox="0 0 24 24"><path d="m21 21-5-5"/><circle cx="10" cy="10" r="7"/></svg></div>
@@ -225,12 +183,12 @@
           <article>
             <div><svg viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4 2v-8L3 5Z"/></svg></div>
             <h3>2. Compara preço, orçamento e qualidade</h3>
-            <p>Mostramos apenas o que cabe, o que aperta e o que fica fora do orçamento sem mascarar a decisão.</p>
+            <p>Organizamos preço, orçamento, origem e qualidade dos dados para destacar opções mais coerentes.</p>
           </article>
           <article>
             <div><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z"/><path d="m8 12 2 2 5-5"/></svg></div>
             <h3>3. Mostra o que realmente faz sentido</h3>
-            <p>Quando existe produto real, a oferta aparece com clareza. Quando não existe, o OQC não inventa.</p>
+            <p>Frete, parcelamento e reputação são considerados quando a fonte disponibiliza essas informações.</p>
           </article>
         </div>
       </section>

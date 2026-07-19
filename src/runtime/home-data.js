@@ -138,11 +138,28 @@ function labelHomeSource(value = "") {
   const source = normalizedCatalogCategoryKey(value);
   if (source === "saldao_informatica" || source === "actionpay_saldao" || source.includes("saldao")) return "Saldão da Informática";
   if (source === "infostore" || source === "info store" || source === "info_store") return "Info Store - Informática";
+  if (source === "flores_online" || source === "flores online") return "Flores Online";
+  if (source === "isabela_flores" || source === "isabela flores") return "Isabela Flores";
+  if (source === "ccp") return "CCP";
+  if (source === "authentical") return "Authentical";
   if (source === "mi_shop" || source === "mi shop" || source === "mishop") return "Mi Shop";
   if (source === "actionpay") return "Actionpay";
   if (source === "awin") return "Awin";
   if (source === "google_merchant") return "Google Merchant";
   return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function resolveCatalogUpdatedAt(items = []) {
+  const now = Date.now();
+  let latest = 0;
+  for (const item of Array.isArray(items) ? items : []) {
+    for (const value of [item?.lastCheckedAt, item?.updatedAt, item?.importedAt]) {
+      const timestamp = Date.parse(value || "");
+      if (!Number.isFinite(timestamp) || timestamp <= 0 || timestamp > now + 86_400_000) continue;
+      latest = Math.max(latest, timestamp);
+    }
+  }
+  return latest ? new Date(latest).toISOString() : null;
 }
 
 export function buildHomeCatalogData() {
@@ -155,7 +172,12 @@ export function buildHomeCatalogData() {
     const seoEngine = getSEOIntelligenceEngine();
     const seoHotSearches = seoEngine.buildSeoHotSearches(6);
     const seoHomeButtons = seoEngine.buildHomeButtons(catalogForHome);
-    const menu = seoEngine.buildMenu();
+    const menu = [
+      { label: "Início", href: "/", active: true },
+      { label: "Departamentos", href: "#departments", active: true },
+      { label: "Blog", href: "", future: true, active: false },
+      { label: "Minha Conta", href: "", future: true, active: false },
+    ];
 
     const departments = Array.isArray(analysis.departments) ? analysis.departments : [];
     const curatedHomeButtons = buildCuratedHomeItems(analysis.categories, departments);
@@ -178,6 +200,7 @@ export function buildHomeCatalogData() {
       totalPublishedProducts: catalogDiagnostics.publishedCount ?? items.length,
       hiddenProducts: catalogDiagnostics.hiddenProducts ?? 0,
       analyzedProducts: analysis.analyzedProducts || catalogForHome.length,
+      catalogUpdatedAt: resolveCatalogUpdatedAt(catalogForHome),
       focusLabel: analysis.focusLabel || "Consultor de compras",
       menu,
       categories,
@@ -225,8 +248,14 @@ export function buildHomeCatalogData() {
       totalPublishedProducts: 0,
       hiddenProducts: 0,
       analyzedProducts: 0,
+      catalogUpdatedAt: null,
       focusLabel: "Consultor de compras",
-      menu: getSEOIntelligenceEngine().buildMenu(),
+      menu: [
+        { label: "Início", href: "/", active: true },
+        { label: "Departamentos", href: "#departments", active: true },
+        { label: "Blog", href: "", future: true, active: false },
+        { label: "Minha Conta", href: "", future: true, active: false },
+      ],
       categories: [],
       homeButtons: [],
       departments: [],

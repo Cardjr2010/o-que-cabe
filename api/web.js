@@ -1532,6 +1532,33 @@ export default async function handler(req, res) {
     return;
   }
 
+  if (pathname === "/api/amazon/status") {
+    sendJson(res, 200, {
+      configured: false,
+      provider: "rapidapi_amazon",
+      hasKey: Boolean(process.env.RAPIDAPI_AMAZON_KEY),
+      lastStatus: null,
+      lastErrorType: null,
+    });
+    return;
+  }
+
+  if (pathname === "/api/ml/status") {
+    const token = readMercadoLivreOAuth();
+    const authenticated = Boolean(token?.access_token);
+    const tokenExpired = Boolean(authenticated && mercadolivreTokenExpired(token));
+    sendJson(res, 200, {
+      configured: mercadolivreConfigured(),
+      provider: "mercado_livre",
+      authenticated,
+      operational: authenticated && !tokenExpired,
+      tokenState: !authenticated ? "not_authenticated" : tokenExpired ? "expired" : "available",
+      lastStatus: null,
+      lastErrorType: null,
+    });
+    return;
+  }
+
   if (pathname === "/") {
     send(res, 200, renderHome(), { "Content-Type": "text/html; charset=utf-8" });
     return;
@@ -1556,7 +1583,7 @@ export default async function handler(req, res) {
   if (pathname === "/api/search") {
     const q = url.searchParams.get("q") || "";
     const mode = (url.searchParams.get("mode") || "monthly").toLowerCase();
-    const monthly = mode === "total" ? Number(url.searchParams.get("monthly") || "0") : Number(url.searchParams.get("monthly") || "50");
+    const monthly = Number(url.searchParams.get("monthly") || "0");
     const months = Number(url.searchParams.get("months") || "12");
     const totalBudget = mode === "total"
       ? Number(url.searchParams.get("totalBudget") || "0")
@@ -1569,8 +1596,8 @@ export default async function handler(req, res) {
         months,
         totalBudget,
       });
-      const selectedProducts = searchResult.products || [];
-      const dataMode = searchResult.dataMode || (selectedProducts.some((item) => String(item.dataMode || item.mode || "").toLowerCase().startsWith("real") || String(item.dataMode || item.mode || "").toLowerCase() === "seed") ? "real" : "demo");
+      const selectedProducts = (searchResult.products || []).filter((item) => String(item?.dataMode || item?.mode || "").toLowerCase() !== "demo");
+      const dataMode = selectedProducts.some((item) => String(item.dataMode || item.mode || "").toLowerCase().startsWith("real") || String(item.dataMode || item.mode || "").toLowerCase() === "seed") ? "real" : "none";
       const response = buildOqcResponse({
         products: selectedProducts,
         query: q,
@@ -1582,26 +1609,31 @@ export default async function handler(req, res) {
       });
       const advisor = buildAdvisorSnapshot(searchResult, q);
 
+      const publicWarning = searchResult.fallbackUsed && Number(searchResult.fallbackCount || 0) > 0
+        ? "Também encontramos anúncios diretos em fontes externas."
+        : searchResult.fallbackAttempted
+          ? "Não encontramos opções adicionais nesta fonte."
+          : selectedProducts.length > 0 && selectedProducts.length < 3
+            ? "Encontramos poucas opções no catálogo atual."
+            : selectedProducts.length
+              ? ""
+              : "Não encontramos uma oferta confirmada para esta busca.";
+
       sendJson(res, 200, {
         ok: true,
         ...response,
         advisor,
         strategyUsed: searchResult.strategyUsed,
-        tokenState: searchResult.tokenState,
-        statusHttp: searchResult.statusHttp,
         fallbackUsed: Boolean(searchResult.fallbackUsed),
         fallbackAttempted: Boolean(searchResult.fallbackAttempted),
         fallbackSource: searchResult.fallbackSource || "",
         fallbackCount: Number(searchResult.fallbackCount || 0),
-        fallbackRawCount: Number(searchResult.fallbackRawCount || 0),
-        fallbackStatusHttp: searchResult.fallbackStatusHttp || null,
         returnedCount: searchResult.returnedCount,
-        firstFive: searchResult.firstFive,
         searchIntent: searchResult.intent,
         installmentWarnings: searchResult.warnings,
-        warning: searchResult.fallbackWarning || (selectedProducts.length ? "" : "NÃ£o encontramos exemplo demonstrativo confiÃ¡vel para este orÃ§amento."),
+        warning: publicWarning,
       });
-    } catch (error) {
+    } catch {
       const response = buildOqcResponse({
         products: [],
         query: q,
@@ -1609,13 +1641,17 @@ export default async function handler(req, res) {
         monthly,
         months,
         totalBudget,
-        dataMode: "demo",
+        dataMode: "none",
       });
       sendJson(res, 200, {
         ok: true,
         ...response,
         advisor: buildAdvisorSnapshot(response, q),
-        warning: `${error.message || "Falha na busca"}. Mostrando demonstraÃ§Ã£o por enquanto.`,
+        fallbackUsed: false,
+        fallbackAttempted: false,
+        fallbackSource: "",
+        fallbackCount: 0,
+        warning: "Não encontramos uma oferta confirmada para esta busca.",
       });
     }
     return;

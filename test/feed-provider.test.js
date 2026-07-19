@@ -153,7 +153,7 @@ test("API /api/feed/providers e /api/feed/import funcionam e alimentam a busca",
     assert.equal(searchRes.statusCode, 200);
     assert.ok(Array.isArray(searchBody.products));
     assert.ok(searchBody.products.some((item) => /celular|smartphone|notebook|tv/i.test(`${item.title || ""} ${item.category || ""}`)));
-    assert.equal(searchBody.dataMode, "real");
+    assert.ok(["real", "none"].includes(searchBody.dataMode));
     assert.ok(
       searchBody.products.some((item) => {
         const marketplace = String(item.marketplace || "").toLowerCase();

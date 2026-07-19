@@ -1191,6 +1191,42 @@ export async function requestHandler(req, res) {
   const requestUrl = new URL(req.url, `http://localhost:${port}`);
   const method = String(req.method || "GET").toUpperCase();
 
+  if (requestUrl.pathname === "/api/health") {
+    sendJson(res, 200, {
+      ok: true,
+      buildCommit: process.env.VERCEL_GIT_COMMIT_SHA || "local",
+      apiVersion: "health-minimal-002",
+    });
+    return;
+  }
+
+  if (requestUrl.pathname === "/api/amazon/status") {
+    sendJson(res, 200, {
+      configured: false,
+      provider: "rapidapi_amazon",
+      hasKey: Boolean(process.env.RAPIDAPI_AMAZON_KEY),
+      lastStatus: null,
+      lastErrorType: null,
+    });
+    return;
+  }
+
+  if (requestUrl.pathname === "/api/ml/status") {
+    const data = await getMercadoLivreTokenData();
+    const authenticated = Boolean(data?.access_token);
+    const tokenIsExpired = Boolean(authenticated && tokenExpired(data));
+    sendJson(res, 200, {
+      configured: Boolean(mercadolivreClientId() && mercadolivreClientSecret() && mercadolivreRedirectUri()),
+      provider: "mercado_livre",
+      authenticated,
+      operational: authenticated && !tokenIsExpired,
+      tokenState: !authenticated ? "not_authenticated" : tokenIsExpired ? "expired" : "available",
+      lastStatus: null,
+      lastErrorType: null,
+    });
+    return;
+  }
+
   if (requestUrl.pathname === "/api/home-data") {
     sendJson(res, 200, buildHomeCatalogData());
     return;

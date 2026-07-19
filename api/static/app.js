@@ -29,10 +29,22 @@ const trustTotalCatalog = document.querySelector("#trustTotalCatalog");
 const trustDepartments = document.querySelector("#trustDepartments");
 const trustSources = document.querySelector("#trustSources");
 const trustUpdated = document.querySelector("#trustUpdated");
+const trustUpdatedLabel = document.querySelector("#trustUpdatedLabel");
 const appView = document.body.dataset.view || "home";
 const apiEndpoint = document.body.dataset.endpoint || "/api/search";
 let searchTimer = null;
 let searchMode = form?.dataset.mode || "monthly";
+
+function submitWithDeclaredBudget() {
+  const budgetInput = searchMode === "total" ? totalBudgetInput : monthlyInput;
+  if (Number(budgetInput?.value || 0) <= 0) {
+    form?.scrollIntoView({ behavior: "smooth", block: "center" });
+    budgetInput?.focus();
+    return false;
+  }
+  form.requestSubmit();
+  return true;
+}
 
 function setMode(nextMode) {
   searchMode = nextMode === "total" ? "total" : "monthly";
@@ -95,17 +107,70 @@ function isDemoProduct(product) {
   return String(product?.dataMode || product?.mode || "").toLowerCase() === "demo";
 }
 
+function normalizeSourceKey(value = "") {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replaceAll(/\s+/g, " ")
+    .replaceAll(/[_-]+/g, "_");
+}
+
+function formatSourceName(value = "") {
+  const normalized = normalizeSourceKey(value);
+  const sourceMap = {
+    flores_online: "Flores Online",
+    isabela_flores: "Isabela Flores",
+    saldao_informatica: "Saldão da Informática",
+    info_store: "Info Store",
+    infostore: "Info Store",
+    ccp: "CCP",
+    authentical: "Authentical",
+    mi_shop: "Mi Shop",
+    mishop: "Mi Shop",
+    actionpay: "Actionpay",
+    actionpay_saldao: "Saldão da Informática",
+    awin: "Awin",
+    mercadolivre: "Mercado Livre",
+    mercado_livre: "Mercado Livre",
+  };
+  return sourceMap[normalized] || "";
+}
+
 function resolveSourceLabel(product) {
   if (isDemoProduct(product)) {
     return "Demonstração — sem anúncio real";
   }
 
-  const source = String(product?.marketplace || product?.source || product?.store || "").trim().toLowerCase();
-  const seller = String(product?.seller?.name || product?.seller || "").trim().toLowerCase();
-  const sourceType = String(product?.sourceType || "").trim().toLowerCase();
-  const sourceText = `${source} ${seller} ${sourceType}`;
+  const candidates = [
+    product?.sourceLabel,
+    product?.sourceName,
+    product?.sourceDisplayName,
+    product?.marketplace,
+    product?.source,
+    product?.provider,
+    product?.seller?.name,
+    product?.seller,
+    product?.store,
+    product?.sourceType,
+  ];
+
+  for (const candidate of candidates) {
+    const label = formatSourceName(candidate);
+    if (label) return label;
+  }
+
+  const sourceText = candidates
+    .map((item) => normalizeSourceKey(item))
+    .filter(Boolean)
+    .join(" ");
   if (sourceText.includes("saldao")) return "Saldão da Informática";
-  if (String(product?.sourceLabel || "").toLowerCase().includes("saldao")) return "Saldão da Informática";
+  if (sourceText.includes("flores")) return "Flores Online";
+  if (sourceText.includes("isabela")) return "Isabela Flores";
+  if (sourceText.includes("info store") || sourceText.includes("infostore")) return "Info Store";
+  if (sourceText.includes("ccp")) return "CCP";
+  if (sourceText.includes("authentical")) return "Authentical";
+  if (sourceText.includes("mi_shop") || sourceText.includes("mishop")) return "Mi Shop";
+  if (sourceText.includes("awin")) return "Awin";
   return "Origem não informada";
 }
 
@@ -170,7 +235,7 @@ function productImage(product) {
   const image = product.image || product.thumbnail || "";
   if (image) {
     return `
-      <img src="${image}" alt="" onerror="this.style.display='none'; const fallback=this.parentElement.querySelector('.image-fallback'); if (fallback) fallback.style.display='grid';">
+      <img src="${escapeHtml(image)}" alt="" onerror="this.style.display='none'; const fallback=this.parentElement.querySelector('.image-fallback'); if (fallback) fallback.style.display='grid';">
       <div class="image-fallback" style="display:none">
         <img src="/logo-oqc.png" alt="" class="image-fallback-logo">
         <span>Imagem indisponível</span>
@@ -187,6 +252,33 @@ function productImage(product) {
 
 function formatPrice(value) {
   return Number.isFinite(value) && value > 0 ? currency.format(value) : "Conferir na loja";
+}
+
+function renderMarketSignal(product = {}) {
+  const market = product.market || product.marketSnapshot;
+  if (!market || typeof market !== "object") return "";
+  const history = Array.isArray(market.priceHistory) ? market.priceHistory : [];
+  const historyCount = Number(market.historyCount || history.length || 0);
+  const historyPrices = history.map((item) => Number(item?.price || 0)).filter((price) => Number.isFinite(price) && price > 0);
+  const currentPrice = Number(product.price || market.currentPrice || 0);
+  const allPrices = [...historyPrices, currentPrice].filter((price) => Number.isFinite(price) && price > 0);
+  const plausibleHistory = allPrices.length >= 2 && Math.max(...allPrices) / Math.min(...allPrices) <= 5;
+
+  if (historyCount < 2 || !plausibleHistory) {
+    return '<p class="small market-insufficient">Histórico de preço ainda insuficiente.</p>';
+  }
+
+  const details = [];
+  if (historyCount >= 2 && market.trend && market.trend !== "insufficient") {
+    details.push(escapeHtml(market.trendLabel || "Tendência calculada com o histórico disponível."));
+  }
+  if (historyCount >= 3 && market.priceIndicator && market.priceIndicator !== "insufficient") {
+    details.push(escapeHtml(market.priceIndicatorLabel || "Faixa de preço calculada com o histórico disponível."));
+  }
+  if (historyCount >= 3 && market.marketAdvice && !/insuficiente/i.test(String(market.marketAdvice))) {
+    details.push(escapeHtml(market.marketAdvice));
+  }
+  return details.length ? `<div class="market-signal">${details.map((item) => `<span>${item}</span>`).join("")}</div>` : "";
 }
 
 function buildProductCardHtml(product) {
@@ -209,6 +301,7 @@ function buildProductCardHtml(product) {
   const imageWarning = !hasImage && !isDemoProduct(product)
     ? `<p class="small warning">Imagem indisponível neste produto real.</p>`
     : "";
+  const condition = String(product.condition || "").trim();
 
   return `
     <article class="card">
@@ -216,6 +309,7 @@ function buildProductCardHtml(product) {
       <div class="card-body">
         <span class="store">${escapeHtml(sourceLabel)}</span>
         <h2>${escapeHtml(resolveProductTitle(product))}</h2>
+        ${condition ? `<p class="small"><strong>Condição:</strong> ${escapeHtml(condition)}</p>` : ""}
         ${product.status ? `<p class="small"><strong>Status:</strong> ${escapeHtml(normalizeStatusLabel(product.status))}</p>` : ""}
         ${Number.isFinite(product.score) ? `<p class="small"><strong>Score O Que Cabe:</strong> ${Number(product.score).toFixed(0)}/100</p>` : ""}
         <p class="small">${escapeHtml(note)}</p>
@@ -225,37 +319,41 @@ function buildProductCardHtml(product) {
           <div class="installment">${total}</div>
           <div class="small">${
             installmentInfo
-              ? `${installmentInfo.count}x de ${installment}${installmentInfo.interestFree === true ? " sem juros" : ""}${installmentInfo.estimated ? " · Parcelamento estimado" : ""}`
+              ? `${installmentInfo.count}x de ${installment}${installmentInfo.interestFree === true ? " sem juros" : ""} · ${installmentInfo.estimated ? "Parcelamento estimado" : "Parcelamento informado pela fonte"}`
               : "Parcelamento não informado."
           }</div>
           ${installmentInfo?.estimated ? `<p class="small warning">Parcelamento estimado. Confirme na loja.</p>` : ""}
+          ${renderMarketSignal(product)}
         </div>
         ${hasLink
-          ? `<a href="${link}" target="_blank" rel="noopener">${escapeHtml(buttonLabel)}</a>`
-          : `<a class="disabled" href="javascript:void(0)" role="button" aria-disabled="true">${escapeHtml(buttonLabel)}</a>`}
+          ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">${escapeHtml(buttonLabel)}</a>`
+          : `<span class="offer-unavailable" aria-disabled="true">${escapeHtml(buttonLabel)}</span>`}
       </div>
     </article>
   `;
 }
 function renderProducts(products) {
-  if (!products.length) {
+  const confirmedProducts = appView === "home"
+    ? (Array.isArray(products) ? products : []).filter((product) => !isDemoProduct(product))
+    : (Array.isArray(products) ? products : []);
+  if (!confirmedProducts.length) {
     const emptyMessage = appView === "products"
       ? "Nenhum produto encontrado dentro desse orçamento. Tente aumentar o valor mensal ou o número de parcelas."
       : appView === "mercadolivre"
         ? "Nenhum produto encontrado dentro desse orçamento. Tente outra categoria ou cadastre outra URL manual."
-        : "Tente aumentar a parcela, trocar o prazo ou buscar outro produto.";
+        : "Não encontramos uma oferta confirmada para esta busca.";
     results.innerHTML = `
       <article class="empty-state">
-        <strong>Nenhum produto coube nesse filtro</strong>
+        <strong>Não encontramos uma oferta confirmada</strong>
         <span>${emptyMessage}</span>
       </article>
     `;
     return;
   }
 
-  const visibleProducts = products.slice(0, 9).map((product) => buildProductCardHtml(product)).join("");
-  const moreProducts = products.length > 9
-    ? `<details class="oqc-more-results"><summary>Ver mais resultados (${products.length - 9})</summary><div class="grid">${products.slice(9, 18).map((product) => buildProductCardHtml(product)).join("")}</div></details>`
+  const visibleProducts = confirmedProducts.slice(0, 9).map((product) => buildProductCardHtml(product)).join("");
+  const moreProducts = confirmedProducts.length > 9
+    ? `<details class="oqc-more-results"><summary>Ver mais resultados (${confirmedProducts.length - 9})</summary><div class="grid">${confirmedProducts.slice(9, 18).map((product) => buildProductCardHtml(product)).join("")}</div></details>`
     : "";
   results.innerHTML = visibleProducts + moreProducts;
 }
@@ -313,8 +411,8 @@ function renderRecommendationBlock(recommendations = []) {
         ${installmentInfo?.estimated ? `<p class="small warning">Parcelamento estimado. Confirme na loja.</p>` : ""}
         ${renderBreakdown(product.scoreBreakdown)}
         ${hasLink
-          ? `<a href="${link}" target="_blank" rel="noopener">${buttonLabel}</a>`
-          : `<a class="disabled" href="javascript:void(0)" role="button" aria-disabled="true">${buttonLabel}</a>`}
+          ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">${buttonLabel}</a>`
+          : `<span class="offer-unavailable" aria-disabled="true">${buttonLabel}</span>`}
       </article>
     `;
   }).join("");
@@ -446,6 +544,14 @@ function isValidExternalUrl(value) {
 function isGenericMarketplaceUrl(value) {
   const normalized = String(value || "").trim().toLowerCase();
   if (!normalized) return true;
+  try {
+    const parsed = new URL(normalized);
+    if (/mercadolivre\.com\.br$/i.test(parsed.hostname) || /\.mercadolivre\.com\.br$/i.test(parsed.hostname)) {
+      return !/\/MLB[\w-]+/i.test(parsed.pathname);
+    }
+  } catch {
+    return true;
+  }
   const genericPatterns = [
     "https://www.mercadolivre.com.br",
     "https://mercadolivre.com.br",
@@ -649,15 +755,9 @@ function renderPurchaseIntentions(items = []) {
   intentGrid.querySelectorAll(".intent-card").forEach((button) => {
     button.addEventListener("click", () => {
       const category = button.dataset.category || "";
-      const preset = presetForCategory(category);
       productInput.value = button.dataset.query || category || productInput.value || "";
-      searchMode = button.dataset.mode === "total" ? "total" : (preset.mode === "total" ? "total" : "monthly");
-      monthlyInput.value = button.dataset.monthly || preset.monthly || monthlyInput.value || "100";
-      monthsInput.value = button.dataset.months || preset.months || monthsInput.value || "12";
-      if (totalBudgetInput) totalBudgetInput.value = button.dataset.totalBudget || preset.totalBudget || totalBudgetInput.value || "500";
-      modeButtons.forEach((item) => item.classList.toggle("active", item.dataset.mode === searchMode));
       setMode(searchMode);
-      form.requestSubmit();
+      submitWithDeclaredBudget();
     });
   });
 }
@@ -680,15 +780,9 @@ function renderDepartmentMenu(items = [], placeholder = false) {
   departmentsMenu.querySelectorAll(".department-link").forEach((button) => {
     button.addEventListener("click", () => {
       const category = button.dataset.category || "";
-      const preset = presetForCategory(category);
       productInput.value = category;
-      searchMode = preset.mode === "total" ? "total" : "monthly";
-      monthlyInput.value = preset.monthly || monthlyInput.value || "100";
-      monthsInput.value = preset.months || monthsInput.value || "12";
-      if (totalBudgetInput) totalBudgetInput.value = preset.totalBudget || totalBudgetInput.value || "500";
-      modeButtons.forEach((item) => item.classList.toggle("active", item.dataset.mode === searchMode));
       setMode(searchMode);
-      form.requestSubmit();
+      submitWithDeclaredBudget();
     });
   });
 }
@@ -707,11 +801,11 @@ function renderDecisionHighlights(items = []) {
 
   decisionHighlightsSection.hidden = false;
   decisionHighlightsGrid.innerHTML = entries.map((item) => `
-    <article class="decision-card" data-category="${escapeHtml(item.category)}" data-query="${escapeHtml(item.query || item.category || "")}" data-mode="${escapeHtml(item.intent?.mode || "monthly")}" data-monthly="${escapeHtml(String(item.intent?.monthly || item.intent?.totalBudget || 0))}" data-total-budget="${escapeHtml(String(item.intent?.totalBudget || item.intent?.monthly || 0))}" data-months="${escapeHtml(String(item.intent?.months || 12))}">
+    <button type="button" class="decision-card" data-category="${escapeHtml(item.category)}" data-query="${escapeHtml(item.query || item.category || "")}" data-mode="${escapeHtml(item.intent?.mode || item.mode || "monthly")}" data-monthly="${escapeHtml(String(item.intent?.monthly || item.monthly || item.intent?.totalBudget || item.totalBudget || 0))}" data-total-budget="${escapeHtml(String(item.intent?.totalBudget || item.totalBudget || item.intent?.monthly || item.monthly || 0))}" data-months="${escapeHtml(String(item.intent?.months || item.months || 12))}">
       <div class="decision-card-icon">${categoryIconSvg(item.category)}</div>
       <strong>${escapeHtml(item.label || normalizeHomeCategoryLabel(item.category))}</strong>
-      <span>${escapeHtml(`${Number(item.count || 0)} itens reais`)}</span>
-    </article>
+      <span>${escapeHtml(item.subtitle || `${Number(item.count || 0)} itens publicados`)}</span>
+    </button>
   `).join("");
 
   decisionHighlightsGrid.querySelectorAll(".decision-card").forEach((card) => {
@@ -818,7 +912,14 @@ function renderTrustBand(data = {}) {
     trustSources.textContent = hiddenProducts ? formatCompactNumber(hiddenProducts, "0") : "0";
   }
   if (trustUpdated) {
-    trustUpdated.textContent = "Hoje";
+    const updatedAt = data.catalogUpdatedAt ? new Date(data.catalogUpdatedAt) : null;
+    const validTimestamp = updatedAt && Number.isFinite(updatedAt.getTime());
+    trustUpdated.textContent = validTimestamp ? "Catálogo atualizado" : "Catálogo ativo";
+    if (trustUpdatedLabel) {
+      trustUpdatedLabel.textContent = validTimestamp
+        ? `em ${updatedAt.toLocaleDateString("pt-BR")} às ${updatedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
+        : "status da base";
+    }
   }
 }
 
@@ -827,10 +928,8 @@ async function loadHomeCatalogData() {
 
   renderLoadingSkeletons(intentGrid, "intent", 8);
   renderLoadingSkeletons(decisionHighlightsGrid, "decision", 3);
-  renderLoadingSkeletons(pechinchaGrid, "chip", 6);
   renderLoadingSkeletons(categoryGrid, "card", 6);
   renderLoadingSkeletons(seoHotSearchesGrid, "chip", 6);
-  renderDepartmentMenu(DEFAULT_HOME_DEPARTMENTS, true);
   if (searchCategoriesHint) {
     searchCategoriesHint.textContent = "Intenções de compra: celular, notebook, monitor gamer, TV, fone, presente, casa e flores.";
   }
@@ -851,9 +950,8 @@ async function loadHomeCatalogData() {
         ? `Intenções de compra: ${labels.join(", ")}.`
         : "Intenções de compra: Celulares, Notebooks, Monitores, TVs, Tablets e Fones.";
     }
-    renderDepartmentMenu(departments);
     renderPurchaseIntentions(Array.isArray(data.homeButtons) && data.homeButtons.length ? data.homeButtons : categories);
-    renderDecisionHighlights(Array.isArray(data.homeButtons) && data.homeButtons.length ? data.homeButtons : categories);
+    renderDecisionHighlights(pechinchas.length ? pechinchas : (Array.isArray(data.homeButtons) && data.homeButtons.length ? data.homeButtons : categories));
     renderSeoHotSearches(Array.isArray(data.seoHotSearches) ? data.seoHotSearches : []);
     renderTrustBand(data);
 
@@ -875,58 +973,21 @@ async function loadHomeCatalogData() {
       categoryGrid.querySelectorAll("article[data-category]").forEach((card) => {
         card.addEventListener("click", () => {
           const category = card.dataset.category || "";
-          const preset = presetForCategory(category);
           productInput.value = card.dataset.query || category;
-          searchMode = card.dataset.mode === "total" ? "total" : (preset.mode === "total" ? "total" : "monthly");
-          monthlyInput.value = card.dataset.monthly || preset.monthly || monthlyInput.value || "100";
-          monthsInput.value = card.dataset.months || preset.months || monthsInput.value || "12";
-          if (totalBudgetInput) totalBudgetInput.value = card.dataset.totalBudget || preset.totalBudget || totalBudgetInput.value || "500";
-          modeButtons.forEach((item) => item.classList.toggle("active", item.dataset.mode === searchMode));
           setMode(searchMode);
-          form.requestSubmit();
-        });
-      });
-    }
-
-    if (pechinchaGrid) {
-      const chips = pechinchas
-        .slice(0, 5)
-        .map((item) => `
-          <button type="button" class="pechincha-card" data-query="${escapeHtml(item.query || item.category || "")}" data-mode="${escapeHtml(item.mode || "total")}" data-total-budget="${escapeHtml(String(item.totalBudget || item.monthly || 0))}" data-monthly="${escapeHtml(String(item.monthly || item.totalBudget || 0))}" data-months="${escapeHtml(String(item.months || 12))}">
-            <strong>${escapeHtml(item.label || "Oferta")}</strong>
-            <span>${escapeHtml(item.subtitle || `${Number(item.count || 0)} itens reais`)}</span>
-          </button>
-        `)
-        .join("");
-      pechinchaGrid.innerHTML = chips || "";
-
-      document.querySelectorAll(".pechincha-card").forEach((button) => {
-        button.addEventListener("click", () => {
-          productInput.value = button.dataset.query || productInput.value || "celular";
-          searchMode = button.dataset.mode === "total" ? "total" : "monthly";
-          monthlyInput.value = button.dataset.monthly || monthlyInput.value || "50";
-          monthsInput.value = button.dataset.months || monthsInput.value || "12";
-          totalBudgetInput.value = button.dataset.totalBudget || button.dataset.monthly || totalBudgetInput.value || "500";
-          modeButtons.forEach((item) => item.classList.toggle("active", item.dataset.mode === searchMode));
-          setMode(searchMode);
-          form.requestSubmit();
+          submitWithDeclaredBudget();
         });
       });
     }
 
     if (homeCatalogState) {
-      const focusLabel = data.focusLabel || "Catálogo real";
-      const totalPublished = Number(data.totalPublishedProducts ?? data.totalCatalogProducts ?? 0);
-      const totalLabel = totalPublished ? formatCompactNumber(totalPublished, "0") : "0";
-      homeCatalogState.textContent = `${focusLabel}: ${totalLabel} produtos reais analisados, ${categories.length} categorias reais, ${pechinchas.length} atalhos do catálogo e ${Array.isArray(data.seoHotSearches) ? data.seoHotSearches.length : 0} buscas em alta`;
+      homeCatalogState.textContent = `${categories.length} categorias com produtos publicados no catálogo.`;
     }
   } catch {
-    if (categoryGrid && !categoryGrid.children.length) {
-      renderLoadingSkeletons(categoryGrid, "card", 6);
-    }
-    if (pechinchaGrid && !pechinchaGrid.children.length) {
-      renderLoadingSkeletons(pechinchaGrid, "chip", 6);
-    }
+    if (intentGrid) intentGrid.innerHTML = "";
+    if (decisionHighlightsGrid) decisionHighlightsGrid.innerHTML = "";
+    if (categoryGrid) categoryGrid.innerHTML = "";
+    if (seoHotSearchesGrid) seoHotSearchesGrid.innerHTML = "";
   }
 }
 
@@ -940,10 +1001,16 @@ form.addEventListener("submit", async (event) => {
   const totalBudget = searchMode === "total" ? totalBudgetInputValue : monthly * months;
   const ceiling = searchMode === "total" ? totalBudget : monthly * months;
 
+  if (!product || ceiling <= 0) {
+    if (resultsArea) resultsArea.hidden = true;
+    return;
+  }
+
   button.disabled = true;
   button.textContent = "Buscando...";
-  results.innerHTML = "";
+  results.innerHTML = '<div class="skeleton skeleton-card" aria-hidden="true"><span class="skeleton-badge"></span><span class="skeleton-line skeleton-line-lg"></span><span class="skeleton-line skeleton-line-md"></span></div>';
   notice.hidden = true;
+  resultsArea.hidden = false;
   resultsArea.classList.add("has-results");
   budgetTotal.textContent = currency.format(ceiling);
     if (searchMode === "total") {
@@ -973,7 +1040,9 @@ form.addEventListener("submit", async (event) => {
     params.set("source", "mercadolivre");
     const endpoint = apiEndpoint;
     const response = await fetch(`${endpoint}?${params.toString()}`);
+    if (!response.ok) throw new Error("SEARCH_UNAVAILABLE");
     const data = await response.json();
+    const confirmedProducts = (Array.isArray(data.products) ? data.products : []).filter((item) => !isDemoProduct(item));
 
     if (apiStatus) {
       apiStatus.textContent = "Base do O Que Cabe";
@@ -983,21 +1052,24 @@ form.addEventListener("submit", async (event) => {
       if (sourceBadge) {
         sourceBadge.textContent = "BASE DO O QUE CABE";
       }
-      if (notice) {
-        notice.hidden = false;
-        notice.textContent = "Resultados carregados a partir da base atual do O Que Cabe.";
-      }
+      if (notice) notice.hidden = true;
     } else if (appView === "products") {
       if (sourceBadge) sourceBadge.textContent = "DummyJSON";
     } else if (appView === "travel") {
       if (sourceBadge) sourceBadge.textContent = "Viagem mock";
     }
 
-    summaryTitle.textContent = `Ofertas para ${product}`;
+    summaryTitle.textContent = confirmedProducts.length ? `Opções para ${product}` : `Nenhuma oferta confirmada para ${product}`;
 
-    if (data.warning) {
+    if (data.fallbackUsed && Number(data.fallbackCount || 0) > 0) {
       notice.hidden = false;
-      notice.textContent = data.warning;
+      notice.textContent = "Também encontramos anúncios diretos em fontes externas.";
+    } else if (data.fallbackAttempted) {
+      notice.hidden = false;
+      notice.textContent = "Não encontramos opções adicionais nesta fonte.";
+    } else if (confirmedProducts.length > 0 && confirmedProducts.length < 3) {
+      notice.hidden = false;
+      notice.textContent = "Encontramos poucas opções no catálogo atual.";
     }
     if (data.errors && data.errors.length && appView === "mercadolivre") {
       notice.hidden = false;
@@ -1011,11 +1083,15 @@ form.addEventListener("submit", async (event) => {
       const list = renderMercadoLivre(data.products || [], data.groups || null);
       results.innerHTML = `${recommendations}${list}`;
     } else {
-      renderProducts(data.products || []);
+      const groupedHtml = renderGroupedProducts(data.groups || null, confirmedProducts);
+      if (groupedHtml) results.innerHTML = groupedHtml;
+      else renderProducts(confirmedProducts);
     }
-  } catch (error) {
+  } catch {
     notice.hidden = false;
-    notice.textContent = `Erro ao buscar: ${error.message}`;
+    notice.textContent = "Não foi possível concluir a busca agora. Tente novamente em instantes.";
+    summaryTitle.textContent = "Busca temporariamente indisponível";
+    renderProducts([]);
   } finally {
     button.disabled = false;
     button.textContent = "Descobrir o que cabe";
