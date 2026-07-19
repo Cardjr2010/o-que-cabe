@@ -71,6 +71,26 @@ O print confirma:
 - ausência de orçamento presumido;
 - ausência das promessas antigas.
 
+## Validação pós-deploy
+
+O hotfix `187805c` foi publicado no domínio principal. Uma nova sessão limpa, com URL única e cache desativado, confirmou:
+
+- HTTP 200;
+- `15.999 produtos publicados`, `16.740 produtos analisados` e `741 produtos ocultos` visíveis;
+- zero ocorrências das frases antigas auditadas;
+- campos de produto e orçamento vazios;
+- dois avisos `Em breve`;
+- zero links falsos para Blog ou Minha Conta;
+- quatro intenções de compra, três decisões inteligentes e seis buscas em alta carregadas;
+- zero skeletons restantes após a carga da API.
+
+Evidências finais:
+
+- `evidencias/auditoria-home-187805c-pos-deploy.png`
+- `output/pdf/auditoria-home-187805c-pos-deploy.pdf`
+
+O PDF foi renderizado em cinco páginas A4 e revisado visualmente, sem textos cortados, sobreposições ou páginas em branco.
+
 ## Testes
 
 - `node --check public/app.js`: OK
