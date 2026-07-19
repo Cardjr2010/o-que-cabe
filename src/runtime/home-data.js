@@ -63,6 +63,54 @@ const HOME_CATEGORY_PRIORITY = [
   "flores",
 ];
 
+const FEATURED_VIDEO_GUIDES = [
+  {
+    product: "iPhone 17 Pro Max",
+    query: "iphone 17 pro max",
+    category: "celulares",
+    channel: "Loop Infinito",
+    title: "iPhone 17 Pro Max: primeiras impressões",
+    url: "https://www.youtube.com/watch?v=_4TdbbKHKyk",
+    reason: "Bom para entender se faz sentido pagar mais no topo da Apple antes de buscar oferta.",
+  },
+  {
+    product: "Samsung Galaxy S24 Ultra",
+    query: "galaxy s24 ultra",
+    category: "celulares",
+    channel: "Canaltech",
+    title: "S24 Ultra vs S23 Ultra: alguma coisa realmente mudou?",
+    url: "https://www.youtube.com/watch?v=kyaqnxZT7sQ",
+    reason: "Ajuda a separar hype de melhoria real antes de comparar Galaxy mais caro com opcoes parecidas.",
+  },
+  {
+    product: "Notebook i5 com 16 GB",
+    query: "notebook i5 16gb",
+    category: "notebooks",
+    channel: "EscolhaSegura",
+    title: "Qual notebook Core i5 ou Ryzen 5 vale mais a pena?",
+    url: "https://www.youtube.com/watch?v=IWPGF7_iWm4",
+    reason: "Boa referencia para quem quer estudar, trabalhar e nao cair em notebook fraco com cara de oferta.",
+  },
+  {
+    product: "Monitor gamer 144Hz",
+    query: "monitor gamer 144hz",
+    category: "monitores",
+    channel: "EscolhaSegura",
+    title: "Qual melhor monitor de 144Hz para jogar?",
+    url: "https://www.youtube.com/watch?v=Blp4SugpKOM",
+    reason: "Explica o que muda de verdade entre monitor barato, custo-beneficio e modelo melhor acabado.",
+  },
+  {
+    product: "Roteador Wi-Fi 7",
+    query: "roteador wi-fi 7",
+    category: "casa e construcao",
+    channel: "Max Dicas",
+    title: "Testei o novo roteador Wi-Fi 7 da TP-Link Archer BE550",
+    url: "https://www.youtube.com/watch?v=uERfkxZIrIM",
+    reason: "Entra bem no OQC porque mistura oferta real com explicacao pratica do produto antes da compra.",
+  },
+];
+
 function buildCuratedHomeItems(primaryItems = [], fallbackItems = []) {
   const combined = new Map();
   for (const item of Array.isArray(primaryItems) ? primaryItems : []) {
@@ -214,6 +262,7 @@ export function buildHomeCatalogData() {
       pechinchas: shortcuts,
       shortcuts,
       seoHotSearches,
+      featuredVideos: FEATURED_VIDEO_GUIDES,
       activeSources,
       marketplaceSummary: Array.isArray(analysis.marketplaceSummary)
         ? analysis.marketplaceSummary.map((item) => ({
@@ -267,6 +316,7 @@ export function buildHomeCatalogData() {
       pechinchas: [],
       shortcuts: [],
       seoHotSearches: [],
+      featuredVideos: FEATURED_VIDEO_GUIDES,
       activeSources: [],
       marketplaceSummary: [],
       sellerSummary: [],

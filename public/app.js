@@ -19,6 +19,8 @@ const resultsArea = document.querySelector(".results-area");
 const pechinchaGrid = document.querySelector("#pechinchaGrid");
 const categoryGrid = document.querySelector("#categoryGrid");
 const seoHotSearchesGrid = document.querySelector("#seoHotSearchesGrid");
+const videoGuidesSection = document.querySelector("#videoGuidesSection");
+const videoGuidesGrid = document.querySelector("#videoGuidesGrid");
 const homeCatalogState = document.querySelector("#homeCatalogState");
 const searchCategoriesHint = document.querySelector("#searchCategoriesHint");
 const intentGrid = document.querySelector("#intentGrid");
@@ -863,6 +865,45 @@ function renderSeoHotSearches(items = []) {
   });
 }
 
+function renderFeaturedVideos(items = []) {
+  if (!videoGuidesSection || !videoGuidesGrid) return;
+  const entries = Array.isArray(items) ? items.slice(0, 5) : [];
+  if (!entries.length) {
+    videoGuidesSection.hidden = true;
+    videoGuidesGrid.innerHTML = "";
+    return;
+  }
+
+  videoGuidesSection.hidden = false;
+  videoGuidesGrid.innerHTML = entries.map((item) => `
+    <article class="video-guide-card">
+      <div class="video-guide-top">
+        <span class="video-guide-channel">${escapeHtml(item.channel || "Canal recomendado")}</span>
+        <span class="video-guide-category">${escapeHtml(normalizeHomeCategoryLabel(item.category || "Produtos"))}</span>
+      </div>
+      <h3>${escapeHtml(item.product || item.title || "Video recomendado")}</h3>
+      <p class="video-guide-title">${escapeHtml(item.title || "")}</p>
+      <p class="video-guide-reason">${escapeHtml(item.reason || "Video para entender melhor o produto antes de comprar.")}</p>
+      <div class="video-guide-actions">
+        <a class="video-guide-link" href="${escapeHtml(item.url || "#")}" target="_blank" rel="noopener noreferrer">Ver video</a>
+        <button type="button" class="video-guide-search" data-query="${escapeHtml(item.query || item.product || "")}" data-category="${escapeHtml(item.category || "")}">
+          Buscar esse produto
+        </button>
+      </div>
+    </article>
+  `).join("");
+
+  videoGuidesGrid.querySelectorAll(".video-guide-search").forEach((button) => {
+    button.addEventListener("click", () => {
+      const query = button.dataset.query || button.dataset.category || "";
+      if (query) productInput.value = query;
+      setMode("total");
+      if (totalBudgetInput && !Number(totalBudgetInput.value || 0)) totalBudgetInput.value = "1500";
+      form.requestSubmit();
+    });
+  });
+}
+
 function formatCompactNumber(value, fallback = "0") {
   const number = Number(value);
   if (!Number.isFinite(number) || number < 0) return fallback;
@@ -941,6 +982,7 @@ async function loadHomeCatalogData() {
 
   renderLoadingSkeletons(intentGrid, "intent", 8);
   renderLoadingSkeletons(decisionHighlightsGrid, "decision", 3);
+  renderLoadingSkeletons(videoGuidesGrid, "card", 3);
   renderLoadingSkeletons(categoryGrid, "card", 6);
   renderLoadingSkeletons(seoHotSearchesGrid, "chip", 6);
   if (searchCategoriesHint) {
@@ -965,6 +1007,7 @@ async function loadHomeCatalogData() {
     }
     renderPurchaseIntentions(Array.isArray(data.homeButtons) && data.homeButtons.length ? data.homeButtons : categories);
     renderDecisionHighlights(pechinchas.length ? pechinchas : (Array.isArray(data.homeButtons) && data.homeButtons.length ? data.homeButtons : categories));
+    renderFeaturedVideos(Array.isArray(data.featuredVideos) ? data.featuredVideos : []);
     renderSeoHotSearches(Array.isArray(data.seoHotSearches) ? data.seoHotSearches : []);
     renderTrustBand(data);
 
@@ -999,6 +1042,7 @@ async function loadHomeCatalogData() {
   } catch {
     if (intentGrid) intentGrid.innerHTML = "";
     if (decisionHighlightsGrid) decisionHighlightsGrid.innerHTML = "";
+    if (videoGuidesGrid) videoGuidesGrid.innerHTML = "";
     if (categoryGrid) categoryGrid.innerHTML = "";
     if (seoHotSearchesGrid) seoHotSearchesGrid.innerHTML = "";
   }

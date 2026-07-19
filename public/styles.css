@@ -696,6 +696,116 @@ footer {
   gap: 12px;
 }
 
+.video-guides-section {
+  width: min(1640px, calc(100% - 44px));
+  margin: 22px auto 0;
+}
+
+.video-guides-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.video-guide-card {
+  display: grid;
+  gap: 10px;
+  min-height: 100%;
+  padding: 18px;
+  border: 1px solid #dfe7f2;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.04);
+}
+
+.video-guide-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.video-guide-channel,
+.video-guide-category {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.video-guide-channel {
+  background: #eef6ff;
+  color: var(--green);
+}
+
+.video-guide-category {
+  background: #f3f6fb;
+  color: #6b7a90;
+}
+
+.video-guide-card h3 {
+  margin: 0;
+  font-size: 19px;
+  line-height: 1.12;
+}
+
+.video-guide-title,
+.video-guide-reason {
+  margin: 0;
+  color: #6b7a90;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 700;
+}
+
+.video-guide-title {
+  color: var(--ink);
+  font-weight: 850;
+}
+
+.video-guide-actions {
+  margin-top: auto;
+  display: grid;
+  gap: 10px;
+}
+
+.video-guide-link,
+.video-guide-search {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.video-guide-link {
+  background: var(--navy);
+  color: white;
+  box-shadow: 0 10px 22px rgba(6, 27, 58, 0.16);
+}
+
+.video-guide-search {
+  border: 1px solid #dbe6f2;
+  background: #f7fbff;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.video-guide-search:hover,
+.video-guide-link:hover {
+  transform: translateY(-1px);
+}
+
 .decision-card {
   appearance: none;
   width: 100%;
@@ -1643,6 +1753,10 @@ footer strong {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .video-guides-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .collection {
     grid-template-columns: 1fr;
   }
@@ -1834,6 +1948,10 @@ footer strong {
   }
 
   .decision-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .video-guides-grid {
     grid-template-columns: 1fr;
   }
 
