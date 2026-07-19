@@ -398,6 +398,29 @@ test("Ofertas afiliadas verificadas entram na busca do iPhone 17 Pro Max com par
   assert.ok(result.products.every((product) => Number(product.installments.count || product.installments.months || 0) > 0));
 });
 
+test("Ofertas afiliadas verificadas entram na busca do Galaxy S26 Ultra com prioridade para os modelos Ultra", async () => {
+  const orchestrator = new SearchOrchestrator({
+    catalogManager: createCatalogManager([]),
+  });
+
+  const result = await orchestrator.search({
+    query: "galaxy s26 ultra",
+    mode: "total",
+    totalBudget: 12000,
+  });
+
+  assert.equal(result.dataMode, "real");
+  assert.equal(result.fallbackUsed, true);
+  assert.match(String(result.fallbackSource || ""), /verified_partner_offers/);
+  assert.ok(result.products.length >= 2);
+  assert.match(String(result.products[0].displayTitle || result.products[0].title), /Galaxy S26 Ultra/i);
+  assert.ok(result.products.some((product) => String(product.sourceLabel || "").includes("mercado_livre")));
+  assert.ok(result.products.some((product) => String(product.sourceLabel || "").includes("magalu")));
+  assert.ok(result.products.some((product) => /Galaxy S26 256GB/i.test(String(product.displayTitle || product.title || ""))));
+  assert.ok(!/capa|pelicula|carregador|cabo/i.test(String(result.products[0].displayTitle || result.products[0].title)));
+  assert.ok(result.products.every((product) => product.installments));
+});
+
 test("Sem token ou proxy configurado, o fallback do Mercado Livre nao eh acionado", async () => {
   let providerCalls = 0;
   const orchestrator = new SearchOrchestrator({
