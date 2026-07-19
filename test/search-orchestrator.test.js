@@ -416,7 +416,7 @@ test("Ofertas afiliadas verificadas entram na busca do Galaxy S26 Ultra com prio
   assert.match(String(result.products[0].displayTitle || result.products[0].title), /Galaxy S26 Ultra/i);
   assert.ok(result.products.some((product) => String(product.sourceLabel || "").includes("mercado_livre")));
   assert.ok(result.products.some((product) => String(product.sourceLabel || "").includes("magalu")));
-  assert.ok(result.products.some((product) => /Galaxy S26 256GB/i.test(String(product.displayTitle || product.title || ""))));
+  assert.ok(result.products.some((product) => /Galaxy S26 Ultra 256GB/i.test(String(product.displayTitle || product.title || ""))));
   assert.ok(!/capa|pelicula|carregador|cabo/i.test(String(result.products[0].displayTitle || result.products[0].title)));
   assert.ok(result.products.every((product) => product.installments));
 });
