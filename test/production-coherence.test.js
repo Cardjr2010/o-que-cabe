@@ -51,6 +51,7 @@ test("home comunica as métricas oficiais sem presumir orçamento", () => {
 
 test("links futuros não fingem navegação e promessas respeitam os dados disponíveis", () => {
   const html = readProjectFile("public/index.html");
+  const script = readProjectFile("public/app.js");
 
   assert.doesNotMatch(html, /<a[^>]+href="#blog"/i);
   assert.doesNotMatch(html, /<a[^>]+href="#conta"/i);
@@ -58,6 +59,8 @@ test("links futuros não fingem navegação e promessas respeitam os dados dispo
   assert.match(html, /Minha Conta <small>Em breve<\/small>/);
   assert.doesNotMatch(html, /corta juros abusivos|fretes absurdos|má reputação/i);
   assert.match(html, /quando a fonte disponibiliza essas informações/);
+  assert.match(script, /source\.toLowerCase\(\) === "estimated"/);
+  assert.match(script, /Parcelamento estimado\. Confirme na loja\./);
 });
 
 test("home-data expõe os números oficiais e menu seguro", () => {

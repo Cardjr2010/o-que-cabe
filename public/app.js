@@ -94,6 +94,17 @@ function normalizeStatusLabel(value = "") {
   return String(value);
 }
 
+function normalizeConditionLabel(value = "") {
+  const normalized = String(value || "").trim().toLowerCase();
+  const labels = {
+    new: "Novo",
+    used: "Usado",
+    refurbished: "Recondicionado",
+    reconditioned: "Recondicionado",
+  };
+  return labels[normalized] || String(value || "").trim();
+}
+
 function escapeHtml(value = "") {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -185,15 +196,17 @@ function resolveInstallmentInfo(product = {}) {
     const count = Number(rawInstallments.count || rawInstallments.months || 0);
     const amount = Number(rawInstallments.amount || rawInstallments.value || 0);
     const total = Number(rawInstallments.total || (count && amount ? Number((count * amount).toFixed(2)) : 0));
+    const source = String(rawInstallments.source || "feed");
+    const estimated = rawInstallments.estimated === true || source.toLowerCase() === "estimated";
     if (count > 0 && amount > 0) {
       return {
         count,
         amount,
         total,
         interestFree: rawInstallments.interestFree ?? null,
-        source: rawInstallments.source || "feed",
+        source,
         confidence: Number(rawInstallments.confidence || 0),
-        estimated: false,
+        estimated,
         available: rawInstallments.available !== false,
       };
     }
@@ -309,7 +322,7 @@ function buildProductCardHtml(product) {
       <div class="card-body">
         <span class="store">${escapeHtml(sourceLabel)}</span>
         <h2>${escapeHtml(resolveProductTitle(product))}</h2>
-        ${condition ? `<p class="small"><strong>Condição:</strong> ${escapeHtml(condition)}</p>` : ""}
+        ${condition ? `<p class="small"><strong>Condição:</strong> ${escapeHtml(normalizeConditionLabel(condition))}</p>` : ""}
         ${product.status ? `<p class="small"><strong>Status:</strong> ${escapeHtml(normalizeStatusLabel(product.status))}</p>` : ""}
         ${Number.isFinite(product.score) ? `<p class="small"><strong>Score O Que Cabe:</strong> ${Number(product.score).toFixed(0)}/100</p>` : ""}
         <p class="small">${escapeHtml(note)}</p>
