@@ -533,10 +533,65 @@ function contentType(filePath) {
     ".html": "text/html; charset=utf-8",
     ".css": "text/css; charset=utf-8",
     ".js": "text/javascript; charset=utf-8",
+    ".txt": "text/plain; charset=utf-8",
+    ".xml": "application/xml; charset=utf-8",
+    ".webmanifest": "application/manifest+json; charset=utf-8",
     ".svg": "image/svg+xml",
     ".png": "image/png",
     ".ico": "image/x-icon",
   }[ext] || "application/octet-stream";
+}
+
+function getPublicSiteUrl() {
+  return String(process.env.PUBLIC_SITE_URL || "https://o-que-cabe.vercel.app").replace(/\/+$/, "");
+}
+
+function getGoogleAnalyticsMeasurementId() {
+  return String(
+    process.env.GA4_MEASUREMENT_ID
+    || process.env.GOOGLE_ANALYTICS_ID
+    || process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
+    || process.env.VITE_GA_MEASUREMENT_ID
+    || "",
+  ).trim();
+}
+
+function getGoogleSiteVerificationValue() {
+  return String(
+    process.env.GOOGLE_SITE_VERIFICATION
+    || process.env.GOOGLE_SITE_VERIFICATION_TOKEN
+    || "",
+  ).trim();
+}
+
+function buildGoogleVerificationFile() {
+  const raw = getGoogleSiteVerificationValue();
+  if (!raw) return null;
+  const normalized = raw.endsWith(".html")
+    ? raw
+    : raw.startsWith("google")
+      ? `${raw}.html`
+      : `google${raw}.html`;
+  return {
+    fileName: normalized,
+    body: `google-site-verification: ${normalized}`,
+  };
+}
+
+function getSeoConfig() {
+  const measurementId = getGoogleAnalyticsMeasurementId();
+  const verification = buildGoogleVerificationFile();
+  return {
+    siteUrl: getPublicSiteUrl(),
+    analytics: {
+      measurementId,
+      configured: Boolean(measurementId),
+    },
+    searchConsole: {
+      configured: Boolean(verification),
+      verificationFile: verification?.fileName || null,
+    },
+  };
 }
 
 function escapeHtml(value) {
@@ -1632,6 +1687,33 @@ export default async function handler(req, res) {
 
   if (pathname === "/api/health") {
     sendJson(res, 200, getBuildMarker());
+    return;
+  }
+
+  if (pathname === "/api/seo/config") {
+    sendJson(res, 200, getSeoConfig());
+    return;
+  }
+
+  if (pathname === "/api/seo/status") {
+    const config = getSeoConfig();
+    sendJson(res, 200, {
+      ok: true,
+      siteUrl: config.siteUrl,
+      analyticsConfigured: config.analytics.configured,
+      measurementIdPresent: Boolean(config.analytics.measurementId),
+      searchConsoleConfigured: config.searchConsole.configured,
+      verificationFile: config.searchConsole.verificationFile,
+    });
+    return;
+  }
+
+  const googleVerification = buildGoogleVerificationFile();
+  if (googleVerification && pathname === `/${googleVerification.fileName}`) {
+    send(res, 200, googleVerification.body, {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "public, max-age=300",
+    });
     return;
   }
 

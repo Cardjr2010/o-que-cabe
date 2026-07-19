@@ -6,10 +6,35 @@
     <title>O Que Cabe — Compra inteligente pelo seu orçamento</title>
     <meta name="description" content="Você diz quanto pode pagar por mês. O Que Cabe mostra produtos compatíveis com seu orçamento, parcelas e ofertas verificadas." />
     <meta name="theme-color" content="#091a35" />
+    <meta name="robots" content="index,follow,max-image-preview:large" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="O Que Cabe — Compra inteligente pelo seu orçamento" />
+    <meta property="og:description" content="Pesquise produtos pelo seu orçamento e receba uma recomendação mais inteligente antes de comprar." />
+    <meta property="og:url" content="https://o-que-cabe.vercel.app/" />
+    <meta property="og:image" content="https://o-que-cabe.vercel.app/logo-oqc.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="O Que Cabe — Compra inteligente pelo seu orçamento" />
+    <meta name="twitter:description" content="Pesquise produtos pelo seu orçamento e receba uma recomendação mais inteligente antes de comprar." />
+    <link rel="canonical" href="https://o-que-cabe.vercel.app/" />
     <link rel="stylesheet" href="/styles.css" />
+    <link rel="manifest" href="/site.webmanifest" />
     <link rel="icon" href="/favicon.png" type="image/png" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/logo-oqc.png" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "O Que Cabe",
+        "url": "https://o-que-cabe.vercel.app/",
+        "description": "Consultor de compras por orçamento com catálogo real, comparações e conteúdo para decidir melhor antes de comprar.",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://o-que-cabe.vercel.app/?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
   </head>
   <body>
     <header class="topbar">
@@ -255,6 +280,7 @@
       </footer>
     </main>
 
+    <script src="/seo.js" defer></script>
     <script src="/app.js"></script>
   </body>
 </html>

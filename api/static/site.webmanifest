@@ -1,0 +1,17 @@
+{
+  "name": "O Que Cabe",
+  "short_name": "OQC",
+  "description": "Consultor de compras por orçamento com catálogo real, comparações e conteúdo para decidir melhor antes de comprar.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4f7fb",
+  "theme_color": "#091a35",
+  "icons": [
+    {
+      "src": "/logo-oqc.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

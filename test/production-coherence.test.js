@@ -59,7 +59,7 @@ test("links futuros nao fingem navegacao e promessas respeitam os dados disponiv
 
   assert.doesNotMatch(html, /<a[^>]+href="#blog"/i);
   assert.doesNotMatch(html, /<a[^>]+href="#conta"/i);
-  assert.match(html, /Blog <small>Em breve<\/small>/);
+  assert.match(html, /<a[^>]+href="\/blog\/index\.html"[^>]*>Blog<\/a>/i);
   assert.match(html, /Minha Conta <small>Em breve<\/small>/);
   assert.doesNotMatch(html, /corta juros abusivos|fretes absurdos|ma reputacao/i);
   assert.match(html, /quando a fonte disponibiliza essas informa(?:c|ç)(?:o|õ)es/i);
