@@ -14,6 +14,37 @@ function toDate(value) {
 
 export const ACTIVE_OFFER_CAMPAIGNS = [
   {
+    id: "magalu-pushfullsu-screened",
+    source: "magalu",
+    sourceLabel: "Magalu",
+    headline: "Cupom PUSHFULLSU",
+    label: "Suplementos a partir de R$ 20,90",
+    description: "Campanha oficial observada por screener da Magalu para suplementos com ate 40% OFF, valida somente durante a janela informada no post.",
+    query: "suplementos",
+    intent: {
+      query: "suplementos",
+      mode: "total",
+      totalBudget: 120,
+      months: 12,
+    },
+    validUntil: "2026-07-20T23:59:59-03:00",
+    badge: "ate 40% OFF",
+    disclaimer: "Campanha capturada de canal oficial. O OQC so deve exibir produtos manualmente validados e apenas enquanto essa janela estiver ativa.",
+    coupon: {
+      source: "magalu_screened_campaign",
+      code: "PUSHFULLSU",
+      type: "percent",
+      value: 40,
+      minimumPurchase: 20.9,
+      maximumDiscount: null,
+      validUntil: "2026-07-20T23:59:59-03:00",
+      verifiedAt: "2026-07-20T11:43:00-03:00",
+      status: "verified",
+    },
+    offerIds: [],
+    screenedSource: "manual_screener",
+  },
+  {
     id: "meli-vipmeli-15off",
     source: "mercado_livre",
     sourceLabel: "Mercado Livre",
@@ -118,6 +149,14 @@ export function listActiveOfferCampaigns(referenceDate = new Date()) {
   return ACTIVE_OFFER_CAMPAIGNS.filter((campaign) => isCampaignActive(campaign, referenceDate));
 }
 
+export function isScreenedOfferVisible(offer = {}, referenceDate = new Date()) {
+  const visibleFrom = toDate(offer.visibleFrom || offer.validFrom || offer.startsAt);
+  const visibleUntil = toDate(offer.visibleUntil || offer.validUntil || offer.endsAt);
+  if (visibleFrom && visibleFrom.getTime() > referenceDate.getTime()) return false;
+  if (visibleUntil && visibleUntil.getTime() < referenceDate.getTime()) return false;
+  return true;
+}
+
 export function resolveCampaignCouponForProduct(product = {}, referenceDate = new Date()) {
   const productId = String(product.id || "").trim();
   if (!productId) return null;
@@ -149,4 +188,5 @@ export default {
   buildCampaignCards,
   listActiveOfferCampaigns,
   resolveCampaignCouponForProduct,
+  isScreenedOfferVisible,
 };
