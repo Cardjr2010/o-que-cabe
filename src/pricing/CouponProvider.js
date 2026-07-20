@@ -1,3 +1,5 @@
+import { resolveCampaignCouponForProduct } from "../data/offer-campaigns.js";
+
 function toNumber(value, fallback = 0) {
   if (value == null || value === "") return fallback;
   if (typeof value === "number") return Number.isFinite(value) ? value : fallback;
@@ -68,7 +70,10 @@ function computeCouponDiscount(price = 0, coupon = {}) {
 export function buildOfferPricing(product = {}) {
   const price = toNumber(product.price, 0);
   const shippingPrice = toNumber(product?.shipping?.price, 0);
-  const coupon = normalizeCoupon(product.coupon, product.source || product.marketplace || "");
+  const coupon = normalizeCoupon(
+    product.coupon || resolveCampaignCouponForProduct(product),
+    product.source || product.marketplace || "",
+  );
   const verifiedCashback = coupon.status === "verified" && coupon.type === "cashback"
     ? Number(coupon.value || 0)
     : 0;

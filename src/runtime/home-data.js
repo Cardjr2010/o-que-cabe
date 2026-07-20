@@ -6,6 +6,7 @@ import { resolveCatalogSeedPath } from "./catalog-path.js";
 import { resolveProjectPath } from "./project-root.js";
 import { VERIFIED_AFFILIATE_OFFERS } from "../data/verified-affiliate-offers.js";
 import { OFFER_RADAR_TARGETS, findOfferRadarTarget, normalizeRadarText } from "../data/offer-radar-targets.js";
+import { buildCampaignCards } from "../data/offer-campaigns.js";
 
 let catalogManagerInstance = null;
 let productIntelligenceEngineInstance = null;
@@ -383,6 +384,7 @@ export function buildHomeCatalogData() {
     const seoHotSearches = seoEngine.buildSeoHotSearches(6);
     const seoHomeButtons = seoEngine.buildHomeButtons(catalogForHome);
     const decisionHighlights = buildOfferRadarHighlights();
+    const activeCampaigns = buildCampaignCards();
     const menu = [
       { label: "Início", href: "/", active: true },
       { label: "Departamentos", href: "#departments", active: true },
@@ -427,6 +429,7 @@ export function buildHomeCatalogData() {
       searchCategories: homeButtons.length ? homeButtons : curatedDepartments,
       departmentCategories: curatedDepartments,
       decisionHighlights,
+      activeCampaigns,
       pechinchas: shortcuts,
       shortcuts,
       seoHotSearches,
@@ -482,6 +485,7 @@ export function buildHomeCatalogData() {
       searchCategories: [],
       departmentCategories: [],
       decisionHighlights: buildOfferRadarHighlights(),
+      activeCampaigns: buildCampaignCards(),
       pechinchas: [],
       shortcuts: [],
       seoHotSearches: [],

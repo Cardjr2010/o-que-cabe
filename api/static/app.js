@@ -27,6 +27,8 @@ const intentGrid = document.querySelector("#intentGrid");
 const departmentsMenu = document.querySelector("#departmentsMenu");
 const decisionHighlightsSection = document.querySelector("#decisions");
 const decisionHighlightsGrid = document.querySelector("#decisionHighlightsGrid");
+const campaignsSection = document.querySelector("#campaignsSection");
+const campaignGrid = document.querySelector("#campaignGrid");
 const trustTotalCatalog = document.querySelector("#trustTotalCatalog");
 const trustDepartments = document.querySelector("#trustDepartments");
 const trustSources = document.querySelector("#trustSources");
@@ -272,6 +274,41 @@ function formatPrice(value) {
   return Number.isFinite(value) && value > 0 ? currency.format(value) : "Conferir na loja";
 }
 
+function formatCampaignDate(value = "") {
+  const parsed = new Date(value);
+  if (!Number.isFinite(parsed.getTime())) return "";
+  return parsed.toLocaleDateString("pt-BR");
+}
+
+function renderCouponPricing(product = {}, storePrice = 0) {
+  const finalPrice = Number(product.finalPrice || 0);
+  const couponDiscount = Number(product.couponDiscount || 0);
+  const cashback = Number(product.verifiedCashback || 0);
+  const coupon = product?.coupon || {};
+  const hasVerifiedCoupon = coupon?.status === "verified" && (couponDiscount > 0 || cashback > 0) && finalPrice > 0 && finalPrice < storePrice;
+
+  if (!hasVerifiedCoupon) return "";
+
+  const savings = couponDiscount + cashback;
+  const benefitLabel = coupon?.code
+    ? `Cupom ${coupon.code}`
+    : "Campanha verificada";
+  const disclaimer = coupon?.validUntil
+    ? `Verificado ate ${formatCampaignDate(coupon.validUntil)}. Confirme a elegibilidade do anuncio na loja.`
+    : "Campanha verificada. Confirme a elegibilidade do anuncio na loja.";
+
+  return `
+    <div class="price-highlight">
+      <div class="small">Preco da loja</div>
+      <div class="price-original">${formatPrice(storePrice)}</div>
+      <div class="small">Preco final com cupom</div>
+      <div class="installment price-final">${formatPrice(finalPrice)}</div>
+      <div class="coupon-chip">${escapeHtml(benefitLabel)} · economia de ${escapeHtml(formatPrice(savings))}</div>
+      <p class="small warning coupon-note">${escapeHtml(disclaimer)}</p>
+    </div>
+  `;
+}
+
 function renderMarketSignal(product = {}) {
   const market = product.market || product.marketSnapshot;
   if (!market || typeof market !== "object") return "";
@@ -304,7 +341,8 @@ function buildProductCardHtml(product) {
   const installment = installmentInfo && Number.isFinite(installmentInfo.amount) && installmentInfo.amount > 0
     ? currency.format(installmentInfo.amount)
     : "";
-  const total = formatPrice(product.price);
+  const storePrice = Number(product.price || 0);
+  const total = formatPrice(storePrice);
   const note = safeText(
     product.explanation || product.note,
     isDemoProduct(product)
@@ -320,6 +358,7 @@ function buildProductCardHtml(product) {
     ? `<p class="small warning">Imagem indisponível neste produto real.</p>`
     : "";
   const condition = String(product.condition || "").trim();
+  const couponPricing = renderCouponPricing(product, storePrice);
 
   return `
     <article class="card">
@@ -333,8 +372,10 @@ function buildProductCardHtml(product) {
         <p class="small">${escapeHtml(note)}</p>
         ${imageWarning}
         <div class="price">
-          <div class="small">Preço total</div>
-          <div class="installment">${total}</div>
+          ${couponPricing || `
+            <div class="small">Preço total</div>
+            <div class="installment">${total}</div>
+          `}
           <div class="small">${
             installmentInfo
               ? `${installmentInfo.count}x de ${installment}${installmentInfo.interestFree === true ? " sem juros" : ""} · ${installmentInfo.estimated ? "Parcelamento estimado" : "Parcelamento informado pela fonte"}`
@@ -842,6 +883,45 @@ function renderDecisionHighlights(items = []) {
   });
 }
 
+function renderActiveCampaigns(items = []) {
+  if (!campaignsSection || !campaignGrid) return;
+  const entries = Array.isArray(items) ? items.slice(0, 4) : [];
+  if (!entries.length) {
+    campaignsSection.hidden = true;
+    campaignGrid.innerHTML = "";
+    return;
+  }
+
+  campaignsSection.hidden = false;
+  campaignGrid.innerHTML = entries.map((item) => `
+    <button type="button" class="campaign-card" data-query="${escapeHtml(item.query || "")}" data-mode="${escapeHtml(item.intent?.mode || "total")}" data-monthly="${escapeHtml(String(item.intent?.monthly || 0))}" data-total-budget="${escapeHtml(String(item.intent?.totalBudget || 0))}" data-months="${escapeHtml(String(item.intent?.months || 12))}">
+      <div class="campaign-card-top">
+        <span class="campaign-badge">${escapeHtml(item.badge || "Campanha")}</span>
+        <span class="campaign-source">${escapeHtml(item.sourceLabel || "Fonte parceira")}</span>
+      </div>
+      <strong>${escapeHtml(item.headline || item.label || "Campanha ativa")}</strong>
+      <p>${escapeHtml(item.description || item.label || "")}</p>
+      <div class="campaign-meta">
+        ${item.code ? `<span>Codigo: ${escapeHtml(item.code)}</span>` : `<span>Campanha ativa</span>`}
+        ${item.validUntil ? `<span>Valido ate ${escapeHtml(formatCampaignDate(item.validUntil))}</span>` : ""}
+      </div>
+    </button>
+  `).join("");
+
+  campaignGrid.querySelectorAll(".campaign-card").forEach((card) => {
+    card.addEventListener("click", () => {
+      const query = card.dataset.query || "";
+      if (query) productInput.value = query;
+      searchMode = card.dataset.mode === "monthly" ? "monthly" : "total";
+      if (monthlyInput && card.dataset.monthly) monthlyInput.value = card.dataset.monthly;
+      if (monthsInput && card.dataset.months) monthsInput.value = card.dataset.months;
+      if (totalBudgetInput && card.dataset.totalBudget) totalBudgetInput.value = card.dataset.totalBudget;
+      setMode(searchMode);
+      form.requestSubmit();
+    });
+  });
+}
+
 function renderSeoHotSearches(items = []) {
   if (!seoHotSearchesGrid) return;
   const entries = Array.isArray(items) ? items : [];
@@ -985,6 +1065,7 @@ async function loadHomeCatalogData() {
 
   renderLoadingSkeletons(intentGrid, "intent", 8);
   renderLoadingSkeletons(decisionHighlightsGrid, "decision", 3);
+  renderLoadingSkeletons(campaignGrid, "decision", 3);
   renderLoadingSkeletons(videoGuidesGrid, "card", 3);
   renderLoadingSkeletons(categoryGrid, "card", 6);
   renderLoadingSkeletons(seoHotSearchesGrid, "chip", 6);
@@ -1017,6 +1098,7 @@ async function loadHomeCatalogData() {
           ? pechinchas
           : (Array.isArray(data.homeButtons) && data.homeButtons.length ? data.homeButtons : categories),
     );
+    renderActiveCampaigns(Array.isArray(data.activeCampaigns) ? data.activeCampaigns : []);
     renderFeaturedVideos(Array.isArray(data.featuredVideos) ? data.featuredVideos : []);
     renderSeoHotSearches(Array.isArray(data.seoHotSearches) ? data.seoHotSearches : []);
     renderTrustBand(data);
@@ -1052,6 +1134,7 @@ async function loadHomeCatalogData() {
   } catch {
     if (intentGrid) intentGrid.innerHTML = "";
     if (decisionHighlightsGrid) decisionHighlightsGrid.innerHTML = "";
+    if (campaignGrid) campaignGrid.innerHTML = "";
     if (videoGuidesGrid) videoGuidesGrid.innerHTML = "";
     if (categoryGrid) categoryGrid.innerHTML = "";
     if (seoHotSearchesGrid) seoHotSearchesGrid.innerHTML = "";
