@@ -1068,6 +1068,11 @@ export default class SearchOrchestrator {
     prepared.sort((left, right) => {
       const scoreDelta = rankPreparedProduct(right, intent) - rankPreparedProduct(left, intent);
       if (Math.abs(scoreDelta) > 1e-9) return scoreDelta;
+      const leftEffectivePrice = Number(left.finalPrice || left.cashPrice || left.price || Number.POSITIVE_INFINITY);
+      const rightEffectivePrice = Number(right.finalPrice || right.cashPrice || right.price || Number.POSITIVE_INFINITY);
+      if (Number.isFinite(leftEffectivePrice) && Number.isFinite(rightEffectivePrice) && Math.abs(leftEffectivePrice - rightEffectivePrice) > 1e-9) {
+        return leftEffectivePrice - rightEffectivePrice;
+      }
       const titleLeft = normalizeText(left.displayTitle || left.originalTitle || left.title || "");
       const titleRight = normalizeText(right.displayTitle || right.originalTitle || right.title || "");
       if (titleLeft === normalizeText(intent.searchText || intent.query || "")) return -1;
