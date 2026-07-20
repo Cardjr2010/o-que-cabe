@@ -997,6 +997,7 @@ async function loadHomeCatalogData() {
     const data = await response.json();
     const categories = Array.isArray(data.categories) ? data.categories : [];
     const departments = Array.isArray(data.departmentCategories) ? data.departmentCategories : Array.isArray(data.departments) ? data.departments : categories;
+    const decisionHighlights = Array.isArray(data.decisionHighlights) ? data.decisionHighlights : [];
     const pechinchas = Array.isArray(data.shortcuts) ? data.shortcuts : Array.isArray(data.pechinchas) ? data.pechinchas : [];
     const searchCategories = Array.isArray(data.searchCategories) ? data.searchCategories : departments;
     if (searchCategoriesHint) {
@@ -1009,7 +1010,13 @@ async function loadHomeCatalogData() {
         : "Intenções de compra: Celulares, Notebooks, Monitores, TVs, Tablets e Fones.";
     }
     renderPurchaseIntentions(Array.isArray(data.homeButtons) && data.homeButtons.length ? data.homeButtons : categories);
-    renderDecisionHighlights(pechinchas.length ? pechinchas : (Array.isArray(data.homeButtons) && data.homeButtons.length ? data.homeButtons : categories));
+    renderDecisionHighlights(
+      decisionHighlights.length
+        ? decisionHighlights
+        : pechinchas.length
+          ? pechinchas
+          : (Array.isArray(data.homeButtons) && data.homeButtons.length ? data.homeButtons : categories),
+    );
     renderFeaturedVideos(Array.isArray(data.featuredVideos) ? data.featuredVideos : []);
     renderSeoHotSearches(Array.isArray(data.seoHotSearches) ? data.seoHotSearches : []);
     renderTrustBand(data);

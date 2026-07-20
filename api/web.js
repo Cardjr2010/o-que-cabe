@@ -1935,7 +1935,9 @@ export default async function handler(req, res) {
         totalBudget,
       });
       const selectedProducts = (searchResult.products || []).filter((item) => String(item?.dataMode || item?.mode || "").toLowerCase() !== "demo");
-      const dataMode = selectedProducts.some((item) => String(item.dataMode || item.mode || "").toLowerCase().startsWith("real") || String(item.dataMode || item.mode || "").toLowerCase() === "seed") ? "real" : "none";
+      const dataMode = selectedProducts.some((item) => String(item.dataMode || item.mode || "").toLowerCase().startsWith("real") || String(item.dataMode || item.mode || "").toLowerCase() === "seed")
+        ? "real"
+        : (searchResult.strategyUsed === "refinement-needed" ? (searchResult.dataMode || "real") : "none");
       const response = buildOqcResponse({
         products: selectedProducts,
         query: q,

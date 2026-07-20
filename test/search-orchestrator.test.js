@@ -421,6 +421,67 @@ test("Ofertas afiliadas verificadas entram na busca do Galaxy S26 Ultra com prio
   assert.ok(result.products.every((product) => product.installments));
 });
 
+test("Consulta exata monitorada prioriza oferta verificada sobre catalogo antigo parecido", async () => {
+  const orchestrator = new SearchOrchestrator({
+    catalogManager: createCatalogManager([
+      {
+        title: "Smartphone Samsung Galaxy J4 Core 16GB",
+        brand: "Samsung",
+        category: "celular",
+        normalizedCategory: "celular",
+        productType: "principal",
+        isAccessory: false,
+        marketplace: "saldao_informatica",
+        dataMode: "real",
+        sourceType: "csv_feed",
+        price: 499.9,
+      },
+    ]),
+  });
+
+  const result = await orchestrator.search({
+    query: "galaxy s26 ultra 256gb",
+    mode: "total",
+    totalBudget: 12000,
+  });
+
+  assert.equal(result.dataMode, "real");
+  assert.equal(result.fallbackUsed, true);
+  assert.match(String(result.products[0].displayTitle || result.products[0].title), /Galaxy S26 Ultra/i);
+  assert.doesNotMatch(String(result.products[0].displayTitle || result.products[0].title), /Galaxy J4/i);
+  assert.ok(result.products.some((product) => String(product.source || "").includes("verified_partner_offers")));
+});
+
+test("Busca ampla por casa pede refinamento em vez de recomendar produto aleatorio", async () => {
+  const orchestrator = new SearchOrchestrator({
+    catalogManager: createCatalogManager([
+      {
+        title: "Escova de carvão para furadeira",
+        category: "peca",
+        normalizedCategory: "peca",
+        productType: "piece",
+        isAccessory: true,
+        marketplace: "infostore_feed",
+        dataMode: "real",
+        sourceType: "xml_feed",
+        price: 19.9,
+      },
+    ]),
+  });
+
+  const result = await orchestrator.search({
+    query: "casa",
+    mode: "total",
+    totalBudget: 50,
+  });
+
+  assert.equal(result.dataMode, "real");
+  assert.equal(result.returnedCount, 0);
+  assert.match(String(result.fallbackWarning || ""), /Refine a busca/i);
+  assert.ok(Array.isArray(result.refinementSuggestions));
+  assert.ok(result.refinementSuggestions.length > 0);
+});
+
 test("Sem token ou proxy configurado, o fallback do Mercado Livre nao eh acionado", async () => {
   let providerCalls = 0;
   const orchestrator = new SearchOrchestrator({

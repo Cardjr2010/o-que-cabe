@@ -7,6 +7,7 @@ import SEOIntelligenceEngine from "../seo/SEOIntelligenceEngine.js";
 import MercadoLivreSearchProvider from "../providers/MercadoLivreSearchProvider.js";
 import AmazonRapidApiSearchProvider from "../providers/AmazonRapidApiSearchProvider.js";
 import VerifiedAffiliateOfferProvider from "../providers/VerifiedAffiliateOfferProvider.js";
+import { findOfferRadarTarget, normalizeRadarText } from "../data/offer-radar-targets.js";
 import { buildOfferPricing } from "../pricing/CouponProvider.js";
 import { resolveProjectPath } from "../runtime/project-root.js";
 
@@ -357,9 +358,11 @@ function shouldUseMercadoLivreFallback(intent = {}, products = []) {
 
 function shouldEnrichWithExternal(intent = {}, products = []) {
   if (isHomeIntent(intent)) return false;
-  if (shouldUseMercadoLivreFallback(intent, products)) return true;
+  if (isTrackedCommercialIntent(intent)) return true;
   const normalizedQuery = normalizeText(intent.query || intent.searchText || "");
   const termCount = normalizedQuery.split(/\s+/).filter(Boolean).length;
+  if (termCount <= 1 && countPrincipalProducts(products) >= 1) return false;
+  if (shouldUseMercadoLivreFallback(intent, products)) return true;
   if (intent.model) return true;
   if (intent.brand && termCount >= 3) return true;
   return false;
@@ -482,8 +485,70 @@ function extractModel(text = "") {
   return "";
 }
 
+function getMeaningfulQueryTokens(text = "") {
+  return normalizeRadarText(text)
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length > 1 && !["de", "do", "da", "e", "com", "para", "por", "sem", "ate"].includes(token));
+}
+
+function countTokenHitsInText(text = "", tokens = []) {
+  const haystack = normalizeRadarText(text);
+  return (Array.isArray(tokens) ? tokens : []).filter((token) => haystack.includes(normalizeRadarText(token))).length;
+}
+
+function getTrackedCommercialTarget(intent = {}) {
+  return findOfferRadarTarget(intent.searchText || intent.query || "");
+}
+
+function isTrackedCommercialIntent(intent = {}) {
+  return Boolean(getTrackedCommercialTarget(intent));
+}
+
+function isStrictCommercialIntent(intent = {}) {
+  if (isTrackedCommercialIntent(intent)) return true;
+  const query = normalizeText(intent.searchText || intent.query || "");
+  const tokens = query.split(/\s+/).filter(Boolean);
+  if (intent.model && tokens.length >= 2) return true;
+  if (isPhoneFamilyQuery(query) && tokens.length >= 3) return true;
+  if (matchesAnyMarker(query, ["roteador", "router", "monitor", "notebook", "tv"]) && tokens.length >= 3) return true;
+  return false;
+}
+
+function hasStrongCommercialCoverage(product = {}, intent = {}) {
+  if (!isStrictCommercialIntent(intent)) return true;
+  const intelligence = product.intelligence || getProductIntelligenceEngine().enrichProduct(product);
+  const productText = [
+    product.displayTitle,
+    product.originalTitle,
+    product.title,
+    product.brand,
+    product.model,
+    product.description,
+    intelligence.department,
+    intelligence.category,
+    intelligence.subcategory,
+    Array.isArray(intelligence.searchKeywords) ? intelligence.searchKeywords.join(" ") : "",
+  ].filter(Boolean).join(" ");
+  const queryTokens = getMeaningfulQueryTokens(intent.searchText || intent.query || "");
+  if (!queryTokens.length) return true;
+  const hits = countTokenHitsInText(productText, queryTokens);
+  if (queryTokens.length >= 4) return hits >= 2;
+  if (queryTokens.length === 3) return hits >= 2;
+  return hits >= 1;
+}
+
 function isHomeIntent(intent = {}) {
   return normalizeText(intent.category || "") === "casa";
+}
+
+function shouldRefineHomeIntent(intent = {}) {
+  if (!isHomeIntent(intent)) return false;
+  const query = normalizeText(intent.searchText || intent.query || "");
+  const tokens = getMeaningfulQueryTokens(query);
+  if (!tokens.length) return true;
+  const specificHomeMarkers = tokens.filter((token) => !HOME_QUERY_MARKERS.includes(token));
+  return specificHomeMarkers.length === 0;
 }
 
 function isBroadCommercialIntent(intent = {}) {
@@ -688,6 +753,15 @@ function rankPreparedProduct(product = {}, intent = {}) {
   const iphoneSamsungBonus = /iphone|apple iphone|samsung|galaxy|redmi|poco|motorola|moto/.test(searchText) && phoneFamilyProduct ? 3 : 0;
   const nonPhonePenalty = phoneFamilyQuery && !cellularProduct && phoneFamilyProduct ? -12 : 0;
   const accessoryQueryPenalty = phoneFamilyQuery && /capa|case|pelicula|carregador|cabo|fone|headphone|airpods|earbud|strap|pulseira|suporte|controle remoto|remote control|remote/.test(brandText) ? -4 : 0;
+  const trackedTarget = getTrackedCommercialTarget(intent);
+  const trackedAliases = trackedTarget ? [trackedTarget.query, ...(Array.isArray(trackedTarget.aliases) ? trackedTarget.aliases : [])] : [];
+  const trackedQueryBonus = trackedAliases.some((alias) => titleText.includes(normalizeRadarText(alias))) ? 28 : 0;
+  const trackedFamilyBonus = trackedTarget && trackedAliases.some((alias) => {
+    const family = normalizeRadarText(alias).split(/\s+/)[0] || "";
+    return family && brandText.includes(family);
+  }) ? 6 : 0;
+  const verifiedOfferBonus = sourceText.includes("verified_partner_offers") ? 5 : 0;
+  const strictIntentPenalty = isStrictCommercialIntent(intent) && !hasStrongCommercialCoverage(product, intent) ? -40 : 0;
   return (
     (searchMatch * 8)
     + (titleMatches * 2.5)
@@ -704,9 +778,13 @@ function rankPreparedProduct(product = {}, intent = {}) {
     + phonePrincipalBonus
     + phoneBrandBonus
     + iphoneSamsungBonus
+    + trackedQueryBonus
+    + trackedFamilyBonus
+    + verifiedOfferBonus
     + accessoryPenalty
     + nonPhonePenalty
     + accessoryQueryPenalty
+    + strictIntentPenalty
   );
 }
 
@@ -716,6 +794,7 @@ function filterCandidateList(list = [], intent = {}) {
     .filter((product) => {
       if (!classifyVisibility(product)) return false;
       if (!matchProductType(product, intent.category || "", intent.accessoryIntent)) return false;
+      if (!hasStrongCommercialCoverage(product, intent)) return false;
       if (intent.brand) {
         const brandText = normalizeText([product.brand, product.title, product.displayTitle, product.originalTitle].filter(Boolean).join(" "));
         if (!brandText.includes(normalizeText(intent.brand))) return false;
@@ -1012,6 +1091,24 @@ export default class SearchOrchestrator {
 
   async search(options = {}) {
     const intent = this.parseIntent(options);
+    if (shouldRefineHomeIntent(intent)) {
+      return {
+        ok: true,
+        dataMode: "real",
+        intent,
+        warnings: [],
+        products: [],
+        returnedCount: 0,
+        strategyUsed: "refinement-needed",
+        tokenState: "n/a",
+        statusHttp: 200,
+        firstFive: [],
+        fallbackUsed: false,
+        fallbackAttempted: false,
+        fallbackWarning: "Encontramos poucas opções no catálogo atual. Refine a busca por cozinha, organizacao, decoracao, iluminacao, utilidades ou limpeza.",
+        refinementSuggestions: intent.refinementSuggestions || [],
+      };
+    }
     const candidates = this.listCandidates(intent);
     const prepared = this.prepareProducts(candidates, intent);
     const externalLookupNeeded = shouldEnrichWithExternal(intent, prepared.products);

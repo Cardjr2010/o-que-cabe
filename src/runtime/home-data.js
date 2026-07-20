@@ -4,6 +4,8 @@ import ProductIntelligenceEngine from "../catalog/ProductIntelligenceEngine.js";
 import SEOIntelligenceEngine from "../seo/SEOIntelligenceEngine.js";
 import { resolveCatalogSeedPath } from "./catalog-path.js";
 import { resolveProjectPath } from "./project-root.js";
+import { VERIFIED_AFFILIATE_OFFERS } from "../data/verified-affiliate-offers.js";
+import { OFFER_RADAR_TARGETS, findOfferRadarTarget, normalizeRadarText } from "../data/offer-radar-targets.js";
 
 let catalogManagerInstance = null;
 let productIntelligenceEngineInstance = null;
@@ -152,6 +154,45 @@ const FEATURED_VIDEO_GUIDES = [
     reason: "Entra bem no OQC porque mistura oferta real com explicacao pratica do produto antes da compra.",
   },
 ];
+
+function buildOfferRadarHighlights() {
+  return OFFER_RADAR_TARGETS.map((target) => {
+    const matchingOffers = VERIFIED_AFFILIATE_OFFERS
+      .filter((offer) => {
+        const match = findOfferRadarTarget([
+          target.query,
+          offer.displayTitle,
+          offer.title,
+          offer.brand,
+          offer.model,
+          Array.isArray(offer.searchKeywords) ? offer.searchKeywords.join(" ") : "",
+        ].filter(Boolean).join(" "));
+        return match?.id === target.id;
+      })
+      .sort((left, right) => Number(left.price || 0) - Number(right.price || 0));
+
+    if (!matchingOffers.length) return null;
+
+    const bestOffer = matchingOffers[0];
+    const sources = [...new Set(matchingOffers.map((offer) => labelHomeSource(offer.sourceName || offer.sourceLabel || offer.source || offer.seller?.name || "")))];
+    return {
+      category: target.category,
+      label: target.label,
+      query: target.query,
+      count: matchingOffers.length,
+      subtitle: `${matchingOffers.length} oferta${matchingOffers.length > 1 ? "s" : ""} verificada${matchingOffers.length > 1 ? "s" : ""} · a partir de ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(bestOffer.cashPrice || bestOffer.price || 0))}`,
+      sources,
+      intent: {
+        category: target.category,
+        query: target.query,
+        mode: target.budgets?.mode || "total",
+        monthly: target.budgets?.monthly || 0,
+        totalBudget: target.budgets?.totalBudget || 0,
+        months: target.budgets?.months || 12,
+      },
+    };
+  }).filter(Boolean).slice(0, 6);
+}
 
 function buildCuratedHomeItems(primaryItems = [], fallbackItems = []) {
   const combined = new Map();
@@ -341,6 +382,7 @@ export function buildHomeCatalogData() {
     const seoEngine = getSEOIntelligenceEngine();
     const seoHotSearches = seoEngine.buildSeoHotSearches(6);
     const seoHomeButtons = seoEngine.buildHomeButtons(catalogForHome);
+    const decisionHighlights = buildOfferRadarHighlights();
     const menu = [
       { label: "Início", href: "/", active: true },
       { label: "Departamentos", href: "#departments", active: true },
@@ -384,6 +426,7 @@ export function buildHomeCatalogData() {
       topSources: activeSources,
       searchCategories: homeButtons.length ? homeButtons : curatedDepartments,
       departmentCategories: curatedDepartments,
+      decisionHighlights,
       pechinchas: shortcuts,
       shortcuts,
       seoHotSearches,
@@ -438,6 +481,7 @@ export function buildHomeCatalogData() {
       topSources: [],
       searchCategories: [],
       departmentCategories: [],
+      decisionHighlights: buildOfferRadarHighlights(),
       pechinchas: [],
       shortcuts: [],
       seoHotSearches: [],
