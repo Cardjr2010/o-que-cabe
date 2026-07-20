@@ -58,10 +58,52 @@ const HOME_CATEGORY_PRIORITY = [
   "tvs",
   "tablets",
   "audio",
-  "ferramentas",
-  "casa e construcao",
-  "flores",
 ];
+
+const HOME_CATEGORY_MATCH_ORDER = [
+  "monitores",
+  "notebooks",
+  "tvs",
+  "tablets",
+  "audio",
+  "celulares",
+];
+
+const HOME_CATEGORY_COPY = new Map([
+  ["monitores", { label: "Monitores", query: "monitor gamer", sourceHint: "monitores" }],
+  ["celulares", { label: "Celulares", query: "celular", sourceHint: "celulares" }],
+  ["notebooks", { label: "Notebooks", query: "notebook", sourceHint: "notebooks" }],
+  ["tvs", { label: "TVs", query: "tv", sourceHint: "tvs" }],
+  ["tablets", { label: "Tablets", query: "tablet", sourceHint: "tablets" }],
+  ["audio", { label: "Áudio", query: "fone bluetooth", sourceHint: "audio" }],
+]);
+
+const PUBLIC_HOME_CATEGORY_RULES = new Map([
+  ["monitores", {
+    include: [/\bmonitor\b/, /\b144hz\b/, /\b165hz\b/, /\b240hz\b/, /\bultrawide\b/, /\bips\b/],
+    exclude: [/\bnotebook\b/, /\blaptop\b/, /\bsmart tv\b/, /televis/, /\bcapa\b/, /\bpelicula\b/, /\bcabo\b/, /\bcarregador\b/],
+  }],
+  ["celulares", {
+    include: [/\bcelular\b/, /\bsmartphone\b/, /\biphone\b/, /\bgalaxy\b/, /\bredmi\b/, /\bpoco\b/, /\bmotorola\b/, /\bmoto\b/, /\bxiaomi\b/],
+    exclude: [/\bcapa\b/, /\bcase\b/, /\bpelicula\b/, /\bcabo\b/, /\bcarregador\b/, /\bsuporte\b/, /\bfone\b/, /\bheadset\b/, /\btablet\b/],
+  }],
+  ["notebooks", {
+    include: [/\bnotebook\b/, /\blaptop\b/, /\bchromebook\b/, /\bmacbook\b/, /\bideapad\b/, /\bthinkpad\b/, /\bvivobook\b/, /\baspire\b/, /\binspiron\b/, /\bswift\b/, /\bloq\b/],
+    exclude: [/\bcapa\b/, /\bcase\b/, /\bmochila\b/, /\bbase\b/, /\bsuporte\b/, /\bcooler\b/, /\bmouse\b/, /\bteclado\b/],
+  }],
+  ["tvs", {
+    include: [/\bsmart tv\b/, /\btv\b/, /televis/, /\boled\b/, /\bqled\b/, /\broku\b/, /\bmini led\b/, /\b4k\b/],
+    exclude: [/\bnotebook\b/, /\blaptop\b/, /\bmonitor\b/, /\bcapa\b/, /\bcontrole\b/, /\bsuporte\b/],
+  }],
+  ["tablets", {
+    include: [/\btablet\b/, /\bipad\b/, /\bgalaxy tab\b/, /\bredmi pad\b/, /\bxiaomi pad\b/, /\blenovo tab\b/],
+    exclude: [/\bcapa\b/, /\bcase\b/, /\bpelicula\b/, /\bcabo\b/, /\bcarregador\b/, /\bsuporte\b/],
+  }],
+  ["audio", {
+    include: [/\bfone\b/, /\bheadphone\b/, /\bheadset\b/, /\bearbud\b/, /\bbuds\b/, /\bairpods\b/, /caixa de som/, /\bsoundbar\b/, /\bbluetooth\b/],
+    exclude: [/\bcapa\b/, /\bcase\b/, /\bcabo\b/, /\bcarregador\b/, /\bsuporte\b/],
+  }],
+]);
 
 const FEATURED_VIDEO_GUIDES = [
   {
@@ -161,6 +203,16 @@ function normalizedCatalogCategoryKey(value = "") {
     .toLowerCase();
 }
 
+function normalizeHomeMatchText(item = {}) {
+  return normalizedCatalogCategoryKey([
+    item?.title,
+    item?.displayTitle,
+    item?.originalTitle,
+    item?.brand,
+    item?.model,
+  ].filter(Boolean).join(" "));
+}
+
 const HOME_EXCLUDED_SOURCES = new Set([
   "mi_shop",
   "mercadolivre",
@@ -178,14 +230,42 @@ function isVisibleHomeProduct(item = {}) {
   );
 }
 
+function resolvePublicHomeCategory(item = {}) {
+  const text = normalizeHomeMatchText(item);
+
+  for (const categoryKey of HOME_CATEGORY_MATCH_ORDER) {
+    const rule = PUBLIC_HOME_CATEGORY_RULES.get(categoryKey);
+    if (!rule) continue;
+    const includeMatches = rule.include.some((pattern) => pattern.test(text));
+    const excludeMatches = rule.exclude.some((pattern) => pattern.test(text));
+    if (!excludeMatches && includeMatches) {
+      return categoryKey;
+    }
+  }
+
+  return null;
+}
+
 function getRealHomeCatalog(items = []) {
-  return Array.isArray(items) ? items.filter((item) => isVisibleHomeProduct(item)) : [];
+  if (!Array.isArray(items)) return [];
+  return items
+    .filter((item) => isVisibleHomeProduct(item))
+    .map((item) => {
+      const publicCategory = resolvePublicHomeCategory(item);
+      if (!publicCategory) return null;
+      return {
+        ...item,
+        category: publicCategory,
+        normalizedCategory: publicCategory,
+      };
+    })
+    .filter(Boolean);
 }
 
 function labelHomeSource(value = "") {
   const source = normalizedCatalogCategoryKey(value);
   if (source === "saldao_informatica" || source === "actionpay_saldao" || source.includes("saldao")) return "Saldão da Informática";
-  if (source === "infostore" || source === "info store" || source === "info_store") return "Info Store - Informática";
+  if (source === "infostore" || source === "info store" || source === "info_store" || source === "infostore_feed") return "Info Store - Informática";
   if (source === "flores_online" || source === "flores online") return "Flores Online";
   if (source === "isabela_flores" || source === "isabela flores") return "Isabela Flores";
   if (source === "ccp") return "CCP";
@@ -210,6 +290,47 @@ function resolveCatalogUpdatedAt(items = []) {
   return latest ? new Date(latest).toISOString() : null;
 }
 
+function buildPublicHomeCollections(items = []) {
+  const groups = new Map();
+
+  for (const categoryKey of HOME_CATEGORY_PRIORITY) {
+    groups.set(categoryKey, []);
+  }
+
+  for (const item of Array.isArray(items) ? items : []) {
+    const categoryKey = normalizedCatalogCategoryKey(item?.normalizedCategory || item?.category || "");
+    if (!groups.has(categoryKey)) continue;
+    groups.get(categoryKey).push(item);
+  }
+
+  const entries = HOME_CATEGORY_PRIORITY.map((categoryKey) => {
+    const group = groups.get(categoryKey) || [];
+    const copy = HOME_CATEGORY_COPY.get(categoryKey) || {
+      label: categoryKey,
+      query: categoryKey,
+      sourceHint: categoryKey,
+    };
+
+    const sources = [...new Set(group
+      .map((item) => normalizedCatalogCategoryKey(item?.source || item?.marketplace || item?.seller || ""))
+      .filter(Boolean))]
+      .slice(0, 6);
+
+    return {
+      category: categoryKey,
+      label: copy.label,
+      query: copy.query,
+      sourceHint: copy.sourceHint,
+      count: group.length,
+      sampleTitles: group.slice(0, 3).map((item) => item?.displayTitle || item?.title || "").filter(Boolean),
+      sources,
+      intent: { category: categoryKey, query: copy.query },
+    };
+  }).filter((entry) => entry.count > 0);
+
+  return entries;
+}
+
 export function buildHomeCatalogData() {
   try {
     const catalogManager = getCatalogManager();
@@ -227,19 +348,23 @@ export function buildHomeCatalogData() {
       { label: "Minha Conta", href: "", future: true, active: false },
     ];
 
-    const departments = Array.isArray(analysis.departments) ? analysis.departments : [];
-    const curatedHomeButtons = buildCuratedHomeItems(analysis.categories, departments);
-    const curatedDepartments = buildCuratedHomeItems(departments, analysis.categories);
-    const categories = curatedHomeButtons;
-    const homeButtons = curatedHomeButtons.length ? curatedHomeButtons : seoHomeButtons;
-    const topCategories = curatedHomeButtons;
+    const publicCollections = buildPublicHomeCollections(catalogForHome);
+    const categories = buildCuratedHomeItems(publicCollections, publicCollections);
+    const homeButtons = categories.length ? categories : seoHomeButtons;
+    const curatedDepartments = buildCuratedHomeItems(publicCollections, publicCollections);
+    const topCategories = categories;
     const shortcuts = Array.isArray(analysis.shortcuts) ? analysis.shortcuts : [];
-    const activeSources = Array.isArray(analysis.activeSources)
-      ? analysis.activeSources.map((item) => ({
-        source: labelHomeSource(item.source || item.marketplace || ""),
-        count: item.count,
-      }))
-      : [];
+    const activeSources = [...new Map(
+      catalogForHome
+        .map((item) => normalizedCatalogCategoryKey(item?.source || item?.marketplace || item?.seller || ""))
+        .filter(Boolean)
+        .map((source) => [source, {
+          source: labelHomeSource(source),
+          count: catalogForHome.filter((item) => normalizedCatalogCategoryKey(item?.source || item?.marketplace || item?.seller || "") === source).length,
+        }]),
+    ).values()]
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 8);
 
     return {
       ok: true,
@@ -275,8 +400,8 @@ export function buildHomeCatalogData() {
       sellerSummary: Array.isArray(analysis.sellerSummary) ? analysis.sellerSummary.slice(0, 8) : [],
       brandSummary: Array.isArray(analysis.brandSummary) ? analysis.brandSummary.slice(0, 8) : [],
       topBrands: Array.isArray(analysis.topBrands) ? analysis.topBrands.slice(0, 8) : [],
-      departmentSummary: Array.isArray(analysis.departmentSummary) ? analysis.departmentSummary.slice(0, 14) : [],
-      categorySummary: Array.isArray(analysis.categorySummary) ? analysis.categorySummary.slice(0, 6) : [],
+      departmentSummary: curatedDepartments,
+      categorySummary: categories,
       beforeOutros: analysis.beforeOutros ?? 0,
       afterOutros: analysis.afterOutros ?? 0,
       catalogSummary: {
