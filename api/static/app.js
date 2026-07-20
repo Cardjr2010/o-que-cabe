@@ -29,6 +29,14 @@ const decisionHighlightsSection = document.querySelector("#decisions");
 const decisionHighlightsGrid = document.querySelector("#decisionHighlightsGrid");
 const campaignsSection = document.querySelector("#campaignsSection");
 const campaignGrid = document.querySelector("#campaignGrid");
+const proofSection = document.querySelector("#proofSection");
+const proofPublishedProducts = document.querySelector("#proofPublishedProducts");
+const proofSummaryText = document.querySelector("#proofSummaryText");
+const proofSummaryStats = document.querySelector("#proofSummaryStats");
+const proofSourcesCount = document.querySelector("#proofSourcesCount");
+const proofSourcesChips = document.querySelector("#proofSourcesChips");
+const proofBrandsCount = document.querySelector("#proofBrandsCount");
+const proofBrandsChips = document.querySelector("#proofBrandsChips");
 const trustTotalCatalog = document.querySelector("#trustTotalCatalog");
 const trustDepartments = document.querySelector("#trustDepartments");
 const trustSources = document.querySelector("#trustSources");
@@ -902,8 +910,8 @@ function renderActiveCampaigns(items = []) {
       <strong>${escapeHtml(item.headline || item.label || "Campanha ativa")}</strong>
       <p>${escapeHtml(item.description || item.label || "")}</p>
       <div class="campaign-meta">
-        ${item.code ? `<span>Codigo: ${escapeHtml(item.code)}</span>` : `<span>Campanha ativa</span>`}
-        ${item.validUntil ? `<span>Valido ate ${escapeHtml(formatCampaignDate(item.validUntil))}</span>` : ""}
+        ${item.code ? `<span>Codigo ${escapeHtml(item.code)}</span>` : `<span>Oferta monitorada</span>`}
+        ${item.validUntil ? `<span>Valido ate ${escapeHtml(formatCampaignDate(item.validUntil))}</span>` : `<span>Abra para revisar no OQC</span>`}
       </div>
     </button>
   `).join("");
@@ -920,6 +928,75 @@ function renderActiveCampaigns(items = []) {
       form.requestSubmit();
     });
   });
+}
+
+function renderProofSection(data = {}) {
+  if (!proofSection) return;
+
+  const publishedProducts = Number(data.totalPublishedProducts ?? data.totalCatalogProducts ?? data.totalProducts ?? 0);
+  const analyzedProducts = Number(data.totalCatalogProducts ?? data.totalProducts ?? publishedProducts ?? 0);
+  const hiddenProducts = Number(data.hiddenProducts ?? Math.max(analyzedProducts - publishedProducts, 0));
+  const topSources = Array.isArray(data.topSources) ? data.topSources.filter(Boolean).slice(0, 6) : [];
+  const topBrands = Array.isArray(data.topBrands) ? data.topBrands.filter(Boolean).slice(0, 8) : [];
+
+  if (!publishedProducts && !topSources.length && !topBrands.length) {
+    proofSection.hidden = true;
+    return;
+  }
+
+  proofSection.hidden = false;
+
+  if (proofPublishedProducts) {
+    proofPublishedProducts.textContent = `${formatCompactNumber(publishedProducts, "0")} produtos publicados`;
+  }
+
+  if (proofSummaryText) {
+    proofSummaryText.textContent = topSources.length
+      ? `O OQC cruza diferentes fontes reais e destaca primeiro o que chega com melhor cobertura de dados, origem legivel e contexto para decidir com mais calma.`
+      : "O OQC organiza produtos reais publicados com filtros de qualidade antes de mostrar qualquer recomendacao.";
+  }
+
+  if (proofSummaryStats) {
+    proofSummaryStats.innerHTML = [
+      `${formatCompactNumber(analyzedProducts, "0")} analisados`,
+      `${formatCompactNumber(hiddenProducts, "0")} ocultos`,
+      data.catalogUpdatedAt ? "Catalogo com leitura recente" : "Catalogo ativo",
+    ].map((item) => `<span>${escapeHtml(item)}</span>`).join("");
+  }
+
+  if (proofSourcesCount) {
+    proofSourcesCount.textContent = `${formatCompactNumber(topSources.length, "0")} fontes`;
+  }
+
+  if (proofSourcesChips) {
+    proofSourcesChips.innerHTML = topSources.length
+      ? topSources.map((item) => `
+        <span class="proof-chip">
+          <strong>${escapeHtml(item.source || "Fonte")}</strong>
+          <small>${escapeHtml(`${formatCompactNumber(item.count || 0, "0")} produtos`)}</small>
+        </span>
+      `).join("")
+      : '<span class="proof-chip proof-chip-muted"><strong>Sem fontes destacadas</strong><small>O catalogo segue ativo.</small></span>';
+  }
+
+  if (proofBrandsCount) {
+    proofBrandsCount.textContent = `${formatCompactNumber(topBrands.length, "0")} marcas`;
+  }
+
+  if (proofBrandsChips) {
+    proofBrandsChips.innerHTML = topBrands.length
+      ? topBrands.map((item) => {
+        const label = typeof item === "string" ? item : item?.brand || item?.label || "";
+        const count = typeof item === "string" ? null : item?.count;
+        return `
+          <span class="proof-chip">
+            <strong>${escapeHtml(label || "Marca")}</strong>
+            <small>${escapeHtml(count ? `${formatCompactNumber(count, "0")} produtos` : "Cobertura real")}</small>
+          </span>
+        `;
+      }).join("")
+      : '<span class="proof-chip proof-chip-muted"><strong>Sem marcas destacadas</strong><small>Dados publicos seguem disponiveis.</small></span>';
+  }
 }
 
 function renderSeoHotSearches(items = []) {
@@ -1099,6 +1176,7 @@ async function loadHomeCatalogData() {
           : (Array.isArray(data.homeButtons) && data.homeButtons.length ? data.homeButtons : categories),
     );
     renderActiveCampaigns(Array.isArray(data.activeCampaigns) ? data.activeCampaigns : []);
+    renderProofSection(data);
     renderFeaturedVideos(Array.isArray(data.featuredVideos) ? data.featuredVideos : []);
     renderSeoHotSearches(Array.isArray(data.seoHotSearches) ? data.seoHotSearches : []);
     renderTrustBand(data);
