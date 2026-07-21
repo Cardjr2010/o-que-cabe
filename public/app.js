@@ -798,7 +798,7 @@ function buildIntentCardItems(items = []) {
         months: match.intent?.months || 12,
       },
     });
-    if (entries.length >= 8) break;
+    if (entries.length >= 6) break;
   }
 
   return entries;
@@ -858,7 +858,7 @@ function renderDecisionHighlights(items = []) {
   if (!decisionHighlightsSection || !decisionHighlightsGrid) return;
   const entries = (Array.isArray(items) ? items : [])
     .filter((item) => item && item.category && !String(item.category).toLowerCase().includes("outros") && !String(item.category).toLowerCase().includes("pecas"))
-    .slice(0, 4);
+    .slice(0, 3);
 
   if (!entries.length) {
     decisionHighlightsSection.hidden = true;
@@ -893,7 +893,7 @@ function renderDecisionHighlights(items = []) {
 
 function renderActiveCampaigns(items = []) {
   if (!campaignsSection || !campaignGrid) return;
-  const entries = Array.isArray(items) ? items.slice(0, 4) : [];
+  const entries = Array.isArray(items) ? items.slice(0, 3) : [];
   if (!entries.length) {
     campaignsSection.hidden = true;
     campaignGrid.innerHTML = "";
@@ -936,8 +936,8 @@ function renderProofSection(data = {}) {
   const publishedProducts = Number(data.totalPublishedProducts ?? data.totalCatalogProducts ?? data.totalProducts ?? 0);
   const analyzedProducts = Number(data.totalCatalogProducts ?? data.totalProducts ?? publishedProducts ?? 0);
   const hiddenProducts = Number(data.hiddenProducts ?? Math.max(analyzedProducts - publishedProducts, 0));
-  const topSources = Array.isArray(data.topSources) ? data.topSources.filter(Boolean).slice(0, 6) : [];
-  const topBrands = Array.isArray(data.topBrands) ? data.topBrands.filter(Boolean).slice(0, 8) : [];
+  const topSources = Array.isArray(data.topSources) ? data.topSources.filter(Boolean).slice(0, 4) : [];
+  const topBrands = Array.isArray(data.topBrands) ? data.topBrands.filter(Boolean).slice(0, 6) : [];
 
   if (!publishedProducts && !topSources.length && !topBrands.length) {
     proofSection.hidden = true;
@@ -952,7 +952,7 @@ function renderProofSection(data = {}) {
 
   if (proofSummaryText) {
     proofSummaryText.textContent = topSources.length
-      ? `O OQC cruza diferentes fontes reais e destaca primeiro o que chega com melhor cobertura de dados, origem legivel e contexto para decidir com mais calma.`
+      ? `O OQC cruza fontes reais e prioriza o que chega com melhor contexto para decisão.`
       : "O OQC organiza produtos reais publicados com filtros de qualidade antes de mostrar qualquer recomendacao.";
   }
 
@@ -1027,7 +1027,7 @@ function renderSeoHotSearches(items = []) {
 
 function renderFeaturedVideos(items = []) {
   if (!videoGuidesSection || !videoGuidesGrid) return;
-  const entries = Array.isArray(items) ? items.slice(0, 5) : [];
+  const entries = Array.isArray(items) ? items.slice(0, 3) : [];
   if (!entries.length) {
     videoGuidesSection.hidden = true;
     videoGuidesGrid.innerHTML = "";
