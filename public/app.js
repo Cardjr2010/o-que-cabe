@@ -892,16 +892,18 @@ function renderDecisionHighlights(items = []) {
 }
 
 function renderActiveCampaigns(items = []) {
-  if (!campaignsSection || !campaignGrid) return;
+  const section = campaignsSection;
+  const grid = campaignGrid;
+  if (!section || !grid) return;
   const entries = Array.isArray(items) ? items.slice(0, 3) : [];
   if (!entries.length) {
-    campaignsSection.hidden = true;
-    campaignGrid.innerHTML = "";
+    section.hidden = true;
+    grid.innerHTML = "";
     return;
   }
 
-  campaignsSection.hidden = false;
-  campaignGrid.innerHTML = entries.map((item) => `
+  section.hidden = false;
+  grid.innerHTML = entries.map((item) => `
     <button type="button" class="campaign-card" data-query="${escapeHtml(item.query || "")}" data-mode="${escapeHtml(item.intent?.mode || "total")}" data-monthly="${escapeHtml(String(item.intent?.monthly || 0))}" data-total-budget="${escapeHtml(String(item.intent?.totalBudget || 0))}" data-months="${escapeHtml(String(item.intent?.months || 12))}">
       <div class="campaign-card-top">
         <span class="campaign-badge">${escapeHtml(item.badge || "Campanha")}</span>
@@ -916,7 +918,7 @@ function renderActiveCampaigns(items = []) {
     </button>
   `).join("");
 
-  campaignGrid.querySelectorAll(".campaign-card").forEach((card) => {
+  grid.querySelectorAll(".campaign-card").forEach((card) => {
     card.addEventListener("click", () => {
       const query = card.dataset.query || "";
       if (query) productInput.value = query;
@@ -1140,7 +1142,7 @@ function renderTrustBand(data = {}) {
 async function loadHomeCatalogData() {
   if (appView !== "home") return;
 
-  renderLoadingSkeletons(intentGrid, "intent", 8);
+  renderLoadingSkeletons(intentGrid, "intent", 6);
   renderLoadingSkeletons(decisionHighlightsGrid, "decision", 3);
   renderLoadingSkeletons(campaignGrid, "decision", 3);
   renderLoadingSkeletons(videoGuidesGrid, "card", 3);
