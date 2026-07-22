@@ -43,6 +43,8 @@ const trustDepartments = document.querySelector("#trustDepartments");
 const trustSources = document.querySelector("#trustSources");
 const trustUpdated = document.querySelector("#trustUpdated");
 const trustUpdatedLabel = document.querySelector("#trustUpdatedLabel");
+const offerRadarSection = document.querySelector("#offerRadarSection");
+const offerRadarGrid = document.querySelector("#offerRadarGrid");
 const appView = document.body.dataset.view || "home";
 const apiEndpoint = document.body.dataset.endpoint || "/api/search";
 let searchTimer = null;
@@ -1545,6 +1547,71 @@ function renderFeaturedVideos(items = []) {
   });
 }
 
+function renderOfferRadar(items = []) {
+  if (!offerRadarSection || !offerRadarGrid) return;
+  const entries = Array.isArray(items) ? items.slice(0, 4) : [];
+  if (!entries.length) {
+    offerRadarSection.hidden = true;
+    offerRadarGrid.innerHTML = "";
+    return;
+  }
+
+  offerRadarSection.hidden = false;
+  offerRadarGrid.innerHTML = entries.map((item) => {
+    const installmentCount = Number(item.installment?.count || 0);
+    const installmentAmount = Number(item.installment?.amount || 0);
+    const installmentText = installmentCount > 0 && installmentAmount > 0
+      ? `${installmentCount}x de ${currency.format(installmentAmount)}${item.installment?.interestFree === true ? " sem juros" : ""}`
+      : "Parcelamento real não informado";
+    const priceValue = Number(item.finalPrice || item.cashPrice || item.price || 0);
+    const priceText = priceValue > 0 ? currency.format(priceValue) : "Preço não informado";
+    const sourceText = item.officialStore
+      ? `${item.source} · loja oficial`
+      : item.source;
+
+    return `
+      <article class="offer-radar-card">
+        <div class="offer-radar-media">
+          ${item.image
+            ? `<img src="${escapeHtml(item.image)}" alt="">`
+            : `<div class="offer-radar-media-fallback"><img src="/logo-oqc.png" alt=""><span>Sem imagem</span></div>`}
+        </div>
+        <div class="offer-radar-body">
+          <div class="offer-radar-top">
+            <span class="offer-radar-source">${escapeHtml(sourceText)}</span>
+            ${item.officialStore ? '<span class="offer-radar-badge">Oficial</span>' : ""}
+          </div>
+          <h3>${escapeHtml(item.title || item.label || "Oferta verificada")}</h3>
+          <p class="offer-radar-note">${escapeHtml(item.note || "Oferta validada manualmente com link direto.")}</p>
+          <div class="offer-radar-price-row">
+            <strong>${escapeHtml(priceText)}</strong>
+            <span>${escapeHtml(installmentText)}</span>
+          </div>
+          <div class="offer-radar-actions">
+            <button type="button" class="offer-radar-search" data-query="${escapeHtml(item.intent?.query || item.query || "")}" data-mode="${escapeHtml(item.intent?.mode || "total")}" data-monthly="${escapeHtml(String(item.intent?.monthly || 0))}" data-total-budget="${escapeHtml(String(item.intent?.totalBudget || 0))}" data-months="${escapeHtml(String(item.intent?.months || 12))}">Analisar no OQC</button>
+            ${item.affiliateUrl || item.permalink
+              ? `<a class="offer-radar-link" href="${escapeHtml(item.affiliateUrl || item.permalink)}" target="_blank" rel="noopener noreferrer">Ver oferta</a>`
+              : ""}
+          </div>
+        </div>
+      </article>
+    `;
+  }).join("");
+
+  offerRadarGrid.querySelectorAll(".offer-radar-search").forEach((button) => {
+    button.addEventListener("click", () => {
+      const query = button.dataset.query || "";
+      if (query) productInput.value = query;
+      searchMode = button.dataset.mode === "monthly" ? "monthly" : "total";
+      if (monthlyInput && button.dataset.monthly) monthlyInput.value = button.dataset.monthly;
+      if (monthsInput && button.dataset.months) monthsInput.value = button.dataset.months;
+      if (totalBudgetInput && button.dataset.totalBudget) totalBudgetInput.value = button.dataset.totalBudget;
+      setMode(searchMode);
+      form.requestSubmit();
+    });
+  });
+}
+
 function formatCompactNumber(value, fallback = "0") {
   const number = Number(value);
   if (!Number.isFinite(number) || number < 0) return fallback;
@@ -1624,6 +1691,7 @@ async function loadHomeCatalogData() {
   renderLoadingSkeletons(intentGrid, "intent", 5);
   renderLoadingSkeletons(decisionHighlightsGrid, "decision", 3);
   renderLoadingSkeletons(campaignGrid, "decision", 3);
+  renderLoadingSkeletons(offerRadarGrid, "card", 3);
   renderLoadingSkeletons(videoGuidesGrid, "card", 3);
   renderLoadingSkeletons(categoryGrid, "card", 6);
   renderLoadingSkeletons(seoHotSearchesGrid, "chip", 6);
@@ -1650,9 +1718,10 @@ async function loadHomeCatalogData() {
     }
     renderPurchaseIntentions(Array.isArray(data.homeButtons) && data.homeButtons.length ? data.homeButtons : categories);
     renderDecisionHighlights([]);
-    renderActiveCampaigns([]);
+    renderOfferRadar(Array.isArray(data.verifiedOfferRadar) ? data.verifiedOfferRadar : []);
+    renderActiveCampaigns(Array.isArray(data.activeCampaigns) ? data.activeCampaigns : []);
     renderProofSection(data);
-    renderFeaturedVideos([]);
+    renderFeaturedVideos(Array.isArray(data.featuredVideos) ? data.featuredVideos : []);
     renderSeoHotSearches([]);
     renderTrustBand(data);
 
@@ -1688,6 +1757,7 @@ async function loadHomeCatalogData() {
     if (intentionsSection) intentionsSection.hidden = true;
     if (intentGrid) intentGrid.innerHTML = "";
     if (decisionHighlightsGrid) decisionHighlightsGrid.innerHTML = "";
+    if (offerRadarGrid) offerRadarGrid.innerHTML = "";
     if (campaignGrid) campaignGrid.innerHTML = "";
     if (videoGuidesGrid) videoGuidesGrid.innerHTML = "";
     if (categoryGrid) categoryGrid.innerHTML = "";

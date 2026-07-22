@@ -195,6 +195,75 @@ function buildOfferRadarHighlights() {
   }).filter(Boolean).slice(0, 6);
 }
 
+function effectiveOfferPrice(offer = {}) {
+  const candidates = [
+    offer.finalPrice,
+    offer.cashPrice,
+    offer.price,
+  ];
+  for (const candidate of candidates) {
+    const parsed = Number(candidate);
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  }
+  return Number.POSITIVE_INFINITY;
+}
+
+function buildVerifiedOfferRadar() {
+  const cards = OFFER_RADAR_TARGETS.map((target) => {
+    const matches = VERIFIED_AFFILIATE_OFFERS
+      .filter((offer) => {
+        const match = findOfferRadarTarget([
+          offer.displayTitle,
+          offer.title,
+          offer.brand,
+          offer.model,
+          Array.isArray(offer.searchKeywords) ? offer.searchKeywords.join(" ") : "",
+        ].filter(Boolean).join(" "));
+        return match?.id === target.id;
+      })
+      .sort((left, right) => {
+        if (Boolean(right.officialStore) !== Boolean(left.officialStore)) {
+          return Number(Boolean(right.officialStore)) - Number(Boolean(left.officialStore));
+        }
+        return effectiveOfferPrice(left) - effectiveOfferPrice(right);
+      });
+
+    if (!matches.length) return null;
+
+    const bestOffer = matches[0];
+    return {
+      id: target.id,
+      label: target.label,
+      query: target.query,
+      category: target.category,
+      title: bestOffer.displayTitle || bestOffer.title || target.label,
+      source: labelHomeSource(bestOffer.sourceName || bestOffer.sourceLabel || bestOffer.source || bestOffer.seller?.name || ""),
+      officialStore: Boolean(bestOffer.officialStore),
+      price: Number(bestOffer.price || 0),
+      cashPrice: Number(bestOffer.cashPrice || 0),
+      finalPrice: Number(bestOffer.finalPrice || bestOffer.cashPrice || bestOffer.price || 0),
+      installment: bestOffer.installments || null,
+      image: bestOffer.image || "",
+      affiliateUrl: bestOffer.affiliateUrl || bestOffer.permalink || bestOffer.productUrl || "",
+      permalink: bestOffer.permalink || bestOffer.productUrl || bestOffer.affiliateUrl || "",
+      verifiedAt: bestOffer.verifiedAt || null,
+      seller: bestOffer.seller?.name || "",
+      note: bestOffer.officialStore
+        ? "Loja oficial confirmada ou origem principal da oferta."
+        : "Oferta validada manualmente com link direto e dados de preço.",
+      intent: {
+        query: target.query,
+        mode: target.budgets?.mode || "total",
+        totalBudget: target.budgets?.totalBudget || 0,
+        monthly: target.budgets?.monthly || 0,
+        months: target.budgets?.months || 12,
+      },
+    };
+  }).filter(Boolean);
+
+  return cards.slice(0, 4);
+}
+
 function buildCuratedHomeItems(primaryItems = [], fallbackItems = []) {
   const combined = new Map();
   for (const item of Array.isArray(primaryItems) ? primaryItems : []) {
@@ -306,6 +375,9 @@ function getRealHomeCatalog(items = []) {
 
 function labelHomeSource(value = "") {
   const source = normalizedCatalogCategoryKey(value);
+  if (source === "amazon" || source === "amazon.com.br") return "Amazon";
+  if (source === "magalu" || source === "magazine voce" || source === "magazine_voce") return "Magalu";
+  if (source === "mercado_livre" || source === "mercado livre" || source === "mercadolivre") return "Mercado Livre";
   if (source === "saldao_informatica" || source === "actionpay_saldao" || source.includes("saldao")) return "Saldão da Informática";
   if (source === "infostore" || source === "info store" || source === "info_store" || source === "infostore_feed") return "Info Store - Informática";
   if (source === "flores_online" || source === "flores online") return "Flores Online";
@@ -384,6 +456,7 @@ export function buildHomeCatalogData() {
     const seoHotSearches = seoEngine.buildSeoHotSearches(6);
     const seoHomeButtons = seoEngine.buildHomeButtons(catalogForHome);
     const decisionHighlights = buildOfferRadarHighlights();
+    const verifiedOfferRadar = buildVerifiedOfferRadar();
     const activeCampaigns = buildCampaignCards();
     const menu = [
       { label: "Início", href: "/", active: true },
@@ -428,6 +501,7 @@ export function buildHomeCatalogData() {
       searchCategories: homeButtons.length ? homeButtons : curatedDepartments,
       departmentCategories: curatedDepartments,
       decisionHighlights,
+      verifiedOfferRadar,
       activeCampaigns,
       pechinchas: shortcuts,
       shortcuts,
@@ -483,6 +557,7 @@ export function buildHomeCatalogData() {
       searchCategories: [],
       departmentCategories: [],
       decisionHighlights: buildOfferRadarHighlights(),
+      verifiedOfferRadar: buildVerifiedOfferRadar(),
       activeCampaigns: buildCampaignCards(),
       pechinchas: [],
       shortcuts: [],
