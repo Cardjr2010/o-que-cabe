@@ -35,6 +35,15 @@ function toNumber(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function normalizeComparatorText(value = "") {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
 function hasValidLink(product = {}) {
   return Boolean(String(product.affiliateUrl || product.productUrl || product.permalink || product.url || "").trim());
 }
@@ -79,7 +88,7 @@ function rankGroup(status) {
 }
 
 function normalizeStatus(product = {}) {
-  return product.budgetStatus || product.status || "NÃO CABE";
+  return product.budgetStatus || product.status || "NAO CABE";
 }
 
 function relevanceScore(product = {}, query = "") {
@@ -88,13 +97,12 @@ function relevanceScore(product = {}, query = "") {
   const text = `${product.title || ""} ${product.category || ""} ${product.description || ""}`.toLowerCase();
   const categoryTerms = {
     celular: ["celular", "smartphone", "galaxy", "moto", "redmi", "iphone"],
-    tv: ["tv", "televisão", "televisao", "smart tv", "oled", "qled", "roku"],
+    tv: ["tv", "televisao", "smart tv", "oled", "qled", "roku"],
     notebook: ["notebook", "laptop", "vivobook", "ideapad", "aspire"],
-    relógio: ["relógio", "relogio", "smartwatch", "watch", "pulseira inteligente"],
-    relogio: ["relógio", "relogio", "smartwatch", "watch", "pulseira inteligente"],
+    relogio: ["relogio", "smartwatch", "watch", "pulseira inteligente"],
     tablet: ["tablet", "ipad", "galaxy tab", "tab"],
     casa: ["casa", "air fryer", "fritadeira", "aspirador", "cozinha"],
-    presente: ["presente", "kit", "caneca", "bloco", "acessório", "acessorio"],
+    presente: ["presente", "kit", "caneca", "bloco", "acessorio"],
   };
   const terms = categoryTerms[q] || q.split(/\s+/).filter(Boolean);
   if (!terms.length) return 0.5;
@@ -112,8 +120,55 @@ function searchIntentStrength(product = {}) {
   return Math.max(0.05, Math.min(1, raw / 200));
 }
 
+function effectiveFinalPrice(product = {}) {
+  return toNumber(product.finalPrice ?? product.cashPrice ?? product.price, Number.POSITIVE_INFINITY);
+}
+
+function installmentAmount(product = {}) {
+  const installments = product.installments || {};
+  const estimated = product.estimatedInstallment || {};
+  return toNumber(
+    installments.amount
+      ?? installments.monthly
+      ?? product.installmentValue
+      ?? product.monthlyPrice
+      ?? estimated.amount,
+    Number.POSITIVE_INFINITY,
+  );
+}
+
+function samePrimaryOffer(a = {}, b = {}) {
+  const aType = String(a.productType || "").toLowerCase();
+  const bType = String(b.productType || "").toLowerCase();
+  if (aType && bType && (aType !== "principal" || bType !== "principal")) {
+    return false;
+  }
+
+  const aModel = normalizeComparatorText(a.model || "");
+  const bModel = normalizeComparatorText(b.model || "");
+  if (aModel && bModel && aModel === bModel) return true;
+
+  const aTitle = normalizeComparatorText(a.displayTitle || a.title || "");
+  const bTitle = normalizeComparatorText(b.displayTitle || b.title || "");
+  if (!aTitle || !bTitle) return false;
+
+  if (aTitle === bTitle) return true;
+  if (aModel && bTitle.includes(aModel)) return true;
+  if (bModel && aTitle.includes(bModel)) return true;
+
+  return false;
+}
+
 function sortWithinGroup(products = []) {
   return [...products].sort((a, b) => {
+    if (samePrimaryOffer(a, b)) {
+      const byEffectivePrice = effectiveFinalPrice(a) - effectiveFinalPrice(b);
+      if (byEffectivePrice !== 0) return byEffectivePrice;
+
+      const byInstallmentAmount = installmentAmount(a) - installmentAmount(b);
+      if (byInstallmentAmount !== 0) return byInstallmentAmount;
+    }
+
     const byFinal = toNumber(b.oqc?.finalScore, 0) - toNumber(a.oqc?.finalScore, 0);
     if (byFinal !== 0) return byFinal;
 
@@ -136,7 +191,7 @@ function sortWithinGroup(products = []) {
     const bHasLink = hasValidLink(b) ? 1 : 0;
     if (bHasLink !== aHasLink) return bHasLink - aHasLink;
 
-    const byPrice = toNumber(a.price, Infinity) - toNumber(b.price, Infinity);
+    const byPrice = effectiveFinalPrice(a) - effectiveFinalPrice(b);
     if (byPrice !== 0) return byPrice;
 
     return String(a.title || "").localeCompare(String(b.title || ""), "pt-BR");
@@ -152,7 +207,7 @@ function buildReason(product, group, hasAnyReal, hasAnyDemo) {
   if (group === "CABE") {
     parts.push("Cabe no orçamento.");
   } else if (group === "APERTADO") {
-    parts.push("Cabe, mas está apertado.");
+    parts.push("Cabe, mas esta apertado.");
   } else {
     parts.push("Fica acima do orçamento.");
   }
@@ -162,9 +217,9 @@ function buildReason(product, group, hasAnyReal, hasAnyDemo) {
   }
 
   if (hasValidLink(product)) {
-    parts.push("Link válido ajudou no desempate.");
+    parts.push("Link valido ajudou no desempate.");
   } else {
-    parts.push("Sem link válido no desempate.");
+    parts.push("Sem link valido no desempate.");
   }
 
   if (reasons.length) {
@@ -178,7 +233,7 @@ function buildReason(product, group, hasAnyReal, hasAnyDemo) {
   if (isDemo(product)) {
     parts.push("Exemplo demonstrativo.");
   } else if (isReal(product)) {
-    parts.push("Base real do OQC disponível.");
+    parts.push("Base real do OQC disponivel.");
   }
 
   if (!hasAnyReal && hasAnyDemo) {
@@ -201,10 +256,10 @@ function labelForProduct(product, index, hasAnyReal, hasAnyDemo, topFitExists) {
 
   if (index === 0 && group === "CABE") return "Melhor escolha";
   if (index === 0 && group === "APERTADO") return "Melhor alternativa dentro do possível";
-  if (index === 0 && group === "NÃO CABE") return "Melhor alternativa dentro do possível";
+  if (index === 0 && group === "NAO CABE") return "Melhor alternativa dentro do possível";
   if (index === 1) return "Boa alternativa";
-  if (index === 2) return "Opção econômica";
-  return group === "CABE" ? "Melhor escolha" : group === "APERTADO" ? "Boa alternativa" : "Opção econômica";
+  if (index === 2) return "Opcao economica";
+  return group === "CABE" ? "Melhor escolha" : group === "APERTADO" ? "Boa alternativa" : "Opcao economica";
 }
 
 function attachOqc(product, siblings = [], query = "") {
@@ -226,7 +281,7 @@ function attachOqc(product, siblings = [], query = "") {
     (value * 0.15) +
     (relevance * 0.1) +
     (searchIntent * 0.15) -
-    (normalizeStatus(product) === "NÃO CABE" ? 0.35 : 0) -
+    (normalizeStatus(product) === "NAO CABE" ? 0.35 : 0) -
     (normalizeStatus(product) === "APERTADO" ? 0.08 : 0)
   ));
 
@@ -276,7 +331,7 @@ function groupProducts(products = []) {
     naoCabe: [],
   };
 
-  const ordered = products.map((item) => item).sort((a, b) => {
+  const initiallyOrdered = products.map((item) => item).sort((a, b) => {
     const byGroup = rankGroup(normalizeStatus(a)) - rankGroup(normalizeStatus(b));
     if (byGroup !== 0) return byGroup;
     const byFinal = toNumber(b.oqc?.finalScore, 0) - toNumber(a.oqc?.finalScore, 0);
@@ -288,9 +343,10 @@ function groupProducts(products = []) {
     return toNumber(b.score, 0) - toNumber(a.score, 0);
   });
 
-  const cabe = sortWithinGroup(ordered.filter((item) => normalizeStatus(item) === "CABE"));
-  const apertado = sortWithinGroup(ordered.filter((item) => normalizeStatus(item) === "APERTADO"));
-  const naoCabe = sortWithinGroup(ordered.filter((item) => normalizeStatus(item) === "NÃO CABE"));
+  const cabe = sortWithinGroup(initiallyOrdered.filter((item) => normalizeStatus(item) === "CABE"));
+  const apertado = sortWithinGroup(initiallyOrdered.filter((item) => normalizeStatus(item) === "APERTADO"));
+  const naoCabe = sortWithinGroup(initiallyOrdered.filter((item) => normalizeStatus(item) === "NAO CABE"));
+  const ordered = [...cabe, ...apertado, ...naoCabe];
 
   groups.cabe = cabe;
   groups.apertado = apertado;

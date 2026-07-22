@@ -87,7 +87,53 @@ const currency = new Intl.NumberFormat("pt-BR", {
 
 function safeText(value, fallback = "") {
   if (value == null || value === "") return fallback;
-  return String(value);
+  return repairVisibleText(String(value));
+}
+
+function repairVisibleText(value = "") {
+  const text = String(value || "");
+  if (!text) return "";
+  const replacements = [
+    ["Ã¡", "á"],
+    ["Ã ", "à"],
+    ["Ã¢", "â"],
+    ["Ã£", "ã"],
+    ["Ã¤", "ä"],
+    ["Ã©", "é"],
+    ["Ãª", "ê"],
+    ["Ã­", "í"],
+    ["Ã³", "ó"],
+    ["Ã´", "ô"],
+    ["Ãµ", "õ"],
+    ["Ã¶", "ö"],
+    ["Ãº", "ú"],
+    ["Ã§", "ç"],
+    ["Ã‰", "É"],
+    ["ÃŠ", "Ê"],
+    ["Ã“", "Ó"],
+    ["Ã”", "Ô"],
+    ["Ãš", "Ú"],
+    ["Ã‡", "Ç"],
+    ["Ã£o", "ão"],
+    ["Ãµes", "ões"],
+    ["NÃ£o", "Não"],
+    ["nÃ£o", "não"],
+    ["NÃƒO", "NÃO"],
+    ["opÃ§Ã£o", "opção"],
+    ["OpÃ§Ã£o", "Opção"],
+    ["econÃ´mica", "econômica"],
+    ["catÃ¡logo", "catálogo"],
+    ["CatÃ¡logo", "Catálogo"],
+    ["acessÃ³rio", "acessório"],
+    ["acessÃ³rios", "acessórios"],
+    ["posiÃ§Ã£o", "posição"],
+    ["orÃ§amento", "orçamento"],
+    ["vÃ¡lido", "válido"],
+    ["estÃ¡", "está"],
+    ["mÃ¡x", "máx"],
+    ["MÃ¡x", "Máx"],
+  ];
+  return replacements.reduce((acc, [from, to]) => acc.replaceAll(from, to), text);
 }
 
 function resolveProductTitle(product) {
@@ -531,7 +577,7 @@ function buildPrimaryDecisionItems(data = {}) {
       const rightInfo = resolveInstallmentInfo(right);
       return Number(leftInfo?.amount || Infinity) - Number(rightInfo?.amount || Infinity);
     })[0] || null;
-  return [
+  const candidates = [
     {
       key: "best-purchase",
       title: "Melhor compra",
@@ -551,13 +597,34 @@ function buildPrimaryDecisionItems(data = {}) {
       product: bestInstallment,
     },
   ].filter((item) => item.product);
+
+  const seen = new Set();
+  const unique = [];
+  for (const item of candidates) {
+    const product = item.product || {};
+    const identity = String(
+      product.id ||
+      product.externalId ||
+      product.sourceProductId ||
+      product.permalink ||
+      product.productUrl ||
+      product.url ||
+      product.title ||
+      "",
+    );
+    if (!identity || seen.has(identity)) continue;
+    seen.add(identity);
+    unique.push(item);
+  }
+  return unique;
 }
 
 function buildDecisionCards(data = {}) {
   const decisions = buildPrimaryDecisionItems(data);
   if (!decisions.length) return "";
+  const singleCardMode = decisions.length === 1;
   return `
-    <section class="decision-strip">
+    <section class="decision-strip ${singleCardMode ? "decision-strip-single" : ""}">
       ${decisions.map((item) => {
         const product = item.product || {};
         const priceValue = Number(product.finalPrice || product.price || 0);
@@ -565,13 +632,13 @@ function buildDecisionCards(data = {}) {
         return `
           <article class="decision-summary-card">
             <div class="decision-summary-top">
-              <span class="decision-summary-label">${escapeHtml(item.title)}</span>
+              <span class="decision-summary-label">${escapeHtml(singleCardMode ? "Melhor compra encontrada" : item.title)}</span>
               <span class="decision-summary-source">${escapeHtml(resolveSourceLabel(product))}</span>
             </div>
             <h3>${escapeHtml(resolveProductTitle(product))}</h3>
             <strong class="decision-summary-price">${formatPrice(priceValue)}</strong>
             <p class="decision-summary-meta">${escapeHtml(installment.short)}</p>
-            <p class="decision-summary-note">${escapeHtml(item.note)}</p>
+            <p class="decision-summary-note">${escapeHtml(singleCardMode ? "Única oferta principal confirmada para esta busca no catálogo atual." : item.note)}</p>
           </article>
         `;
       }).join("")}

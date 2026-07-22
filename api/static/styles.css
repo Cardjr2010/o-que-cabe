@@ -1076,6 +1076,10 @@ h2 {
   gap: 14px;
 }
 
+.decision-strip-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .decision-summary-card {
   padding: 16px;
   border: 1px solid #dde8f4;

@@ -815,7 +815,7 @@ function buildAdvisorSnapshot(searchResult = {}, query = "") {
   if (recommendations.length) {
     addAlternative(recommendations[0].product || recommendations[0], recommendations[0].label || "Melhor escolha");
     addAlternative(recommendations[1]?.product || recommendations[1], recommendations[1]?.label || "Boa alternativa");
-    addAlternative(recommendations[2]?.product || recommendations[2], recommendations[2]?.label || "OpÃ§Ã£o econÃ´mica");
+    addAlternative(recommendations[2]?.product || recommendations[2], recommendations[2]?.label || "Opção econômica");
   } else {
     addAlternative(firstProduct, "Melhor escolha");
   }
@@ -827,7 +827,7 @@ function buildAdvisorSnapshot(searchResult = {}, query = "") {
     addAlternative(apertado[0], "Cabe apertado");
   }
   if (alternatives.length < 2 && naoCabe.length) {
-    addAlternative(naoCabe[0], "NÃ£o cabe");
+    addAlternative(naoCabe[0], "Não cabe");
   }
 
   const comparison = comparisonProducts.length
@@ -839,23 +839,23 @@ function buildAdvisorSnapshot(searchResult = {}, query = "") {
 
   const whyThisProduct = firstProduct
     ? [
-      firstProduct.status === "CABE" ? "Cabe no orÃ§amento." : firstProduct.status === "APERTADO" ? "Cabe, mas estÃ¡ apertado." : "Fica acima do orÃ§amento.",
-      firstProduct.isAccessory ? "Produto acessÃ³rio rebaixado pela consulta." : "Produto principal priorizado pela consulta.",
-      String(firstProduct.affiliateUrl || firstProduct.productUrl || firstProduct.permalink || firstProduct.url || "").trim() ? "Tem link real vÃ¡lido." : "Link indisponÃ­vel.",
+      firstProduct.status === "CABE" ? "Cabe no orçamento." : firstProduct.status === "APERTADO" ? "Cabe, mas está apertado." : "Fica acima do orçamento.",
+      firstProduct.isAccessory ? "Produto acessório rebaixado pela consulta." : "Produto principal priorizado pela consulta.",
+      String(firstProduct.affiliateUrl || firstProduct.productUrl || firstProduct.permalink || firstProduct.url || "").trim() ? "Tem link real válido." : "Link indisponível.",
     ].filter(Boolean)
     : [];
 
   const overviewParts = [];
   if (products.length === 1) {
-    overviewParts.push("Encontramos apenas 1 resultado real no catÃ¡logo atual.");
+    overviewParts.push("Encontramos apenas 1 resultado real no catálogo atual.");
   } else if (products.length > 1) {
-    overviewParts.push(`Encontramos ${products.length} resultados reais no catÃ¡logo atual.`);
+    overviewParts.push(`Encontramos ${products.length} resultados reais no catálogo atual.`);
   }
   if (principalCount || accessoryCount) {
-    overviewParts.push(`${pluralize(principalCount, "produto principal")} e ${pluralize(accessoryCount, "acessÃ³rio")} avaliados.`);
+    overviewParts.push(`${pluralize(principalCount, "produto principal")} e ${pluralize(accessoryCount, "acessório")} avaliados.`);
   }
   if (firstProduct?.status) {
-    overviewParts.push(`Melhor posiÃ§Ã£o atual: ${firstProduct.status}.`);
+    overviewParts.push(`Melhor posição atual: ${firstProduct.status}.`);
   }
 
   return {
