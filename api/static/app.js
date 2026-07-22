@@ -344,19 +344,305 @@ function renderMarketSignal(product = {}) {
   return details.length ? `<div class="market-signal">${details.map((item) => `<span>${item}</span>`).join("")}</div>` : "";
 }
 
-function buildProductCardHtml(product) {
-  const installmentInfo = resolveInstallmentInfo(product);
-  const installment = installmentInfo && Number.isFinite(installmentInfo.amount) && installmentInfo.amount > 0
-    ? currency.format(installmentInfo.amount)
-    : "";
-  const storePrice = Number(product.price || 0);
-  const total = formatPrice(storePrice);
-  const note = safeText(
-    product.explanation || product.note,
-    isDemoProduct(product)
-      ? "Demonstração — sem anúncio real."
-      : "Preço e disponibilidade devem ser confirmados na loja.",
+function resolveBudgetStatus(product = {}) {
+  return normalizeStatusLabel(product.status || product.budgetStatus || "CABE");
+}
+
+function resolveBudgetBadge(product = {}) {
+  const status = resolveBudgetStatus(product);
+  if (status === "CABE") return { label: "Cabe no orçamento", tone: "fit" };
+  if (status === "APERTADO") return { label: "Cabe apertado", tone: "tight" };
+  return { label: "Fora do orçamento", tone: "over" };
+}
+
+function resolveSellerName(product = {}) {
+  const seller = product.seller;
+  if (seller && typeof seller === "object") {
+    return safeText(
+      seller.official_store_name ||
+      seller.officialStoreName ||
+      seller.nickname ||
+      seller.name,
+      "",
+    );
+  }
+  if (typeof seller === "string") return seller.trim();
+  return "";
+}
+
+function resolveSellerReputation(product = {}) {
+  const seller = product.seller;
+  const raw = seller && typeof seller === "object"
+    ? seller.reputation || seller.level || product.sellerReputation
+    : product.sellerReputation;
+  return String(raw || "").trim();
+}
+
+function resolveShippingSummary(product = {}) {
+  const shipping = product.shipping && typeof product.shipping === "object" ? product.shipping : {};
+  const freeShipping = Boolean(
+    product.freeShipping ??
+    shipping.freeShipping ??
+    shipping.free_shipping ??
+    shipping.free,
   );
+  const shippingPrice = Number(
+    shipping.price ??
+    shipping.cost ??
+    product.shippingCost ??
+    product.shipping_cost ??
+    0,
+  );
+  if (freeShipping || shippingPrice === 0) {
+    return { label: "Frete grátis", tone: "good" };
+  }
+  if (shippingPrice > 0) {
+    return { label: `Frete ${currency.format(shippingPrice)}`, tone: "neutral" };
+  }
+  return { label: "Frete não informado", tone: "muted" };
+}
+
+function resolveStoreTrust(product = {}) {
+  const officialStore = Boolean(
+    product.officialStore ??
+    product.official_store ??
+    product.seller?.official_store_name,
+  );
+  if (officialStore) {
+    return {
+      label: "Loja oficial confirmada",
+      detail: resolveSellerName(product) || resolveSourceLabel(product),
+      tone: "verified",
+    };
+  }
+  const sellerName = resolveSellerName(product);
+  if (sellerName) {
+    return {
+      label: "Vendedor",
+      detail: sellerName,
+      tone: "seller",
+    };
+  }
+  return {
+    label: "Origem",
+    detail: resolveSourceLabel(product),
+    tone: "source",
+  };
+}
+
+function buildInstallmentSummary(product = {}) {
+  const info = resolveInstallmentInfo(product);
+  if (!info) {
+    return {
+      short: "Parcelamento não informado",
+      detail: "Consulte a oferta para confirmar parcelamento.",
+      estimated: false,
+      available: false,
+    };
+  }
+  const short = `${info.count}x de ${currency.format(info.amount)}${info.interestFree === true ? " sem juros" : ""}`;
+  const detail = info.estimated
+    ? "Parcelamento estimado. Confirme na loja."
+    : "Parcelamento real informado pela fonte.";
+  return {
+    short,
+    detail,
+    estimated: Boolean(info.estimated),
+    available: true,
+  };
+}
+
+function buildReasonSummary(product = {}) {
+  return safeText(
+    product.explanationShort ||
+    product.explanation ||
+    product.reason ||
+    product.note,
+    "Preço e disponibilidade devem ser confirmados na loja.",
+  );
+}
+
+function buildReasonList(product = {}) {
+  const items = [];
+  const budgetBadge = resolveBudgetBadge(product);
+  items.push(budgetBadge.label);
+  if (product.officialStore || product.seller?.official_store_name) {
+    items.push("Origem com identificação oficial");
+  } else if (resolveSourceLabel(product) !== "Origem não informada") {
+    items.push(`Origem identificada: ${resolveSourceLabel(product)}`);
+  }
+  const installment = buildInstallmentSummary(product);
+  if (installment.available) items.push(installment.detail);
+  const shipping = resolveShippingSummary(product);
+  if (shipping.label) items.push(shipping.label);
+  const reputation = resolveSellerReputation(product);
+  if (reputation) items.push(`Reputação informada: ${reputation}`);
+  if (product.coupon?.status === "verified" && Number(product.finalPrice || 0) > 0 && Number(product.finalPrice || 0) < Number(product.price || 0)) {
+    items.push("Preço final com cupom verificado");
+  }
+  return items.slice(0, 5);
+}
+
+function renderFactPills(product = {}) {
+  const budget = resolveBudgetBadge(product);
+  const shipping = resolveShippingSummary(product);
+  const installment = buildInstallmentSummary(product);
+  const trust = resolveStoreTrust(product);
+  const pills = [
+    `<span class="result-pill result-pill-${budget.tone}">${escapeHtml(budget.label)}</span>`,
+    `<span class="result-pill result-pill-neutral">${escapeHtml(shipping.label)}</span>`,
+    installment.available ? `<span class="result-pill result-pill-${installment.estimated ? "muted" : "good"}">${escapeHtml(installment.short)}</span>` : "",
+    trust.detail ? `<span class="result-pill result-pill-${trust.tone}">${escapeHtml(trust.label)}: ${escapeHtml(trust.detail)}</span>` : "",
+  ].filter(Boolean);
+  return pills.length ? `<div class="result-pills">${pills.join("")}</div>` : "";
+}
+
+function buildResultPriceBlock(product = {}) {
+  const storePrice = Number(product.price || 0);
+  const couponMarkup = renderCouponPricing(product, storePrice);
+  const installment = buildInstallmentSummary(product);
+  return `
+    <div class="result-price-block">
+      ${couponMarkup || `
+        <div class="result-price-stack">
+          <span class="result-label">Preço</span>
+          <strong class="result-price">${formatPrice(storePrice)}</strong>
+        </div>
+      `}
+      <p class="result-installment ${installment.estimated ? "estimated" : ""}">${escapeHtml(installment.short)}</p>
+      <p class="result-support">${escapeHtml(installment.detail)}</p>
+    </div>
+  `;
+}
+
+function buildPrimaryDecisionItems(data = {}) {
+  const products = Array.isArray(data.products) ? data.products : [];
+  const recommendations = Array.isArray(data.recommendations) ? data.recommendations : [];
+  const principalProducts = products.filter((item) => !item?.isAccessory && !["accessory", "piece", "compatible"].includes(String(item?.productType || "").toLowerCase()));
+  const rankedPool = principalProducts.length ? principalProducts : products;
+  const bestPurchase = recommendations[0]?.product || rankedPool[0] || null;
+  const cheapestReliable = [...rankedPool]
+    .filter((item) => Number(item.price || 0) > 0 && hasValidProductLink(item))
+    .sort((left, right) => Number(left.finalPrice || left.price || 0) - Number(right.finalPrice || right.price || 0))[0] || null;
+  const bestInstallment = [...rankedPool]
+    .filter((item) => resolveInstallmentInfo(item)?.available)
+    .sort((left, right) => {
+      const leftInfo = resolveInstallmentInfo(left);
+      const rightInfo = resolveInstallmentInfo(right);
+      return Number(leftInfo?.amount || Infinity) - Number(rightInfo?.amount || Infinity);
+    })[0] || null;
+  return [
+    {
+      key: "best-purchase",
+      title: "Melhor compra",
+      note: "Equilíbrio entre adequação ao orçamento, origem e contexto da oferta.",
+      product: bestPurchase,
+    },
+    {
+      key: "best-price",
+      title: "Menor preço confiável",
+      note: "Menor preço entre ofertas com origem e link direto confirmados.",
+      product: cheapestReliable,
+    },
+    {
+      key: "best-installment",
+      title: "Melhor parcelamento",
+      note: "Menor parcela real disponível entre as opções relevantes.",
+      product: bestInstallment,
+    },
+  ].filter((item) => item.product);
+}
+
+function buildDecisionCards(data = {}) {
+  const decisions = buildPrimaryDecisionItems(data);
+  if (!decisions.length) return "";
+  return `
+    <section class="decision-strip">
+      ${decisions.map((item) => {
+        const product = item.product || {};
+        const priceValue = Number(product.finalPrice || product.price || 0);
+        const installment = buildInstallmentSummary(product);
+        return `
+          <article class="decision-summary-card">
+            <div class="decision-summary-top">
+              <span class="decision-summary-label">${escapeHtml(item.title)}</span>
+              <span class="decision-summary-source">${escapeHtml(resolveSourceLabel(product))}</span>
+            </div>
+            <h3>${escapeHtml(resolveProductTitle(product))}</h3>
+            <strong class="decision-summary-price">${formatPrice(priceValue)}</strong>
+            <p class="decision-summary-meta">${escapeHtml(installment.short)}</p>
+            <p class="decision-summary-note">${escapeHtml(item.note)}</p>
+          </article>
+        `;
+      }).join("")}
+    </section>
+  `;
+}
+
+function buildComparisonBlock(data = {}) {
+  const products = Array.isArray(data.products) ? data.products : [];
+  const official = products.find((item) => Boolean(item?.officialStore ?? item?.official_store ?? item?.seller?.official_store_name));
+  const general = products[0] || null;
+  if (!official && !general) return "";
+  const officialPrice = Number(official?.finalPrice || official?.price || 0);
+  const generalPrice = Number(general?.finalPrice || general?.price || 0);
+  const diff = officialPrice > 0 && generalPrice > 0 ? officialPrice - generalPrice : 0;
+  const officialInstallment = buildInstallmentSummary(official || {});
+  const generalInstallment = buildInstallmentSummary(general || {});
+  const officialShipping = resolveShippingSummary(official || {});
+  const generalShipping = resolveShippingSummary(general || {});
+  const officialRep = resolveSellerReputation(official || {}) || "Não informada";
+  const generalRep = resolveSellerReputation(general || {}) || "Não informada";
+  const finalRecommendation = diff > 0
+    ? "A melhor oferta geral entrega economia sem abrir mão de origem identificada."
+    : official
+      ? "A loja oficial continua como referência de segurança para esta busca."
+      : "A melhor oferta geral é a referência mais completa nesta consulta.";
+  return `
+    <section class="result-comparison">
+      <div class="section-head section-head-tight">
+        <div>
+          <p class="panel-label">Comparativo rápido</p>
+          <h3>Loja oficial x melhor oferta geral</h3>
+        </div>
+        <p class="section-note">Comparação objetiva entre segurança, preço final e condições operacionais.</p>
+      </div>
+      <div class="comparison-grid">
+        <article class="comparison-card">
+          <span class="comparison-kicker">Loja oficial</span>
+          <h4>${escapeHtml(official ? resolveProductTitle(official) : "Sem loja oficial confirmada")}</h4>
+          <p class="comparison-price">${official ? formatPrice(officialPrice) : "—"}</p>
+          <ul class="comparison-list">
+            <li><strong>Fonte:</strong> ${escapeHtml(official ? resolveSourceLabel(official) : "Não confirmada")}</li>
+            <li><strong>Reputação:</strong> ${escapeHtml(officialRep)}</li>
+            <li><strong>Frete:</strong> ${escapeHtml(officialShipping.label)}</li>
+            <li><strong>Parcelamento:</strong> ${escapeHtml(officialInstallment.short)}</li>
+          </ul>
+        </article>
+        <article class="comparison-card comparison-card-highlight">
+          <span class="comparison-kicker">Melhor oferta geral</span>
+          <h4>${escapeHtml(general ? resolveProductTitle(general) : "Sem oferta confirmada")}</h4>
+          <p class="comparison-price">${general ? formatPrice(generalPrice) : "—"}</p>
+          <ul class="comparison-list">
+            <li><strong>Fonte:</strong> ${escapeHtml(general ? resolveSourceLabel(general) : "Não confirmada")}</li>
+            <li><strong>Reputação:</strong> ${escapeHtml(generalRep)}</li>
+            <li><strong>Frete:</strong> ${escapeHtml(generalShipping.label)}</li>
+            <li><strong>Parcelamento:</strong> ${escapeHtml(generalInstallment.short)}</li>
+          </ul>
+        </article>
+      </div>
+      <div class="comparison-summary">
+        <span><strong>Diferença de preço:</strong> ${official && general && diff !== 0 ? `${diff > 0 ? "-" : "+"}${formatPrice(Math.abs(diff))}` : "Sem base suficiente"}</span>
+        <span><strong>Segurança:</strong> ${official ? "Loja oficial confirmada disponível" : "Sem loja oficial confirmada nesta busca"}</span>
+        <span><strong>Cupom:</strong> ${general?.coupon?.status === "verified" ? "Cupom verificado na melhor oferta" : "Sem cupom verificado na melhor oferta"}</span>
+        <span><strong>Recomendação final:</strong> ${escapeHtml(finalRecommendation)}</span>
+      </div>
+    </section>
+  `;
+}
+
+function buildProductCardHtml(product) {
+  const note = buildReasonSummary(product);
   const buttonLabel = resolveButtonLabel(product);
   const link = resolveProductLink(product);
   const hasLink = hasValidProductLink(product) && !isDemoProduct(product);
@@ -366,35 +652,47 @@ function buildProductCardHtml(product) {
     ? `<p class="small warning">Imagem indisponível neste produto real.</p>`
     : "";
   const condition = String(product.condition || "").trim();
-  const couponPricing = renderCouponPricing(product, storePrice);
+  const budget = resolveBudgetBadge(product);
+  const trust = resolveStoreTrust(product);
+  const reputation = resolveSellerReputation(product);
+  const reasons = buildReasonList(product);
 
   return `
-    <article class="card">
-      <div class="image-box">${productImage(product)}</div>
-      <div class="card-body">
-        <span class="store">${escapeHtml(sourceLabel)}</span>
-        <h2>${escapeHtml(resolveProductTitle(product))}</h2>
-        ${condition ? `<p class="small"><strong>Condição:</strong> ${escapeHtml(normalizeConditionLabel(condition))}</p>` : ""}
-        ${product.status ? `<p class="small"><strong>Status:</strong> ${escapeHtml(normalizeStatusLabel(product.status))}</p>` : ""}
-        ${Number.isFinite(product.score) ? `<p class="small"><strong>Score O Que Cabe:</strong> ${Number(product.score).toFixed(0)}/100</p>` : ""}
-        <p class="small">${escapeHtml(note)}</p>
-        ${imageWarning}
-        <div class="price">
-          ${couponPricing || `
-            <div class="small">Preço total</div>
-            <div class="installment">${total}</div>
-          `}
-          <div class="small">${
-            installmentInfo
-              ? `${installmentInfo.count}x de ${installment}${installmentInfo.interestFree === true ? " sem juros" : ""} · ${installmentInfo.estimated ? "Parcelamento estimado" : "Parcelamento informado pela fonte"}`
-              : "Parcelamento não informado."
-          }</div>
-          ${installmentInfo?.estimated ? `<p class="small warning">Parcelamento estimado. Confirme na loja.</p>` : ""}
-          ${renderMarketSignal(product)}
+    <article class="result-card">
+      <div class="result-card-media">${productImage(product)}</div>
+      <div class="result-card-body">
+        <div class="result-card-top">
+          <div>
+            <span class="store">${escapeHtml(sourceLabel)}</span>
+            <h2>${escapeHtml(resolveProductTitle(product))}</h2>
+          </div>
+          <span class="result-budget-badge result-budget-badge-${budget.tone}">${escapeHtml(budget.label)}</span>
         </div>
-        ${hasLink
-          ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">${escapeHtml(buttonLabel)}</a>`
-          : `<span class="offer-unavailable" aria-disabled="true">${escapeHtml(buttonLabel)}</span>`}
+        <div class="result-meta-grid">
+          <div><span class="result-label">${escapeHtml(trust.label)}</span><strong>${escapeHtml(trust.detail || sourceLabel)}</strong></div>
+          <div><span class="result-label">Condição</span><strong>${escapeHtml(condition ? normalizeConditionLabel(condition) : "Não informada")}</strong></div>
+          <div><span class="result-label">Reputação</span><strong>${escapeHtml(reputation || "Não informada")}</strong></div>
+        </div>
+        ${renderFactPills(product)}
+        <p class="result-reason">${escapeHtml(note)}</p>
+        ${imageWarning}
+        ${buildResultPriceBlock(product)}
+        <div class="result-card-footer">
+          ${renderMarketSignal(product)}
+          <div class="result-card-actions">
+            ${hasLink
+              ? `<a class="result-offer-button" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">${escapeHtml(buttonLabel)}</a>`
+              : `<span class="offer-unavailable" aria-disabled="true">${escapeHtml(buttonLabel)}</span>`}
+            <details class="result-why">
+              <summary>Por que recomendamos?</summary>
+              <div class="result-why-body">
+                <ul>
+                  ${reasons.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+                </ul>
+              </div>
+            </details>
+          </div>
+        </div>
       </div>
     </article>
   `;
@@ -513,19 +811,19 @@ function renderGroupedProducts(groups = null, products = []) {
     {
       key: "cabe",
       title: "Melhores dentro do orçamento",
-      description: "Prioridade para o que cabe sem aperto.",
+      description: "Primeiras opções para decidir sem apertar o orçamento.",
       items: readGroup(normalizedGroups, ["cabe", "CABE"]),
     },
     {
       key: "apertado",
       title: "Cabem apertado",
-      description: "Ainda funcionam, mas já exigem mais cuidado no bolso.",
+      description: "Ainda são possíveis, mas pedem mais atenção no valor final.",
       items: readGroup(normalizedGroups, ["apertado", "APERTADO"]),
     },
     {
       key: "naoCabe",
       title: "Fora do orçamento",
-      description: "Não entram como recomendação principal.",
+      description: "Ficam fora da recomendação principal para esta busca.",
       items: readGroup(normalizedGroups, ["naoCabe", "nao_cabe", "NÃO CABE", "NÃO_CABE", "NAO_CABE"]),
     },
   ];
@@ -541,15 +839,37 @@ function renderGroupedProducts(groups = null, products = []) {
           </div>
           <span>${section.items.length} itens</span>
           </div>
-          <div class="grid">
-            ${section.items.slice(0, 3).map((product) => buildProductCardHtml(product)).join("")}
+          <div class="result-card-grid">
+            ${section.items.slice(0, 2).map((product) => buildProductCardHtml(product)).join("")}
           </div>
-          ${section.items.length > 3 ? `<details class="oqc-more-results"><summary>Ver mais resultados (${section.items.length - 3})</summary><div class="grid">${section.items.slice(3, 6).map((product) => buildProductCardHtml(product)).join("")}</div></details>` : ""}
+          ${section.items.length > 2 ? `<details class="oqc-more-results"><summary>Ver mais resultados (${section.items.length - 2})</summary><div class="result-card-grid">${section.items.slice(2, 5).map((product) => buildProductCardHtml(product)).join("")}</div></details>` : ""}
         </section>
       `)
       .join("");
 
   return markup || "";
+}
+
+function renderResultsExperience(data = {}, products = []) {
+  const advisor = data.advisor || {};
+  const overview = safeText(advisor.overview || data.summary, "Mostramos apenas ofertas confirmadas e alinhadas com a sua busca.");
+  const comparison = buildComparisonBlock(data);
+  const decisions = buildDecisionCards(data);
+  const grouped = renderGroupedProducts(data.groups || null, products);
+  return `
+    <section class="results-intro">
+      <div class="section-head section-head-tight">
+        <div>
+          <p class="panel-label">Leitura do OQC</p>
+          <h3>Três decisões claras para esta busca</h3>
+        </div>
+        <p class="section-note">${escapeHtml(overview)}</p>
+      </div>
+      ${decisions}
+    </section>
+    ${comparison}
+    ${grouped}
+  `;
 }
 
 function renderTrips(trips) {
@@ -798,7 +1118,7 @@ function buildIntentCardItems(items = []) {
         months: match.intent?.months || 12,
       },
     });
-    if (entries.length >= 8) break;
+    if (entries.length >= 6) break;
   }
 
   return entries;
@@ -858,7 +1178,7 @@ function renderDecisionHighlights(items = []) {
   if (!decisionHighlightsSection || !decisionHighlightsGrid) return;
   const entries = (Array.isArray(items) ? items : [])
     .filter((item) => item && item.category && !String(item.category).toLowerCase().includes("outros") && !String(item.category).toLowerCase().includes("pecas"))
-    .slice(0, 4);
+    .slice(0, 3);
 
   if (!entries.length) {
     decisionHighlightsSection.hidden = true;
@@ -892,16 +1212,18 @@ function renderDecisionHighlights(items = []) {
 }
 
 function renderActiveCampaigns(items = []) {
-  if (!campaignsSection || !campaignGrid) return;
-  const entries = Array.isArray(items) ? items.slice(0, 4) : [];
+  const section = campaignsSection;
+  const grid = campaignGrid;
+  if (!section || !grid) return;
+  const entries = Array.isArray(items) ? items.slice(0, 3) : [];
   if (!entries.length) {
-    campaignsSection.hidden = true;
-    campaignGrid.innerHTML = "";
+    section.hidden = true;
+    grid.innerHTML = "";
     return;
   }
 
-  campaignsSection.hidden = false;
-  campaignGrid.innerHTML = entries.map((item) => `
+  section.hidden = false;
+  grid.innerHTML = entries.map((item) => `
     <button type="button" class="campaign-card" data-query="${escapeHtml(item.query || "")}" data-mode="${escapeHtml(item.intent?.mode || "total")}" data-monthly="${escapeHtml(String(item.intent?.monthly || 0))}" data-total-budget="${escapeHtml(String(item.intent?.totalBudget || 0))}" data-months="${escapeHtml(String(item.intent?.months || 12))}">
       <div class="campaign-card-top">
         <span class="campaign-badge">${escapeHtml(item.badge || "Campanha")}</span>
@@ -916,7 +1238,7 @@ function renderActiveCampaigns(items = []) {
     </button>
   `).join("");
 
-  campaignGrid.querySelectorAll(".campaign-card").forEach((card) => {
+  grid.querySelectorAll(".campaign-card").forEach((card) => {
     card.addEventListener("click", () => {
       const query = card.dataset.query || "";
       if (query) productInput.value = query;
@@ -936,8 +1258,8 @@ function renderProofSection(data = {}) {
   const publishedProducts = Number(data.totalPublishedProducts ?? data.totalCatalogProducts ?? data.totalProducts ?? 0);
   const analyzedProducts = Number(data.totalCatalogProducts ?? data.totalProducts ?? publishedProducts ?? 0);
   const hiddenProducts = Number(data.hiddenProducts ?? Math.max(analyzedProducts - publishedProducts, 0));
-  const topSources = Array.isArray(data.topSources) ? data.topSources.filter(Boolean).slice(0, 6) : [];
-  const topBrands = Array.isArray(data.topBrands) ? data.topBrands.filter(Boolean).slice(0, 8) : [];
+  const topSources = Array.isArray(data.topSources) ? data.topSources.filter(Boolean).slice(0, 4) : [];
+  const topBrands = Array.isArray(data.topBrands) ? data.topBrands.filter(Boolean).slice(0, 6) : [];
 
   if (!publishedProducts && !topSources.length && !topBrands.length) {
     proofSection.hidden = true;
@@ -952,7 +1274,7 @@ function renderProofSection(data = {}) {
 
   if (proofSummaryText) {
     proofSummaryText.textContent = topSources.length
-      ? `O OQC cruza diferentes fontes reais e destaca primeiro o que chega com melhor cobertura de dados, origem legivel e contexto para decidir com mais calma.`
+      ? `O OQC cruza fontes reais e prioriza o que chega com melhor contexto para decisão.`
       : "O OQC organiza produtos reais publicados com filtros de qualidade antes de mostrar qualquer recomendacao.";
   }
 
@@ -1027,7 +1349,7 @@ function renderSeoHotSearches(items = []) {
 
 function renderFeaturedVideos(items = []) {
   if (!videoGuidesSection || !videoGuidesGrid) return;
-  const entries = Array.isArray(items) ? items.slice(0, 5) : [];
+  const entries = Array.isArray(items) ? items.slice(0, 3) : [];
   if (!entries.length) {
     videoGuidesSection.hidden = true;
     videoGuidesGrid.innerHTML = "";
@@ -1140,7 +1462,7 @@ function renderTrustBand(data = {}) {
 async function loadHomeCatalogData() {
   if (appView !== "home") return;
 
-  renderLoadingSkeletons(intentGrid, "intent", 8);
+  renderLoadingSkeletons(intentGrid, "intent", 6);
   renderLoadingSkeletons(decisionHighlightsGrid, "decision", 3);
   renderLoadingSkeletons(campaignGrid, "decision", 3);
   renderLoadingSkeletons(videoGuidesGrid, "card", 3);
@@ -1274,14 +1596,14 @@ form.addEventListener("submit", async (event) => {
   budgetTotal.textContent = currency.format(ceiling);
     if (searchMode === "total") {
       budgetLine.textContent = `Orçamento total: ${currency.format(totalBudget)}`;
-      if (marketline) marketline.textContent = `Seu orçamento total: ${currency.format(totalBudget)}.`;
+      if (marketline) marketline.textContent = `Comparando ofertas com teto total de ${currency.format(totalBudget)}.`;
       if (monthlyLabel) monthlyLabel.textContent = "Máx. mensal";
       if (monthsField) monthsField.hidden = true;
       if (totalField) totalField.hidden = false;
       if (totalBudgetInput) totalBudgetInput.disabled = false;
     } else {
       budgetLine.textContent = `${currency.format(monthly)} por mês em até ${months}x`;
-      if (marketline) marketline.textContent = `Seu teto estimado: ${currency.format(ceiling)}, considerando ${currency.format(monthly)} por mês em até ${months}x.`;
+      if (marketline) marketline.textContent = `Comparando ofertas para ${currency.format(monthly)} por mês em até ${months}x.`;
       if (monthlyLabel) monthlyLabel.textContent = "Máx. mensal";
       if (monthsField) monthsField.hidden = false;
       if (totalField) totalField.hidden = true;
@@ -1337,13 +1659,9 @@ form.addEventListener("submit", async (event) => {
 
     if (appView === "travel") {
       renderTrips(data.trips || []);
-    } else if (appView === "mercadolivre") {
-      const recommendations = renderRecommendationBlock(data.recommendations || []);
-      const list = renderMercadoLivre(data.products || [], data.groups || null);
-      results.innerHTML = `${recommendations}${list}`;
     } else {
-      const groupedHtml = renderGroupedProducts(data.groups || null, confirmedProducts);
-      if (groupedHtml) results.innerHTML = groupedHtml;
+      const experienceHtml = renderResultsExperience(data, confirmedProducts);
+      if (experienceHtml) results.innerHTML = experienceHtml;
       else renderProducts(confirmedProducts);
     }
   } catch {
