@@ -42,6 +42,8 @@ const trustDepartments = document.querySelector("#trustDepartments");
 const trustSources = document.querySelector("#trustSources");
 const trustUpdated = document.querySelector("#trustUpdated");
 const trustUpdatedLabel = document.querySelector("#trustUpdatedLabel");
+const heroSection = document.querySelector("#heroSection");
+const homeSecondarySections = document.querySelectorAll(".home-secondary-section");
 const appView = document.body.dataset.view || "home";
 const apiEndpoint = document.body.dataset.endpoint || "/api/search";
 let searchTimer = null;
@@ -56,6 +58,16 @@ function submitWithDeclaredBudget() {
   }
   form.requestSubmit();
   return true;
+}
+
+function setSearchExperienceState(isActive) {
+  document.body.classList.toggle("search-active", Boolean(isActive));
+  if (heroSection) {
+    heroSection.classList.toggle("hero-compact", Boolean(isActive));
+  }
+  homeSecondarySections.forEach((section) => {
+    section.classList.toggle("home-secondary-hidden", Boolean(isActive));
+  });
 }
 
 function setMode(nextMode) {
@@ -580,18 +592,21 @@ function buildPrimaryDecisionItems(data = {}) {
   const candidates = [
     {
       key: "best-purchase",
+      order: 1,
       title: "Melhor compra",
       note: "Equilíbrio entre adequação ao orçamento, origem e contexto da oferta.",
       product: bestPurchase,
     },
     {
       key: "best-price",
+      order: 2,
       title: "Menor preço confiável",
       note: "Menor preço entre ofertas com origem e link direto confirmados.",
       product: cheapestReliable,
     },
     {
       key: "best-installment",
+      order: 3,
       title: "Melhor parcelamento",
       note: "Menor parcela real disponível entre as opções relevantes.",
       product: bestInstallment,
@@ -632,6 +647,7 @@ function buildDecisionCards(data = {}) {
         return `
           <article class="decision-summary-card">
             <div class="decision-summary-top">
+              <span class="decision-summary-order">#${item.order || 1}</span>
               <span class="decision-summary-label">${escapeHtml(singleCardMode ? "Melhor compra encontrada" : item.title)}</span>
               <span class="decision-summary-source">${escapeHtml(resolveSourceLabel(product))}</span>
             </div>
@@ -699,10 +715,9 @@ function buildComparisonBlock(data = {}) {
         </article>
       </div>
       <div class="comparison-summary">
-        <span><strong>Diferença de preço:</strong> ${official && general && diff !== 0 ? `${diff > 0 ? "-" : "+"}${formatPrice(Math.abs(diff))}` : "Sem base suficiente"}</span>
+        <span><strong>Diferença:</strong> ${official && general && diff !== 0 ? `${diff > 0 ? "-" : "+"}${formatPrice(Math.abs(diff))}` : "Sem base suficiente"}</span>
         <span><strong>Segurança:</strong> ${official ? "Loja oficial confirmada disponível" : "Sem loja oficial confirmada nesta busca"}</span>
-        <span><strong>Cupom:</strong> ${general?.coupon?.status === "verified" ? "Cupom verificado na melhor oferta" : "Sem cupom verificado na melhor oferta"}</span>
-        <span><strong>Recomendação final:</strong> ${escapeHtml(finalRecommendation)}</span>
+        <span><strong>Recomendação:</strong> ${escapeHtml(finalRecommendation)}</span>
       </div>
     </section>
   `;
@@ -726,7 +741,7 @@ function buildProductCardHtml(product) {
 
   return `
     <article class="result-card">
-      <div class="result-card-media">${productImage(product)}</div>
+      <div class="result-card-media"><div class="image-box">${productImage(product)}</div></div>
       <div class="result-card-body">
         <div class="result-card-top">
           <div>
@@ -741,18 +756,23 @@ function buildProductCardHtml(product) {
           <div><span class="result-label">Reputação</span><strong>${escapeHtml(reputation || "Não informada")}</strong></div>
         </div>
         ${renderFactPills(product)}
-        <p class="result-reason">${escapeHtml(note)}</p>
-        ${imageWarning}
         ${buildResultPriceBlock(product)}
         <div class="result-card-footer">
-          ${renderMarketSignal(product)}
           <div class="result-card-actions">
             ${hasLink
               ? `<a class="result-offer-button" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">${escapeHtml(buttonLabel)}</a>`
               : `<span class="offer-unavailable" aria-disabled="true">${escapeHtml(buttonLabel)}</span>`}
-            <details class="result-why">
+            <details class="result-why result-analysis-panel">
               <summary>Por que recomendamos?</summary>
               <div class="result-why-body">
+                <p class="result-reason">${escapeHtml(note)}</p>
+                ${renderMarketSignal(product)}
+                ${imageWarning}
+                <div class="result-analysis-meta">
+                  <div><span class="result-label">${escapeHtml(trust.label)}</span><strong>${escapeHtml(trust.detail || sourceLabel)}</strong></div>
+                  <div><span class="result-label">Condição</span><strong>${escapeHtml(condition ? normalizeConditionLabel(condition) : "Não informada")}</strong></div>
+                  <div><span class="result-label">Reputação</span><strong>${escapeHtml(reputation || "Não informada")}</strong></div>
+                </div>
                 <ul>
                   ${reasons.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
                 </ul>
@@ -1202,6 +1222,7 @@ function renderPurchaseIntentions(items = []) {
           <strong>${escapeHtml(item.label || `Quero ${normalizeHomeCategoryLabel(item.category).toLowerCase()}`)}</strong>
           <span>${escapeHtml(`${Number(item.count || 0)} itens reais`)}</span>
         </div>
+        <span class="home-card-arrow" aria-hidden="true">→</span>
       </button>
     `).join("")
     : "";
@@ -1536,7 +1557,7 @@ async function loadHomeCatalogData() {
   renderLoadingSkeletons(categoryGrid, "card", 6);
   renderLoadingSkeletons(seoHotSearchesGrid, "chip", 6);
   if (searchCategoriesHint) {
-    searchCategoriesHint.textContent = "Intenções de compra: celular, notebook, monitor gamer, TV, fone, presente, casa e flores.";
+    searchCategoriesHint.textContent = "Ex.: celular até R$ 1.500, notebook para estudar, TV 55 ou monitor gamer 144 Hz.";
   }
 
   try {
@@ -1553,8 +1574,8 @@ async function loadHomeCatalogData() {
         .slice(0, 6)
         .map((item) => item.label || normalizeHomeCategoryLabel(item.category));
       searchCategoriesHint.textContent = labels.length
-        ? `Intenções de compra: ${labels.join(", ")}.`
-        : "Intenções de compra: Celulares, Notebooks, Monitores, TVs, Tablets e Fones.";
+        ? `Busque direto por: ${labels.join(", ")}.`
+        : "Busque direto por: Celulares, Notebooks, Monitores, TVs, Tablets e Áudio.";
     }
     renderPurchaseIntentions(Array.isArray(data.homeButtons) && data.homeButtons.length ? data.homeButtons : categories);
     renderDecisionHighlights(
@@ -1577,11 +1598,12 @@ async function loadHomeCatalogData() {
         .slice(0, 6)
         .map((item) => `
           <article data-category="${escapeHtml(item.category)}" data-query="${escapeHtml(item.query || item.category || "")}" data-mode="${escapeHtml(item.intent?.mode || "monthly")}" data-monthly="${escapeHtml(String(item.intent?.monthly || item.intent?.totalBudget || 0))}" data-total-budget="${escapeHtml(String(item.intent?.totalBudget || item.intent?.monthly || 0))}" data-months="${escapeHtml(String(item.intent?.months || 12))}">
-          <div class="category-icon">${categoryIconSvg(item.category)}</div>
-          <h3>${escapeHtml(item.label || normalizeHomeCategoryLabel(item.category))}</h3>
-          <p>${escapeHtml(`${Number(item.count || 0)} itens reais`)}</p>
-        </article>
-      `)
+            <div class="category-icon">${categoryIconSvg(item.category)}</div>
+            <h3>${escapeHtml(item.label || normalizeHomeCategoryLabel(item.category))}</h3>
+            <p>${escapeHtml(`${Number(item.count || 0)} itens reais`)}</p>
+            <span class="home-card-arrow" aria-hidden="true">→</span>
+          </article>
+        `)
         .join("");
       categoryGrid.innerHTML = cards || "";
 
@@ -1596,7 +1618,7 @@ async function loadHomeCatalogData() {
     }
 
     if (homeCatalogState) {
-      homeCatalogState.textContent = `${categories.length} categorias com produtos publicados no catálogo.`;
+      homeCatalogState.textContent = `${categories.length} áreas com cobertura suficiente.`;
     }
   } catch {
     if (intentGrid) intentGrid.innerHTML = "";
@@ -1651,6 +1673,7 @@ form.addEventListener("submit", async (event) => {
 
   if (!product || ceiling <= 0) {
     if (resultsArea) resultsArea.hidden = true;
+    setSearchExperienceState(false);
     return;
   }
 
@@ -1660,6 +1683,7 @@ form.addEventListener("submit", async (event) => {
   notice.hidden = true;
   resultsArea.hidden = false;
   resultsArea.classList.add("has-results");
+  setSearchExperienceState(true);
   budgetTotal.textContent = currency.format(ceiling);
     if (searchMode === "total") {
       budgetLine.textContent = `Orçamento total: ${currency.format(totalBudget)}`;
@@ -1677,6 +1701,7 @@ form.addEventListener("submit", async (event) => {
       if (totalBudgetInput) totalBudgetInput.disabled = true;
     }
   summaryTitle.textContent = `Buscando ${product}...`;
+  resultsArea.scrollIntoView({ behavior: "smooth", block: "start" });
 
   try {
     const params = new URLSearchParams();
@@ -1738,7 +1763,7 @@ form.addEventListener("submit", async (event) => {
     renderProducts([]);
   } finally {
     button.disabled = false;
-    button.textContent = "Descobrir o que cabe";
+    button.textContent = "Encontrar a melhor compra";
   }
 });
 

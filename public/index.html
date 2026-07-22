@@ -46,7 +46,7 @@
         <nav class="main-nav" aria-label="Navegação principal">
           <a class="topbar-link active" href="/">Início</a>
           <a class="topbar-link" href="#departments">Departamentos</a>
-          <a class="topbar-link" href="#guides">Guias</a>
+          <a class="topbar-link" href="/blog/">Guias</a>
         </nav>
         <div class="trust-pill">
           <svg viewBox="0 0 24 24"><path d="M12 3 19 6v5c0 5-3 8-7 10-4-2-7-5-7-10V6l7-3Z"/><path d="m9 12 2 2 4-5"/></svg>
@@ -56,12 +56,12 @@
     </header>
 
     <main>
-      <section class="hero">
+      <section class="hero" id="heroSection">
         <div class="hero-copy">
           <h1>Você diz quanto pode pagar.<br />O OQC encontra a melhor compra.</h1>
           <p>
-            Compare ofertas com base em orçamento, origem e cobertura real de dados.
-            <strong>Pesquisamos 15.999 produtos publicados em diferentes fontes antes de recomendar qualquer oferta.</strong>
+            Compare o que realmente cabe no seu orçamento.
+            <strong>15.999 produtos publicados. Menos ruído. Mais decisão.</strong>
           </p>
         </div>
 
@@ -104,17 +104,17 @@
           <button class="submit-button" type="submit">Encontrar a melhor compra</button>
         </form>
         <p class="seo-muted search-categories-hint" id="searchCategoriesHint">
-          Pesquise por produto, marca ou intenção: celular, notebook, monitor gamer, TV 55 polegadas ou presente até R$ 300.
+          Ex.: celular até R$ 1.500, notebook para estudar, TV 55 ou monitor gamer 144 Hz.
         </p>
       </section>
 
-      <section class="intentions-section intentions-section-compact" id="intentionsSection">
+      <section class="intentions-section intentions-section-compact home-secondary-section" id="intentionsSection">
         <div class="section-head section-head-tight">
           <div>
-          <p class="panel-label">Sugestões rápidas</p>
-          <h2>Atalhos úteis para cair direto em uma busca boa</h2>
+          <p class="panel-label">Comece por aqui</p>
+          <h2>Escolha uma intenção</h2>
           </div>
-          <p class="section-note">Sem vitrine infinita. Só pontos de partida claros.</p>
+          <p class="section-note">Poucos atalhos, sem poluição.</p>
         </div>
         <div class="intent-grid" id="intentGrid" aria-live="polite">
           <div class="skeleton skeleton-intent" aria-hidden="true">
@@ -125,7 +125,7 @@
         </div>
       </section>
 
-      <section class="trust-band trust-band-single" id="catalogTrustBand" aria-live="polite">
+      <section class="trust-band trust-band-single home-secondary-section" id="catalogTrustBand" aria-live="polite">
         <article>
           <strong id="trustTotalCatalog">15.999</strong>
           <span>produtos publicados</span>
@@ -144,7 +144,7 @@
         </article>
       </section>
 
-      <section class="offer-radar-shell" id="offerRadarSection" hidden>
+      <section class="offer-radar-shell home-secondary-section" id="offerRadarSection" hidden>
         <div class="section-head section-head-tight">
           <div>
             <p class="panel-label">Radar de ofertas</p>
@@ -155,7 +155,7 @@
         <div class="offer-radar-grid" id="offerRadarGrid" aria-live="polite"></div>
       </section>
 
-      <section class="campaigns-shell" id="campaignsSection" hidden>
+      <section class="campaigns-shell home-secondary-section" id="campaignsSection" hidden>
         <div class="section-head section-head-tight">
           <div>
             <p class="panel-label">Cupons e campanhas</p>
@@ -184,7 +184,7 @@
         </div>
       </section>
 
-      <section class="how how-compact">
+      <section class="how how-compact home-secondary-section" id="howSection">
         <div class="section-head section-head-tight">
           <div>
             <p class="panel-label">Como funciona</p>
@@ -211,13 +211,13 @@
         </div>
       </section>
 
-      <section class="categories" id="departments">
+      <section class="categories home-secondary-section" id="departments">
         <div class="section-head section-head-tight">
           <div>
             <p class="panel-label">Departamentos</p>
-            <h2>Áreas em que o catálogo já sustenta uma busca confiável</h2>
+            <h2>Busca confiável por área</h2>
           </div>
-          <p class="section-note" id="homeCatalogState">Mostramos só departamentos com cobertura suficiente no catálogo publicado.</p>
+          <p class="section-note" id="homeCatalogState">Só o que já tem cobertura suficiente.</p>
         </div>
         <div class="category-grid" id="categoryGrid" aria-live="polite">
           <div class="skeleton skeleton-card" aria-hidden="true">
@@ -228,61 +228,10 @@
         </div>
       </section>
 
-      <section class="video-guides-shell" id="videoGuidesSection" hidden>
-        <div class="section-head section-head-tight">
-          <div>
-            <p class="panel-label">Vídeos para decidir</p>
-            <h2>Reviews e análises curtas para validar a compra</h2>
-          </div>
-          <p class="section-note">Só vídeos que ajudam a decidir melhor, não a distrair.</p>
-        </div>
-        <div class="video-guides-grid" id="videoGuidesGrid" aria-live="polite"></div>
-      </section>
-
-      <section class="blog-spotlight" id="guides">
-        <div class="section-head section-head-tight">
-          <div>
-            <p class="panel-label">Guias de compra</p>
-            <h2>Conteúdo curto para decidir antes de parcelar</h2>
-          </div>
-          <p class="section-note">A home fica curta. O aprofundamento fica nos guias.</p>
-        </div>
-        <div class="blog-spotlight-grid">
-          <article class="blog-card">
-            <span class="blog-card-tag">Guia pilar</span>
-            <h3>Como escolher notebook sem cair em ficha tecnica inflada</h3>
-            <p>Um guia para separar notebook equilibrado de oferta que impressiona no anuncio e decepciona no uso.</p>
-            <div class="blog-card-actions">
-              <a href="/blog/como-escolher-notebook-sem-cair-em-ficha-tecnica-inflada.html">Ler artigo</a>
-              <a class="blog-card-secondary" href="/?q=notebook&mode=total&totalBudget=3500">Abrir busca no OQC</a>
-            </div>
-          </article>
-
-          <article class="blog-card">
-            <span class="blog-card-tag">Guia pilar</span>
-            <h3>Como escolher celular sem se enrolar no orçamento</h3>
-            <p>O guia mais útil para quem quer comprar celular sem confundir parcela pequena com compra inteligente.</p>
-            <div class="blog-card-actions">
-              <a href="/blog/como-escolher-celular-sem-se-enrolar-no-orcamento.html">Ler artigo</a>
-              <a class="blog-card-secondary" href="/?q=celular&mode=total&totalBudget=1500">Abrir busca no OQC</a>
-            </div>
-          </article>
-          <article class="blog-card">
-            <span class="blog-card-tag">Comparativo</span>
-            <h3>iPhone 17 Pro Max vs Galaxy S26 Ultra: qual faz mais sentido para o seu dinheiro?</h3>
-            <p>Um comparativo sem hype, olhando preço, uso real, risco de arrependimento e impacto no orçamento.</p>
-            <div class="blog-card-actions">
-              <a href="/blog/iphone-17-pro-max-vs-galaxy-s26-ultra.html">Ler artigo</a>
-              <a class="blog-card-secondary" href="/?q=iphone%2017%20pro%20max&mode=total&totalBudget=12000">Abrir busca no OQC</a>
-            </div>
-          </article>
-        </div>
-      </section>
-
       <footer>
         <strong>O Que Cabe</strong>
-        <span>Pesquisamos diferentes fontes para ajudar você a comprar melhor, com mais contexto e menos impulso.</span>
-        <small>Frete, parcelamento e reputação entram na análise quando a fonte disponibiliza essas informações. Minha Conta entra depois que a camada de acompanhamento estiver funcional.</small>
+        <span>Busca por orçamento com catálogo publicado e leitura objetiva.</span>
+        <small>Detalhamento de oferta, parcelamento, origem e comparação aparecem na página de resultado.</small>
       </footer>
     </main>
 
