@@ -1,4 +1,4 @@
-import test from "node:test";
+﻿import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
@@ -44,8 +44,8 @@ test("CatalogManager importa, atualiza e evita duplicados", () => {
       brand: "Samsung",
       model: "A15",
       price: 899,
-      marketplace: "Mercado Livre",
-      productUrl: "https://lista.mercadolivre.com.br/samsung-galaxy-a15-256gb",
+      marketplace: "Saldão da Informática",
+      productUrl: "https://example.com/samsung-galaxy-a15-256gb",
       dataMode: "seed",
     },
   ]);
@@ -63,8 +63,8 @@ test("CatalogManager importa, atualiza e evita duplicados", () => {
       brand: "Samsung",
       model: "A15",
       price: 999,
-      marketplace: "Mercado Livre",
-      productUrl: "https://lista.mercadolivre.com.br/samsung-galaxy-a15-256gb",
+      marketplace: "Saldão da Informática",
+      productUrl: "https://example.com/samsung-galaxy-a15-256gb",
       dataMode: "seed",
     },
   ]);
@@ -76,7 +76,7 @@ test("CatalogManager importa, atualiza e evita duplicados", () => {
   assert.ok(manager.getById("cat-1").priceHistory.length >= 1);
 });
 
-test("CatalogManager registra histórico quando o preço muda", () => {
+test("CatalogManager registra histÃ³rico quando o preÃ§o muda", () => {
   const temp = createTempSeed([
     {
       id: "cat-history",
@@ -87,8 +87,8 @@ test("CatalogManager registra histórico quando o preço muda", () => {
       model: "Modelo",
       price: 1000,
       currency: "BRL",
-      productUrl: "https://lista.mercadolivre.com.br/produto-historico",
-      marketplace: "Mercado Livre",
+      productUrl: "https://example.com/produto-historico",
+      marketplace: "Saldão da Informática",
       dataMode: "seed",
       priceHistory: [{ date: "2026-06-01", price: 1000 }],
       importedAt: "2026-06-01T00:00:00-03:00",
@@ -107,8 +107,8 @@ test("CatalogManager registra histórico quando o preço muda", () => {
       model: "Modelo",
       price: 1200,
       currency: "BRL",
-      productUrl: "https://lista.mercadolivre.com.br/produto-historico",
-      marketplace: "Mercado Livre",
+      productUrl: "https://example.com/produto-historico",
+      marketplace: "Saldão da Informática",
       dataMode: "seed",
     },
   ]);
@@ -133,7 +133,7 @@ test("CatalogManager rejeita produto sem link", () => {
       brand: "Marca",
       model: "Modelo",
       price: 100,
-      marketplace: "Mercado Livre",
+      marketplace: "Saldão da Informática",
       dataMode: "seed",
     },
   ]);
@@ -154,8 +154,8 @@ test("CatalogManager exporta JSON e CSV", () => {
       model: "Modelo",
       price: 2299,
       currency: "BRL",
-      productUrl: "https://lista.mercadolivre.com.br/produto-export",
-      marketplace: "Mercado Livre",
+      productUrl: "https://example.com/produto-export",
+      marketplace: "Saldão da Informática",
       dataMode: "seed",
     },
   ]);
@@ -176,19 +176,19 @@ test("CatalogManager busca por filtros", () => {
       model: "IdeaPad",
       price: 1999,
       currency: "BRL",
-      productUrl: "https://lista.mercadolivre.com.br/notebook-x",
-      marketplace: "Mercado Livre",
+      productUrl: "https://example.com/notebook-x",
+      marketplace: "Saldão da Informática",
       dataMode: "seed",
     },
   ]);
   const manager = new CatalogManager({ seedPath: temp.filePath });
-  const result = manager.search({ category: "notebook", marketplace: "Mercado Livre", minPrice: 1000, maxPrice: 3000 });
+  const result = manager.search({ category: "notebook", marketplace: "Saldão da Informática", minPrice: 1000, maxPrice: 3000 });
 
   assert.equal(result.length, 1);
   assert.equal(result[0].title, "Notebook X");
 });
 
-test("Catalog page e API retornam catálogo", async () => {
+test("Catalog page e API retornam catÃ¡logo", async () => {
   const originalFetch = global.fetch;
   global.fetch = async () => {
     throw new Error("offline");
@@ -204,8 +204,9 @@ test("Catalog page e API retornam catálogo", async () => {
     const pageRes = createResponse();
     await handler({ url: "/catalog" }, pageRes);
     assert.equal(pageRes.statusCode, 200);
-    assert.match(pageRes.body, /Catálogo interno/);
+    assert.match(pageRes.body, /Cat..logo interno/i);
   } finally {
     global.fetch = originalFetch;
   }
 });
+

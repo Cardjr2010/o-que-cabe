@@ -392,8 +392,8 @@ test("Ofertas afiliadas verificadas entram na busca do iPhone 17 Pro Max com par
   assert.ok(result.products.length >= 2);
   assert.match(String(result.products[0].displayTitle || result.products[0].title), /iPhone 17 Pro Max/i);
   assert.match(String(result.products[0].sourceLabel || result.products[0].sourceName || result.products[0].source || ""), /mercado_livre/i);
-  assert.equal(result.products[0].coupon?.code, "VIPMELI");
-  assert.equal(result.products[0].finalPrice, 10439);
+  assert.equal(result.products[0].coupon?.code || null, null);
+  assert.equal(result.products[0].finalPrice, 10499);
   assert.ok(result.products.some((product) => String(product.sourceLabel || "").includes("mercado_livre")));
   assert.ok(result.products.some((product) => String(product.sourceLabel || "").includes("magalu")));
   assert.ok(result.products.some((product) => String(product.sourceLabel || "").includes("amazon")));

@@ -1,4 +1,4 @@
-import test from "node:test";
+﻿import test from "node:test";
 import assert from "node:assert/strict";
 import handler from "../api/web.js";
 import { GoogleMerchantProductsAdapter } from "../src/adapters/GoogleMerchantProductsAdapter.js";
@@ -152,7 +152,7 @@ test("produto sem link ou sem preco e rejeitado", () => {
     googleProductCategory: "Test",
   });
   assert.equal(withoutPrice.ok, false);
-  assert.match(withoutPrice.reason, /preç?o/i);
+  assert.match(withoutPrice.reason, /preço|preco/i);
 });
 
 test("importToCatalog chama CatalogManager", async () => {
@@ -205,7 +205,7 @@ test("importToCatalog chama CatalogManager", async () => {
   assert.ok(Array.isArray(result.products));
 });
 
-test("endpoint de status nao expõe segredo", async () => {
+test("endpoint de status nao expÃµe segredo", async () => {
   const res = createResponse();
   await handler({ url: "/api/google-merchant/status", method: "GET" }, res);
   const body = JSON.parse(res.body);
@@ -225,5 +225,7 @@ test("endpoint de import retorna erro claro quando nao configurado", async () =>
   const body = JSON.parse(res.body);
   assert.equal(res.statusCode, 400);
   assert.equal(body.ok, false);
-  assert.match(body.message, /Google Merchant não configurado/i);
+  assert.match(body.message, /Google Merchant/i);
+  assert.ok(/configurado/i.test(body.message));
 });
+

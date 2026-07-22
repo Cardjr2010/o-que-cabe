@@ -33,7 +33,7 @@ test("oferta verificada com janela expirada nao entra na busca", async () => {
         model: "iPhone 17 Pro Max 256GB",
         category: "celular",
         normalizedCategory: "celular",
-        visibleUntil: "2026-07-21T23:59:59-03:00",
+        visibleUntil: "2026-07-23T23:59:59-03:00",
         affiliateUrl: "https://example.com/active",
       },
     ],

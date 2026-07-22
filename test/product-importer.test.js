@@ -129,7 +129,7 @@ test("/api/search usa catálogo real antes de demo", async () => {
   }
 });
 
-test("busca sem produto real nao devolve demo nem link externo", async () => {
+test("busca sem produto real não devolve demo nem link externo", async () => {
   const originalFetch = global.fetch;
   global.fetch = async () => {
     throw new Error("offline");

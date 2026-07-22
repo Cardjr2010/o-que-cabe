@@ -92,22 +92,30 @@ function getPermalink(item = {}) {
 }
 
 function normalizeProduct(rawItem = {}, dataMode = "real-authenticated") {
+  const seller = rawItem.seller || rawItem.owner || null;
+  const shipping = rawItem.shipping || null;
+  const installments = rawItem.installments?.quantity ?? rawItem.installments ?? null;
   return {
     id: rawItem.id || "",
+    itemId: rawItem.id || "",
     title: rawItem.title || "Produto Mercado Livre",
     price: Number(rawItem.price ?? rawItem.total_price ?? 0) || 0,
     image: getProductImage(rawItem),
     productUrl: getPermalink(rawItem),
     permalink: getPermalink(rawItem),
-    seller: rawItem.seller || rawItem.owner || null,
+    seller,
     reputation: rawItem.seller?.reputation?.level_id || rawItem.reputation || null,
+    sellerReputation: rawItem.seller?.reputation || rawItem.seller_reputation || null,
     rating: rawItem.rating ?? rawItem.seller?.reputation?.metrics?.claims?.rate ?? null,
     soldQuantity: rawItem.sold_quantity ?? rawItem.available_quantity ?? null,
-    shipping: rawItem.shipping || null,
-    installments: rawItem.installments?.quantity ?? rawItem.installments ?? null,
-    marketplace: "mercadolivre",
+    shipping,
+    freeShipping: Boolean(rawItem.shipping?.free_shipping ?? rawItem.free_shipping),
+    installments,
+    marketplace: "mercado_livre",
     dataMode,
-    source: "mercadolivre",
+    source: "mercado_livre",
+    sourceName: "Mercado Livre",
+    sourceLabel: "Mercado Livre",
     condition: rawItem.condition ?? null,
     availableQuantity: rawItem.available_quantity ?? null,
     description: rawItem.title || rawItem.description || "",

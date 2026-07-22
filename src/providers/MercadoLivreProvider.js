@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import MarketplaceProvider from "./MarketplaceProvider.js";
 import MercadoLivreConnector from "../connectors/MercadoLivreConnector.js";
+import MercadoLivreSearchProvider from "./MercadoLivreSearchProvider.js";
 import CatalogManager from "../catalog/CatalogManager.js";
 import { resolveCatalogSeedPath } from "../runtime/catalog-path.js";
 import { projectRoot } from "../runtime/project-root.js";
@@ -21,6 +22,7 @@ import {
 const root = projectRoot;
 const seedPath = resolveCatalogSeedPath(path.join(root, "data", "products.seed.json"));
 const catalogManager = new CatalogManager({ seedPath });
+const mercadoLivreSearchProvider = new MercadoLivreSearchProvider();
 
 function readJson(filePath, fallback) {
   try {
@@ -111,10 +113,12 @@ function mapSeedProduct(raw = {}) {
 }
 
 function catalogSourceLabel(item = {}) {
-  const source = String(item.marketplace || item.source || item.store || "").trim().toLowerCase();
+  const source = String(item.marketplace || item.source || item.store || item.seller || "").trim().toLowerCase();
   const seller = String(item.seller || "").toLowerCase();
-  if (source.includes("saldao") || seller.includes("saldao")) return "Saldão da Informática";
-  return "Origem não informada";
+  if (source.includes("mercadolivre") || source.includes("mercado livre")) return "Mercado Livre";
+  if (source.includes("saldao") || seller.includes("saldao")) return "Sald?o da Inform?tica";
+  if (source.includes("infostore") || seller.includes("info store")) return "Info Store - Inform?tica";
+  return "Origem n?o informada";
 }
 
 function buildCatalogSearchText(item = {}) {
@@ -175,6 +179,8 @@ function looksLikeAccessory(item = {}) {
     "adaptador",
     "strap",
     "pulseira",
+    "controle remoto",
+    "remote control",
     "holder",
     "power bank",
     "powerbank",
@@ -184,6 +190,8 @@ function looksLikeAccessory(item = {}) {
     "bumper",
     "watch band",
     "smart band",
+    "controle remoto",
+    "remote control",
     "suporte",
     "acessorio",
     "accessory",
@@ -198,12 +206,20 @@ function isRealCatalogItem(item = {}) {
   const marketplace = String(item.marketplace || "").toLowerCase();
   const seller = String(item.seller || "").toLowerCase();
   return (source === "real" || source === "real-authenticated" || source === "real-public" || source === "seed")
-    && (marketplace.includes("saldao") || seller.includes("saldao") || String(item.sourceType || "").toLowerCase().includes("saldao"));
+    && (
+      marketplace.includes("saldao")
+      || marketplace.includes("infostore")
+      || seller.includes("saldao")
+      || seller.includes("info store")
+      || String(item.sourceType || "").toLowerCase().includes("saldao")
+      || String(item.sourceType || "").toLowerCase().includes("infostore")
+    );
 }
 
 function sourceSearchPriority(item = {}) {
   const source = String(item.marketplace || item.source || item.store || item.seller || "").toLowerCase();
   if (source.includes("saldao_informatica") || source.includes("actionpay_saldao") || source.includes("saldao")) return 3;
+  if (source.includes("infostore") || source.includes("info store")) return 3;
   return 0;
 }
 
@@ -223,7 +239,8 @@ function normalizeCatalogProduct(item = {}) {
   const model = item.model || extractModel(displayTitle || originalTitle, brand || "") || null;
   const isAccessory = Boolean((item.isAccessory ?? ["accessory", "piece", "compatible"].includes(productType)) || ["pelicula", "capa", "cabo", "carregador", "acessorio", "peca"].includes(inferredCategory));
   return {
-    id: String(item.id || item.externalId || item.sku || item.gtin || item.ean || item.title || ""),
+    id: String(item.id || item.itemId || item.externalId || item.sku || item.gtin || item.ean || item.title || ""),
+    itemId: String(item.itemId || item.id || item.externalId || item.sku || item.gtin || item.ean || item.title || ""),
     title: String(displayTitle || item.title || ""),
     originalTitle,
     displayTitle,
@@ -253,8 +270,10 @@ function normalizeCatalogProduct(item = {}) {
     rating: item.rating ?? null,
     soldQuantity: item.soldQuantity ?? null,
     shipping: item.shipping || null,
+    freeShipping: Boolean(item.freeShipping ?? item.shipping?.freeShipping ?? item.shipping?.free_shipping ?? false),
     installments: item.installments ?? null,
     affiliateUrl: String(item.affiliateUrl || ""),
+    sellerReputation: item.sellerReputation || item.reputation || item.seller?.reputation || null,
     priceHistory: Array.isArray(item.priceHistory) ? item.priceHistory : [],
     raw: item.raw || item,
   };
@@ -267,7 +286,7 @@ class MercadoLivreProvider extends MarketplaceProvider {
     const catalog = catalogManager.list().filter((item) => item && Number(item.price || 0) > 0 && (item.productUrl || item.affiliateUrl || item.permalink || item.url));
     const catalogPrimaryOnly = catalog.filter((item) => {
       const source = String(item.marketplace || item.source || item.store || item.seller || "").toLowerCase();
-      return source.includes("saldao_informatica") || source.includes("actionpay_saldao") || source.includes("saldão da informática") || source.includes("saldao da informatica");
+      return source.includes("saldao_informatica") || source.includes("actionpay_saldao") || source.includes("sald?o da inform?tica") || source.includes("saldao da informatica") || source.includes("infostore") || source.includes("info store");
     });
     const realItems = catalogPrimaryOnly.filter((item) => {
       const itemAccessory = Boolean(item.isAccessory || looksLikeAccessory(item) || ["accessory", "piece", "compatible"].includes(String(item.productType || "").toLowerCase()));
@@ -322,17 +341,36 @@ class MercadoLivreProvider extends MarketplaceProvider {
   }
 
   async searchProducts(query, options = {}) {
-    const catalogResult = this.searchCatalogProducts(query, options);
+    const q = String(query || "").trim();
+    const catalogResult = this.searchCatalogProducts(q, options);
     if (catalogResult.products.length) {
       return catalogResult;
     }
 
-    const result = await MercadoLivreConnector.searchProducts(query, options);
+    const result = await mercadoLivreSearchProvider.searchProducts(q, options);
+    const normalizedProducts = Array.isArray(result.products)
+      ? result.products.map((product) => this.normalizeProduct({
+        ...product,
+        itemId: product.itemId || product.id,
+        permalink: product.permalink || product.productUrl || "",
+        productUrl: product.productUrl || product.permalink || "",
+        image: product.image || product.thumbnail || "",
+        seller: product.seller || null,
+        shipping: product.shipping || null,
+        installments: product.installments || null,
+        freeShipping: product.freeShipping ?? product.shipping?.freeShipping ?? product.shipping?.free_shipping ?? false,
+        sellerReputation: product.sellerReputation || product.seller?.reputation || null,
+        source: product.source || "mercadolivre",
+        marketplace: product.marketplace || "mercadolivre",
+        dataMode: product.dataMode || "real",
+      }))
+      : [];
     return {
       ...result,
-      products: Array.isArray(result.products)
-        ? result.products.map((product) => this.normalizeProduct(product))
-        : [],
+      products: normalizedProducts,
+      dataMode: result.dataMode || (normalizedProducts.length ? "real" : "demo"),
+      strategyUsed: result.strategyUsed || "mercado_livre_direct_item_search",
+      fallbackText: result.fallbackText || "",
     };
   }
 
@@ -380,3 +418,4 @@ class MercadoLivreProvider extends MarketplaceProvider {
 
 export { MercadoLivreProvider };
 export default new MercadoLivreProvider();
+

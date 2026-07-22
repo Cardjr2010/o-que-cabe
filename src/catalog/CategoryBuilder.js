@@ -37,6 +37,9 @@ function humanLabel(category = "") {
     compativel: "Compatíveis",
     casa: "Casa",
     presente: "Presentes",
+    ferramenta: "Ferramentas",
+    ferragem: "Ferragens",
+    construcao: "Casa e Construção",
   };
   return labels[value] || titleCase(value);
 }
