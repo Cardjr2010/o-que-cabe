@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OQC Admin Shopping Lab</title>
+  <link rel="stylesheet" href="/admin/shopping-lab.css">
+</head>
+<body>
+  <main class="lab-shell">
+    <header class="lab-header">
+      <div>
+        <p class="eyebrow">OQC Admin</p>
+        <h1>Shopping Lab</h1>
+        <p class="subtitle">Laboratório multifonte para validar decisões antes de publicar no fluxo público.</p>
+      </div>
+    </header>
+
+    <section class="lab-card lab-form-card">
+      <form id="labForm" class="lab-form">
+        <label>
+          <span>Busca</span>
+          <input id="queryInput" name="query" type="text" placeholder="Ex.: iPhone 17 Pro Max 256GB">
+        </label>
+        <label>
+          <span>Orçamento total</span>
+          <input id="budgetInput" name="budget" type="number" min="0" step="0.01" placeholder="10000">
+        </label>
+        <label>
+          <span>Admin token</span>
+          <input id="tokenInput" name="adminToken" type="password" placeholder="Token administrativo">
+        </label>
+        <button type="submit">Rodar laboratório</button>
+      </form>
+    </section>
+
+    <section class="lab-grid">
+      <article class="lab-card">
+        <h2>Resumo</h2>
+        <div id="summary" class="placeholder">Informe uma busca para ver fontes, rejeições e decisões.</div>
+      </article>
+      <article class="lab-card">
+        <h2>Fontes</h2>
+        <div id="sources" class="placeholder">Nenhuma chamada ainda.</div>
+      </article>
+    </section>
+
+    <section class="lab-card">
+      <h2>Decisões</h2>
+      <div id="decisions" class="placeholder">As melhores decisões aparecem aqui.</div>
+    </section>
+
+    <section class="lab-card">
+      <h2>Produtos aceitos</h2>
+      <div id="products" class="placeholder">Nenhum produto validado ainda.</div>
+    </section>
+  </main>
+  <script type="module" src="/admin/shopping-lab.js"></script>
+</body>
+</html>

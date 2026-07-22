@@ -23,6 +23,7 @@ import AmazonRapidApiSearchProvider from "../src/providers/AmazonRapidApiSearchP
 import { createOAuthTokenStore } from "../src/auth/VercelKvOAuthTokenStore.js";
 import CatalogManager from "../src/catalog/CatalogManager.js";
 import SearchOrchestrator from "../src/search/SearchOrchestrator.js";
+import SourceIntelligenceLayer from "../src/sources/SourceIntelligenceLayer.js";
 import { GoogleMerchantProductsAdapter } from "../src/adapters/GoogleMerchantProductsAdapter.js";
 import { buildHomeCatalogData } from "../src/runtime/home-data.js";
 import { projectRoot, resolveProjectPath } from "../src/runtime/project-root.js";
@@ -78,6 +79,7 @@ let searchOrchestratorInstance = null;
 let mercadoLivreSearchProviderInstance = null;
 let amazonSearchProviderInstance = null;
 let oauthTokenStoreInstance = null;
+let sourceIntelligenceLayerInstance = null;
 function createFeedProvider(providerName = "mi_shop", options = {}) {
   const name = String(providerName || "").trim().toLowerCase();
   const baseOptions = {
@@ -166,6 +168,17 @@ function getSearchOrchestrator() {
     });
   }
   return searchOrchestratorInstance;
+}
+
+function getSourceIntelligenceLayer() {
+  if (!sourceIntelligenceLayerInstance) {
+    sourceIntelligenceLayerInstance = new SourceIntelligenceLayer({
+      catalogManager: getCatalogManager(),
+      mercadoLivreProvider: getMercadoLivreSearchProvider(),
+      amazonProvider: getAmazonSearchProvider(),
+    });
+  }
+  return sourceIntelligenceLayerInstance;
 }
 
 function createActionpayProvider() {
@@ -1777,6 +1790,26 @@ export default async function handler(req, res) {
       lastErrorType,
       lastCheckedAt: diagnostics.lastCheckedAt ?? null,
       lastValidatedAt: diagnostics.lastValidatedAt ?? null,
+    });
+    return;
+  }
+
+  if (pathname === "/api/admin/shopping-lab/search") {
+    const auth = requireAdminAuth(req, url);
+    if (!auth.ok) {
+      sendJson(res, auth.status, auth.body);
+      return;
+    }
+    const query = String(url.searchParams.get("query") || "").trim();
+    const totalBudget = Number(url.searchParams.get("totalBudget") || 0);
+    const result = await getSourceIntelligenceLayer().search({
+      query,
+      budget: { totalBudget, maxTotalBudget: totalBudget },
+      limitPerSource: 8,
+    });
+    sendJson(res, 200, {
+      ok: true,
+      ...result,
     });
     return;
   }
