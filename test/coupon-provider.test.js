@@ -7,6 +7,8 @@ test("Cupom de campanha aplicavel reduz o preco final do produto verificado", ()
     id: "verified-ml-iphone-17-pro-max-256gb",
     source: "mercado_livre",
     price: 10499,
+  }, {
+    referenceDate: new Date("2026-07-20T12:00:00-03:00"),
   });
 
   assert.equal(pricing.coupon.code, "VIPMELI");

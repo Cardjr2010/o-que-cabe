@@ -64,8 +64,9 @@ export default class VerifiedAffiliateOfferProvider {
     this.offers = Array.isArray(offers) ? offers : [];
   }
 
-  getDiagnostics() {
-    const visibleOffers = this.offers.filter((offer) => isScreenedOfferVisible(offer));
+  getDiagnostics(options = {}) {
+    const referenceDate = options.referenceDate || new Date();
+    const visibleOffers = this.offers.filter((offer) => isScreenedOfferVisible(offer, referenceDate));
     return {
       configured: visibleOffers.length > 0,
       hasCatalog: visibleOffers.length > 0,
@@ -77,9 +78,10 @@ export default class VerifiedAffiliateOfferProvider {
 
   async searchProducts(query = "", options = {}) {
     const limit = Math.max(1, toNumber(options.limit, 12));
+    const referenceDate = options.referenceDate || new Date();
     const normalizedQuery = normalizeText(query);
     const ranked = this.offers
-      .filter((offer) => isScreenedOfferVisible(offer))
+      .filter((offer) => isScreenedOfferVisible(offer, referenceDate))
       .map((offer) => ({
         ...offer,
         matchScore: offerSearchScore(offer, normalizedQuery),

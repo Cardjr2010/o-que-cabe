@@ -384,6 +384,7 @@ test("Ofertas afiliadas verificadas entram na busca do iPhone 17 Pro Max com par
     query: "iphone 17 pro max 256gb",
     mode: "total",
     totalBudget: 12000,
+    referenceDate: new Date("2026-07-20T12:00:00-03:00"),
   });
 
   assert.equal(result.dataMode, "real");

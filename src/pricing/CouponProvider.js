@@ -67,11 +67,12 @@ function computeCouponDiscount(price = 0, coupon = {}) {
   return 0;
 }
 
-export function buildOfferPricing(product = {}) {
+export function buildOfferPricing(product = {}, options = {}) {
   const price = toNumber(product.price, 0);
   const shippingPrice = toNumber(product?.shipping?.price, 0);
+  const referenceDate = options.referenceDate || product.referenceDate || null;
   const coupon = normalizeCoupon(
-    product.coupon || resolveCampaignCouponForProduct(product),
+    product.coupon || resolveCampaignCouponForProduct(product, referenceDate || new Date()),
     product.source || product.marketplace || "",
   );
   const verifiedCashback = coupon.status === "verified" && coupon.type === "cashback"

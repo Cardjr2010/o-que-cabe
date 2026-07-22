@@ -835,7 +835,7 @@ function buildRefinementSuggestions(intent = {}) {
   return [];
 }
 
-async function searchProviderVariants({ provider, intent, source }) {
+async function searchProviderVariants({ provider, intent, source, referenceDate = null }) {
   const queries = source === "mercado_livre"
     ? buildMercadoLivreFallbackVariants(intent)
     : uniqueValues([intent.searchText, intent.query, `${intent.brand || ""} ${intent.model || ""}`.trim()]).filter(Boolean);
@@ -854,6 +854,7 @@ async function searchProviderVariants({ provider, intent, source }) {
       brand: intent.brand || "",
       model: intent.model || "",
       marketplace: "BR",
+      referenceDate,
     });
     accepted = filterCandidateList(lastResult.products || [], intent).filter((product) => {
       if (source === "mercado_livre") {
@@ -876,9 +877,10 @@ async function searchProviderVariants({ provider, intent, source }) {
 }
 
 export default class SearchOrchestrator {
-  constructor({ catalogManager, marketplaceSearchProvider } = {}) {
+  constructor({ catalogManager, marketplaceSearchProvider, verifiedAffiliateOfferProvider } = {}) {
     this.catalogManager = catalogManager;
     this.marketplaceSearchProvider = marketplaceSearchProvider || null;
+    this.verifiedAffiliateOfferProvider = verifiedAffiliateOfferProvider || null;
   }
 
   parseIntent({ query = "", mode = "monthly", monthly = 0, months = 12, totalBudget = 0 } = {}) {
@@ -974,7 +976,7 @@ export default class SearchOrchestrator {
     return collected;
   }
 
-  prepareProducts(products = [], intent = {}) {
+  prepareProducts(products = [], intent = {}, options = {}) {
     const baseBudget = BudgetEngine.buildBudgetContext({
       mode: intent.mode || "monthly",
       monthly: intent.monthly || 0,
@@ -997,7 +999,7 @@ export default class SearchOrchestrator {
       const effectiveInstallment = installmentData.installments?.available
         ? installmentData.installments
         : installmentData.estimatedInstallment;
-      const pricing = buildOfferPricing(richProduct);
+      const pricing = buildOfferPricing(richProduct, { referenceDate: options.referenceDate || null });
       const searchText = intent.searchText || intent.query || "";
       const matchScore = rankSearchMatch(richProduct, searchText);
       const sourceText = normalizeText([richProduct.marketplace, richProduct.source, richProduct.sourceType, richProduct.seller, richProduct.store].filter(Boolean).join(" "));
@@ -1096,6 +1098,7 @@ export default class SearchOrchestrator {
 
   async search(options = {}) {
     const intent = this.parseIntent(options);
+    const referenceDate = options.referenceDate || null;
     if (shouldRefineHomeIntent(intent)) {
       return {
         ok: true,
@@ -1115,7 +1118,7 @@ export default class SearchOrchestrator {
       };
     }
     const candidates = this.listCandidates(intent);
-    const prepared = this.prepareProducts(candidates, intent);
+    const prepared = this.prepareProducts(candidates, intent, { referenceDate });
     const externalLookupNeeded = shouldEnrichWithExternal(intent, prepared.products);
 
     if (!externalLookupNeeded) {
@@ -1133,7 +1136,7 @@ export default class SearchOrchestrator {
     }
 
     const providerEntries = [
-      { source: "verified_partner_offers", provider: getVerifiedAffiliateOfferProvider() },
+      { source: "verified_partner_offers", provider: this.verifiedAffiliateOfferProvider || getVerifiedAffiliateOfferProvider() },
       { source: "mercado_livre", provider: this.marketplaceSearchProvider || getMercadoLivreSearchProvider() },
       { source: "amazon", provider: getAmazonSearchProvider() },
     ];
@@ -1175,7 +1178,7 @@ export default class SearchOrchestrator {
 
     try {
       const settled = await Promise.allSettled(
-        enabledProviders.map(({ source, provider }) => searchProviderVariants({ source, provider, intent })),
+        enabledProviders.map(({ source, provider }) => searchProviderVariants({ source, provider, intent, referenceDate })),
       );
 
       const externalProducts = [];
@@ -1195,7 +1198,7 @@ export default class SearchOrchestrator {
 
       if (dedupedExternal.length) {
         const combinedProducts = dedupeProducts([...candidates, ...dedupedExternal]);
-        const combinedPrepared = this.prepareProducts(combinedProducts, intent);
+        const combinedPrepared = this.prepareProducts(combinedProducts, intent, { referenceDate });
         const strategyUsed = successfulSources.length === 1
           ? successfulSources[0] === "mercado_livre"
             ? "catalog-search+mercado-livre-fallback"

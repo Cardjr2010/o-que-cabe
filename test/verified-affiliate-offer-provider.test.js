@@ -39,7 +39,10 @@ test("oferta verificada com janela expirada nao entra na busca", async () => {
     ],
   });
 
-  const result = await provider.searchProducts("iphone 17 pro max", { limit: 10 });
+  const result = await provider.searchProducts("iphone 17 pro max", {
+    limit: 10,
+    referenceDate: new Date("2026-07-20T12:00:00-03:00"),
+  });
 
   assert.equal(result.products.length, 1);
   assert.equal(result.products[0].id, "offer-active");
