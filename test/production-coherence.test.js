@@ -53,30 +53,26 @@ test("home comunica as metricas oficiais sem presumir orcamento", () => {
   assert.doesNotMatch(html, /Seu teto estimado:\s*<strong[^>]*>R\$/);
 });
 
-test("links futuros nao fingem navegacao e promessas respeitam os dados disponiveis", () => {
+test("header e promessas da home seguem o escopo publico real", () => {
   const html = readProjectFile("public/index.html");
   const script = readProjectFile("public/app.js");
 
-  assert.doesNotMatch(html, /<a[^>]+href="#blog"/i);
-  assert.doesNotMatch(html, /<a[^>]+href="#conta"/i);
-  assert.match(html, /<a[^>]+href="\/blog\/index\.html"[^>]*>Blog<\/a>/i);
-  assert.match(html, /Minha Conta <small>Em breve<\/small>/);
+  assert.match(html, /<a[^>]+href="#guides"[^>]*>Guias<\/a>/i);
+  assert.doesNotMatch(html, /Minha Conta <small>Em breve<\/small>/);
   assert.doesNotMatch(html, /corta juros abusivos|fretes absurdos|ma reputacao/i);
   assert.match(html, /quando a fonte disponibiliza essas informa(?:c|ç)(?:o|õ)es/i);
   assert.match(script, /source\.toLowerCase\(\) === "estimated"/);
   assert.match(script, /Parcelamento estimado\. Confirme na loja\./);
 });
 
-test("home-data expoe os numeros oficiais e menu seguro", () => {
+test("home-data expoe os numeros oficiais e menu enxuto", () => {
   const data = buildHomeCatalogData();
 
   assert.equal(data.totalCatalogProducts, 16740);
   assert.equal(data.totalPublishedProducts, 15999);
   assert.equal(data.hiddenProducts, 741);
   assert.ok(data.catalogUpdatedAt === null || Number.isFinite(Date.parse(data.catalogUpdatedAt)));
-  const futureItems = data.menu.filter((item) => ["Blog", "Minha Conta"].includes(item.label));
-  assert.equal(futureItems.length, 2);
-  assert.ok(futureItems.every((item) => item.future === true && item.active === false && item.href === ""));
+  assert.deepEqual(data.menu.map((item) => item.label), ["Início", "Departamentos", "Guias"]);
 });
 
 test("status de fontes nunca expoe segredos e mantem diagnostico honesto", async () => {

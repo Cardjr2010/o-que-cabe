@@ -388,8 +388,7 @@ export function buildHomeCatalogData() {
     const menu = [
       { label: "Início", href: "/", active: true },
       { label: "Departamentos", href: "#departments", active: true },
-      { label: "Blog", href: "", future: true, active: false },
-      { label: "Minha Conta", href: "", future: true, active: false },
+      { label: "Guias", href: "#guides", active: true },
     ];
 
     const publicCollections = buildPublicHomeCollections(catalogForHome);
@@ -473,8 +472,7 @@ export function buildHomeCatalogData() {
       menu: [
         { label: "Início", href: "/", active: true },
         { label: "Departamentos", href: "#departments", active: true },
-        { label: "Blog", href: "", future: true, active: false },
-        { label: "Minha Conta", href: "", future: true, active: false },
+        { label: "Guias", href: "#guides", active: true },
       ],
       categories: [],
       homeButtons: [],

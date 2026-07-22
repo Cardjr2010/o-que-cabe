@@ -24,6 +24,7 @@ const videoGuidesGrid = document.querySelector("#videoGuidesGrid");
 const homeCatalogState = document.querySelector("#homeCatalogState");
 const searchCategoriesHint = document.querySelector("#searchCategoriesHint");
 const intentGrid = document.querySelector("#intentGrid");
+const intentionsSection = document.querySelector("#intentionsSection");
 const departmentsMenu = document.querySelector("#departmentsMenu");
 const decisionHighlightsSection = document.querySelector("#decisions");
 const decisionHighlightsGrid = document.querySelector("#decisionHighlightsGrid");
@@ -581,19 +582,19 @@ function buildPrimaryDecisionItems(data = {}) {
     {
       key: "best-purchase",
       title: "Melhor compra",
-      note: "Equilíbrio entre adequação ao orçamento, origem e contexto da oferta.",
+      note: "Melhor equilíbrio entre correspondência do produto, preço final e confiança da origem.",
       product: bestPurchase,
     },
     {
       key: "best-price",
       title: "Menor preço confiável",
-      note: "Menor preço entre ofertas com origem e link direto confirmados.",
+      note: "Preço mais baixo entre ofertas aceitas com anúncio direto e contexto suficiente.",
       product: cheapestReliable,
     },
     {
       key: "best-installment",
       title: "Melhor parcelamento",
-      note: "Menor parcela real disponível entre as opções relevantes.",
+      note: "Parcela real mais leve entre as opções que continuam fazendo sentido para a busca.",
       product: bestInstallment,
     },
   ].filter((item) => item.product);
@@ -638,7 +639,7 @@ function buildDecisionCards(data = {}) {
             <h3>${escapeHtml(resolveProductTitle(product))}</h3>
             <strong class="decision-summary-price">${formatPrice(priceValue)}</strong>
             <p class="decision-summary-meta">${escapeHtml(installment.short)}</p>
-            <p class="decision-summary-note">${escapeHtml(singleCardMode ? "Única oferta principal confirmada para esta busca no catálogo atual." : item.note)}</p>
+            <p class="decision-summary-note">${escapeHtml(singleCardMode ? "Encontramos uma única oferta principal confirmada para esta busca." : item.note)}</p>
           </article>
         `;
       }).join("")}
@@ -651,6 +652,27 @@ function buildComparisonBlock(data = {}) {
   const official = products.find((item) => Boolean(item?.officialStore ?? item?.official_store ?? item?.seller?.official_store_name));
   const general = products[0] || null;
   if (!official && !general) return "";
+  const isSameOffer = Boolean(
+    official
+    && general
+    && String(
+      official.id
+      || official.externalId
+      || official.sourceProductId
+      || official.permalink
+      || official.productUrl
+      || official.title
+      || "",
+    ) === String(
+      general.id
+      || general.externalId
+      || general.sourceProductId
+      || general.permalink
+      || general.productUrl
+      || general.title
+      || "",
+    ),
+  );
   const officialPrice = Number(official?.finalPrice || official?.price || 0);
   const generalPrice = Number(general?.finalPrice || general?.price || 0);
   const diff = officialPrice > 0 && generalPrice > 0 ? officialPrice - generalPrice : 0;
@@ -660,7 +682,9 @@ function buildComparisonBlock(data = {}) {
   const generalShipping = resolveShippingSummary(general || {});
   const officialRep = resolveSellerReputation(official || {}) || "Não informada";
   const generalRep = resolveSellerReputation(general || {}) || "Não informada";
-  const finalRecommendation = diff > 0
+  const finalRecommendation = isSameOffer
+    ? "A melhor compra e a referência oficial coincidem nesta busca."
+    : diff > 0
     ? "A melhor oferta geral entrega economia sem abrir mão de origem identificada."
     : official
       ? "A loja oficial continua como referência de segurança para esta busca."
@@ -672,7 +696,7 @@ function buildComparisonBlock(data = {}) {
           <p class="panel-label">Comparativo rápido</p>
           <h3>Loja oficial x melhor oferta geral</h3>
         </div>
-        <p class="section-note">Comparação objetiva entre segurança, preço final e condições operacionais.</p>
+        <p class="section-note">Comparação curta entre preço final, parcelamento, frete e segurança operacional.</p>
       </div>
       <div class="comparison-grid">
         <article class="comparison-card">
@@ -699,7 +723,7 @@ function buildComparisonBlock(data = {}) {
         </article>
       </div>
       <div class="comparison-summary">
-        <span><strong>Diferença de preço:</strong> ${official && general && diff !== 0 ? `${diff > 0 ? "-" : "+"}${formatPrice(Math.abs(diff))}` : "Sem base suficiente"}</span>
+        <span><strong>Diferença de preço:</strong> ${isSameOffer ? "Mesma oferta comparada" : official && general && diff !== 0 ? `${diff > 0 ? "-" : "+"}${formatPrice(Math.abs(diff))}` : "Sem base suficiente"}</span>
         <span><strong>Segurança:</strong> ${official ? "Loja oficial confirmada disponível" : "Sem loja oficial confirmada nesta busca"}</span>
         <span><strong>Cupom:</strong> ${general?.coupon?.status === "verified" ? "Cupom verificado na melhor oferta" : "Sem cupom verificado na melhor oferta"}</span>
         <span><strong>Recomendação final:</strong> ${escapeHtml(finalRecommendation)}</span>
@@ -723,6 +747,14 @@ function buildProductCardHtml(product) {
   const trust = resolveStoreTrust(product);
   const reputation = resolveSellerReputation(product);
   const reasons = buildReasonList(product);
+  const shipping = resolveShippingSummary(product);
+  const installment = buildInstallmentSummary(product);
+  const microfacts = [
+    shipping?.label ? `<span>${escapeHtml(shipping.label)}</span>` : "",
+    installment?.available ? `<span class="${installment.estimated ? "estimated" : ""}">${escapeHtml(installment.short)}</span>` : "",
+    condition ? `<span>${escapeHtml(normalizeConditionLabel(condition))}</span>` : "",
+    reputation ? `<span>Reputação ${escapeHtml(reputation)}</span>` : "",
+  ].filter(Boolean);
 
   return `
     <article class="result-card">
@@ -735,12 +767,10 @@ function buildProductCardHtml(product) {
           </div>
           <span class="result-budget-badge result-budget-badge-${budget.tone}">${escapeHtml(budget.label)}</span>
         </div>
-        <div class="result-meta-grid">
-          <div><span class="result-label">${escapeHtml(trust.label)}</span><strong>${escapeHtml(trust.detail || sourceLabel)}</strong></div>
-          <div><span class="result-label">Condição</span><strong>${escapeHtml(condition ? normalizeConditionLabel(condition) : "Não informada")}</strong></div>
-          <div><span class="result-label">Reputação</span><strong>${escapeHtml(reputation || "Não informada")}</strong></div>
+        <div class="result-support-tight">
+          <span class="result-source-line">${escapeHtml(trust.label)}: ${escapeHtml(trust.detail || sourceLabel)}</span>
         </div>
-        ${renderFactPills(product)}
+        ${microfacts.length ? `<div class="result-microfacts">${microfacts.join("")}</div>` : ""}
         <p class="result-reason">${escapeHtml(note)}</p>
         ${imageWarning}
         ${buildResultPriceBlock(product)}
@@ -764,6 +794,60 @@ function buildProductCardHtml(product) {
     </article>
   `;
 }
+
+function buildResultsSummaryBlock(data = {}, products = []) {
+  const acceptedCount = Array.isArray(products) ? products.length : 0;
+  const totalFound = Number(
+    data.acceptedCount
+    ?? data.totalResults
+    ?? data.totalFound
+    ?? data.metrics?.accepted
+    ?? acceptedCount,
+  );
+  const evaluatedCount = Number(
+    data.evaluatedCount
+    ?? data.totalEvaluated
+    ?? data.metrics?.evaluated
+    ?? totalFound
+    ?? acceptedCount,
+  );
+  const discardedCount = Math.max(
+    Number(
+      data.discardedCount
+      ?? data.rejectedCount
+      ?? data.metrics?.rejected
+      ?? evaluatedCount - acceptedCount,
+    ),
+    0,
+  );
+  const refinements = Array.isArray(data.refinementSuggestions) ? data.refinementSuggestions.filter(Boolean).slice(0, 4) : [];
+
+  return `
+    <section class="results-overview-card">
+      <div class="results-overview-top">
+        <div>
+          <p class="panel-label">Resumo da busca</p>
+          <h3>${escapeHtml(safeText(data.query || productInput?.value, "Busca atual"))}</h3>
+        </div>
+        <p class="section-note">Mostramos só o que passou pelos filtros de correspondência, orçamento e integridade mínima do anúncio.</p>
+      </div>
+      <div class="results-overview-metrics">
+        <span><strong>${formatCompactNumber(acceptedCount, "0")}</strong> aceitos</span>
+        <span><strong>${formatCompactNumber(evaluatedCount, "0")}</strong> avaliados</span>
+        <span><strong>${formatCompactNumber(discardedCount, "0")}</strong> descartados</span>
+      </div>
+      ${refinements.length ? `
+        <div class="results-refinement">
+          <strong>Refine a busca:</strong>
+          <div class="results-refinement-list">
+            ${refinements.map((item) => `<button type="button" class="refinement-chip" data-refinement="${escapeHtml(item)}">${escapeHtml(item)}</button>`).join("")}
+          </div>
+        </div>
+      ` : ""}
+    </section>
+  `;
+}
+
 function renderProducts(products) {
   const confirmedProducts = appView === "home"
     ? (Array.isArray(products) ? products : []).filter((product) => !isDemoProduct(product))
@@ -878,19 +962,19 @@ function renderGroupedProducts(groups = null, products = []) {
     {
       key: "cabe",
       title: "Melhores dentro do orçamento",
-      description: "Primeiras opções para decidir sem apertar o orçamento.",
+      description: "Ofertas que continuam coerentes com a busca e com o teto informado.",
       items: readGroup(normalizedGroups, ["cabe", "CABE"]),
     },
     {
       key: "apertado",
       title: "Cabem apertado",
-      description: "Ainda são possíveis, mas pedem mais atenção no valor final.",
+      description: "Ainda entram na conta, mas com menos folga no valor final.",
       items: readGroup(normalizedGroups, ["apertado", "APERTADO"]),
     },
     {
       key: "naoCabe",
       title: "Fora do orçamento",
-      description: "Ficam fora da recomendação principal para esta busca.",
+      description: "Foram mantidas apenas como referência, não como recomendação principal.",
       items: readGroup(normalizedGroups, ["naoCabe", "nao_cabe", "NÃO CABE", "NÃO_CABE", "NAO_CABE"]),
     },
   ];
@@ -923,12 +1007,17 @@ function renderResultsExperience(data = {}, products = []) {
   const comparison = buildComparisonBlock(data);
   const decisions = buildDecisionCards(data);
   const grouped = renderGroupedProducts(data.groups || null, products);
+  const summary = buildResultsSummaryBlock(data, products);
+  const title = buildPrimaryDecisionItems(data).length === 1
+    ? "Melhor compra encontrada"
+    : "Três decisões claras para esta busca";
   return `
+    ${summary}
     <section class="results-intro">
       <div class="section-head section-head-tight">
         <div>
           <p class="panel-label">Leitura do OQC</p>
-          <h3>Três decisões claras para esta busca</h3>
+          <h3>${title}</h3>
         </div>
         <p class="section-note">${escapeHtml(overview)}</p>
       </div>
@@ -1121,14 +1210,11 @@ const DEFAULT_HOME_DEPARTMENTS = [
 ];
 
 const HOME_INTENTIONS = [
-  { category: "celular", label: "Quero um celular", query: "celular", mode: "monthly" },
-  { category: "notebook", label: "Quero um notebook", query: "notebook", mode: "monthly" },
-  { category: "monitor", label: "Quero um monitor gamer", query: "monitor gamer", mode: "monthly" },
-  { category: "tv", label: "Quero uma TV", query: "tv", mode: "monthly" },
-  { category: "fone", label: "Quero um fone", query: "fone bluetooth", mode: "total" },
-  { category: "presente", label: "Quero um presente", query: "presente", mode: "total" },
-  { category: "casa", label: "Quero melhorar minha casa", query: "casa", mode: "total" },
-  { category: "flores", label: "Quero flores", query: "flores", mode: "total" },
+  { category: "celular", label: "Celular até R$ 2.000", query: "celular", mode: "total", totalBudget: 2000 },
+  { category: "notebook", label: "Notebook para estudar", query: "notebook para estudar", mode: "total", totalBudget: 3500 },
+  { category: "monitor", label: "Monitor gamer 144 Hz", query: "monitor gamer 144hz", mode: "total", totalBudget: 1500 },
+  { category: "tv", label: "TV 55 polegadas", query: "tv 55 polegadas", mode: "total", totalBudget: 2500 },
+  { category: "presente", label: "Presente até R$ 300", query: "presente", mode: "total", totalBudget: 300 },
 ];
 
 function normalizedCategoryTokens(value = "") {
@@ -1180,12 +1266,12 @@ function buildIntentCardItems(items = []) {
       query: intent.query || match.query || match.category || intent.category,
       intent: {
         mode: intent.mode || match.intent?.mode || "monthly",
-        monthly: match.intent?.monthly || match.intent?.totalBudget || undefined,
-        totalBudget: match.intent?.totalBudget || match.intent?.monthly || undefined,
-        months: match.intent?.months || 12,
+        monthly: intent.monthly || match.intent?.monthly || undefined,
+        totalBudget: intent.totalBudget || match.intent?.totalBudget || undefined,
+        months: intent.months || match.intent?.months || 12,
       },
     });
-    if (entries.length >= 6) break;
+    if (entries.length >= 5) break;
   }
 
   return entries;
@@ -1194,13 +1280,14 @@ function buildIntentCardItems(items = []) {
 function renderPurchaseIntentions(items = []) {
   if (!intentGrid) return;
   const entries = buildIntentCardItems(items);
+  if (intentionsSection) intentionsSection.hidden = entries.length === 0;
   intentGrid.innerHTML = entries.length
     ? entries.map((item) => `
       <button type="button" class="intent-card" data-category="${escapeHtml(item.category)}" data-query="${escapeHtml(item.query || item.category || "")}" data-mode="${escapeHtml(item.intent?.mode || "monthly")}" data-monthly="${escapeHtml(String(item.intent?.monthly || item.intent?.totalBudget || 0))}" data-total-budget="${escapeHtml(String(item.intent?.totalBudget || item.intent?.monthly || 0))}" data-months="${escapeHtml(String(item.intent?.months || 12))}">
         <div class="intent-card-icon">${categoryIconSvg(item.category)}</div>
         <div class="intent-card-copy">
-          <strong>${escapeHtml(item.label || `Quero ${normalizeHomeCategoryLabel(item.category).toLowerCase()}`)}</strong>
-          <span>${escapeHtml(`${Number(item.count || 0)} itens reais`)}</span>
+          <strong>${escapeHtml(item.label || normalizeHomeCategoryLabel(item.category))}</strong>
+          <span>${escapeHtml(item.subtitle || `${Number(item.count || 0)} itens publicados`)}</span>
         </div>
       </button>
     `).join("")
@@ -1210,7 +1297,12 @@ function renderPurchaseIntentions(items = []) {
     button.addEventListener("click", () => {
       const category = button.dataset.category || "";
       productInput.value = button.dataset.query || category || productInput.value || "";
-      setMode(searchMode);
+      const nextMode = button.dataset.mode === "total" ? "total" : "monthly";
+      searchMode = nextMode;
+      if (monthlyInput && button.dataset.monthly) monthlyInput.value = button.dataset.monthly;
+      if (monthsInput && button.dataset.months) monthsInput.value = button.dataset.months;
+      if (totalBudgetInput && button.dataset.totalBudget) totalBudgetInput.value = button.dataset.totalBudget;
+      setMode(nextMode);
       submitWithDeclaredBudget();
     });
   });
@@ -1328,7 +1420,7 @@ function renderProofSection(data = {}) {
   const topSources = Array.isArray(data.topSources) ? data.topSources.filter(Boolean).slice(0, 4) : [];
   const topBrands = Array.isArray(data.topBrands) ? data.topBrands.filter(Boolean).slice(0, 6) : [];
 
-  if (!publishedProducts && !topSources.length && !topBrands.length) {
+  if (!publishedProducts || !topSources.length || !topBrands.length) {
     proofSection.hidden = true;
     return;
   }
@@ -1529,14 +1621,14 @@ function renderTrustBand(data = {}) {
 async function loadHomeCatalogData() {
   if (appView !== "home") return;
 
-  renderLoadingSkeletons(intentGrid, "intent", 6);
+  renderLoadingSkeletons(intentGrid, "intent", 5);
   renderLoadingSkeletons(decisionHighlightsGrid, "decision", 3);
   renderLoadingSkeletons(campaignGrid, "decision", 3);
   renderLoadingSkeletons(videoGuidesGrid, "card", 3);
   renderLoadingSkeletons(categoryGrid, "card", 6);
   renderLoadingSkeletons(seoHotSearchesGrid, "chip", 6);
   if (searchCategoriesHint) {
-    searchCategoriesHint.textContent = "Intenções de compra: celular, notebook, monitor gamer, TV, fone, presente, casa e flores.";
+    searchCategoriesHint.textContent = "Exemplos úteis: celular até R$ 2.000, notebook para estudar, monitor gamer 144 Hz, TV 55 polegadas ou presente até R$ 300.";
   }
 
   try {
@@ -1550,24 +1642,18 @@ async function loadHomeCatalogData() {
     if (searchCategoriesHint) {
       const labels = searchCategories
         .filter((item) => item && item.category)
-        .slice(0, 6)
+        .slice(0, 5)
         .map((item) => item.label || normalizeHomeCategoryLabel(item.category));
       searchCategoriesHint.textContent = labels.length
         ? `Intenções de compra: ${labels.join(", ")}.`
-        : "Intenções de compra: Celulares, Notebooks, Monitores, TVs, Tablets e Fones.";
+        : "Intenções de compra: celular até R$ 2.000, notebook para estudar, monitor gamer 144 Hz, TV 55 polegadas e presente até R$ 300.";
     }
     renderPurchaseIntentions(Array.isArray(data.homeButtons) && data.homeButtons.length ? data.homeButtons : categories);
-    renderDecisionHighlights(
-      decisionHighlights.length
-        ? decisionHighlights
-        : pechinchas.length
-          ? pechinchas
-          : (Array.isArray(data.homeButtons) && data.homeButtons.length ? data.homeButtons : categories),
-    );
-    renderActiveCampaigns(Array.isArray(data.activeCampaigns) ? data.activeCampaigns : []);
+    renderDecisionHighlights([]);
+    renderActiveCampaigns([]);
     renderProofSection(data);
-    renderFeaturedVideos(Array.isArray(data.featuredVideos) ? data.featuredVideos : []);
-    renderSeoHotSearches(Array.isArray(data.seoHotSearches) ? data.seoHotSearches : []);
+    renderFeaturedVideos([]);
+    renderSeoHotSearches([]);
     renderTrustBand(data);
 
     if (categoryGrid) {
@@ -1596,9 +1682,10 @@ async function loadHomeCatalogData() {
     }
 
     if (homeCatalogState) {
-      homeCatalogState.textContent = `${categories.length} categorias com produtos publicados no catálogo.`;
+      homeCatalogState.textContent = `${categories.length} departamentos com cobertura suficiente para sustentar uma busca pública.`;
     }
   } catch {
+    if (intentionsSection) intentionsSection.hidden = true;
     if (intentGrid) intentGrid.innerHTML = "";
     if (decisionHighlightsGrid) decisionHighlightsGrid.innerHTML = "";
     if (campaignGrid) campaignGrid.innerHTML = "";
@@ -1728,7 +1815,17 @@ form.addEventListener("submit", async (event) => {
       renderTrips(data.trips || []);
     } else {
       const experienceHtml = renderResultsExperience(data, confirmedProducts);
-      if (experienceHtml) results.innerHTML = experienceHtml;
+      if (experienceHtml) {
+        results.innerHTML = experienceHtml;
+        results.querySelectorAll(".refinement-chip").forEach((chip) => {
+          chip.addEventListener("click", () => {
+            const refinement = chip.dataset.refinement || "";
+            if (!refinement) return;
+            productInput.value = refinement;
+            form.requestSubmit();
+          });
+        });
+      }
       else renderProducts(confirmedProducts);
     }
   } catch {
@@ -1738,7 +1835,7 @@ form.addEventListener("submit", async (event) => {
     renderProducts([]);
   } finally {
     button.disabled = false;
-    button.textContent = "Descobrir o que cabe";
+    button.textContent = "Encontrar a melhor compra";
   }
 });
 

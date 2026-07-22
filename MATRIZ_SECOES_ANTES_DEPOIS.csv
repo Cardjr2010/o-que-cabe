@@ -1,0 +1,13 @@
+secao,antes,depois,acao
+header,"Início, Departamentos, Blog, Minha Conta","Início, Departamentos, Guias",consolidar
+hero,"promessa + formulário + camadas auxiliares","promessa + formulário + texto concreto",reescrever
+sugestoes_rapidas,"intenções amplas com 8 cards","5 atalhos curtos e objetivos",reduzir
+metricas,"métricas repetidas em mais de um bloco","faixa única de transparência",consolidar
+prova_social,"podia renderizar zero fontes e zero marcas","oculta quando não houver base suficiente",ocultar
+radar_ofertas,"promessa antecipada sem fonte externa estável","oculto na home",ocultar
+videos,"bloco genérico na home","removido da home",remover
+decisoes_home,"seção separada e redundante","incorporada ao resultado",remover
+resultados,"cards grandes e mais técnicos","cards mais curtos e comparativo claro",reestruturar
+departamentos,"uma das muitas camadas da home","seção compacta após como funciona",manter
+guias,"blog misturado com outras áreas","3 cards editoriais curtos",consolidar
+rodape,"mensagem genérica","mensagem objetiva com escopo real do produto",reescrever
