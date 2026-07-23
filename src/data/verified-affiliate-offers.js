@@ -46,6 +46,7 @@ export const VERIFIED_AFFILIATE_OFFERS = [
       "s26 ultra 256gb",
     ],
     verifiedAt: "2026-07-19T00:00:00.000Z",
+    lastCheckedAt: "2026-07-23T01:41:28.728Z",
   },
   {
     id: "verified-magalu-galaxy-s26-ultra-512gb",
@@ -140,6 +141,7 @@ export const VERIFIED_AFFILIATE_OFFERS = [
       "s26 ultra 256gb",
     ],
     verifiedAt: "2026-07-23T00:30:00.000Z",
+    lastCheckedAt: "2026-07-23T01:41:28.728Z",
   },
   {
     id: "verified-ml-iphone-17-pro-max-256gb",
@@ -187,6 +189,7 @@ export const VERIFIED_AFFILIATE_OFFERS = [
       "apple iphone 17 pro max",
     ],
     verifiedAt: "2026-07-19T00:00:00.000Z",
+    lastCheckedAt: "2026-07-23T01:41:28.728Z",
   },
   {
     id: "verified-amazon-iphone-17-pro-256gb",
@@ -232,6 +235,7 @@ export const VERIFIED_AFFILIATE_OFFERS = [
       "apple iphone 17 pro",
     ],
     verifiedAt: "2026-07-23T00:30:00.000Z",
+    lastCheckedAt: "2026-07-23T01:41:28.728Z",
   },
   {
     id: "verified-magalu-iphone-17-pro-max-256gb",
@@ -295,8 +299,21 @@ function toVerifiedDate(value) {
   return Number.isFinite(parsed.getTime()) ? parsed : null;
 }
 
+function resolveOfferFreshnessDate(offer = {}) {
+  const candidates = [
+    offer?.lastCheckedAt,
+    offer?.verifiedAt,
+    offer?.updatedAt,
+  ]
+    .map((value) => toVerifiedDate(value))
+    .filter(Boolean)
+    .sort((left, right) => right.getTime() - left.getTime());
+
+  return candidates[0] || null;
+}
+
 export function isVerifiedAffiliateOfferFresh(offer = {}, referenceDate = new Date()) {
-  const verifiedAt = toVerifiedDate(offer?.verifiedAt || offer?.lastCheckedAt || offer?.updatedAt);
+  const verifiedAt = resolveOfferFreshnessDate(offer);
   if (!verifiedAt) return false;
   const ageMs = referenceDate.getTime() - verifiedAt.getTime();
   return ageMs >= 0 && ageMs <= MAX_VERIFIED_OFFER_AGE_HOURS * 60 * 60 * 1000;

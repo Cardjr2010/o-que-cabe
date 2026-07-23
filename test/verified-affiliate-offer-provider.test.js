@@ -90,6 +90,19 @@ test("oferta verificada antiga deixa de aparecer mesmo com link manual", async (
   assert.equal(result.products.length, 0);
 });
 
+test("rechecagem recente reativa oferta sem fingir nova verificacao de preco", () => {
+  assert.equal(
+    isVerifiedAffiliateOfferFresh(
+      {
+        verifiedAt: "2026-07-19T00:00:00.000Z",
+        lastCheckedAt: "2026-07-23T01:41:28.728Z",
+      },
+      new Date("2026-07-23T12:00:00.000Z"),
+    ),
+    true,
+  );
+});
+
 test("fonte Magalu sai do fluxo automatico mesmo quando o link existe", async () => {
   assert.equal(
     isVerifiedAffiliateOfferAutomatedSourceAllowed({ sourceLabel: "magalu" }),
