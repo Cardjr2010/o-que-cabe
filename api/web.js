@@ -552,6 +552,7 @@ function getGoogleAnalyticsMeasurementId() {
     || process.env.GOOGLE_ANALYTICS_ID
     || process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
     || process.env.VITE_GA_MEASUREMENT_ID
+    || "G-RY4R9CD3CD"
     || "",
   ).trim();
 }
