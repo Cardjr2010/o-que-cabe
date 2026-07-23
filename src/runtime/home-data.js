@@ -4,6 +4,7 @@ import ProductIntelligenceEngine from "../catalog/ProductIntelligenceEngine.js";
 import SEOIntelligenceEngine from "../seo/SEOIntelligenceEngine.js";
 import { resolveCatalogSeedPath } from "./catalog-path.js";
 import { resolveProjectPath } from "./project-root.js";
+import { readCatalogRefreshMetadata } from "./catalog-refresh-metadata.js";
 import { listFreshVerifiedAffiliateOffers } from "../data/verified-affiliate-offers.js";
 import { OFFER_RADAR_TARGETS, findOfferRadarTarget, normalizeRadarText } from "../data/offer-radar-targets.js";
 import { buildCampaignCards } from "../data/offer-campaigns.js";
@@ -385,14 +386,18 @@ export function buildHomeCatalogData() {
     const catalogManager = getCatalogManager();
     const items = catalogManager.list();
     const catalogDiagnostics = catalogManager.diagnostics();
+    const refreshMetadata = readCatalogRefreshMetadata();
     const catalogForHome = getRealHomeCatalog(items);
     const analysis = getProductIntelligenceEngine().buildHomeData(catalogForHome);
     const seoEngine = getSEOIntelligenceEngine();
     const seoHotSearches = seoEngine.buildSeoHotSearches(6);
     const seoHomeButtons = seoEngine.buildHomeButtons(catalogForHome);
     const decisionHighlights = buildOfferRadarHighlights();
-    const catalogUpdatedAt = resolveCatalogUpdatedAt(catalogForHome);
-    const catalogFresh = isCatalogFreshEnough(catalogUpdatedAt, 7);
+    const catalogUpdatedAt = refreshMetadata?.refreshedAt || resolveCatalogUpdatedAt(catalogForHome);
+    const catalogFresh = refreshMetadata?.fresh === true || isCatalogFreshEnough(catalogUpdatedAt, 7);
+    const totalCatalogProducts = Number(refreshMetadata?.analyzedCount ?? catalogDiagnostics.rawCount ?? items.length);
+    const totalPublishedProducts = Number(refreshMetadata?.publishedCount ?? catalogDiagnostics.publishedCount ?? items.length);
+    const hiddenProducts = Number(refreshMetadata?.hiddenCount ?? catalogDiagnostics.hiddenProducts ?? 0);
     const activeCampaigns = buildCampaignCards();
     const visibleCampaigns = catalogFresh ? activeCampaigns : [];
     const menu = [
@@ -436,9 +441,9 @@ export function buildHomeCatalogData() {
     return {
       ok: true,
       totalProducts: items.length,
-      totalCatalogProducts: catalogDiagnostics.rawCount ?? items.length,
-      totalPublishedProducts: catalogDiagnostics.publishedCount ?? items.length,
-      hiddenProducts: catalogDiagnostics.hiddenProducts ?? 0,
+      totalCatalogProducts,
+      totalPublishedProducts,
+      hiddenProducts,
       analyzedProducts: analysis.analyzedProducts || catalogForHome.length,
       catalogUpdatedAt,
       catalogFresh,
@@ -469,12 +474,13 @@ export function buildHomeCatalogData() {
       afterOutros: analysis.afterOutros ?? 0,
       catalogSummary: {
         seedUsed: catalogDiagnostics.seedPath || "",
-        rawCount: catalogDiagnostics.rawCount ?? 0,
-        publishedCount: catalogDiagnostics.publishedCount ?? items.length,
-        hiddenProducts: catalogDiagnostics.hiddenProducts ?? 0,
+        rawCount: totalCatalogProducts,
+        publishedCount: totalPublishedProducts,
+        hiddenProducts,
         filteredCount: catalogDiagnostics.filteredCount ?? 0,
         filterReasons: Array.isArray(catalogDiagnostics.filterReasons) ? catalogDiagnostics.filterReasons : [],
         sourceCounts: Array.isArray(catalogDiagnostics.sourceCounts) ? catalogDiagnostics.sourceCounts : [],
+        refreshMetadata,
       },
     };
   } catch (error) {

@@ -651,6 +651,11 @@ function matchProductType(product = {}, queryCategory = "", accessoryIntent = fa
     product.description,
     product.compatibility,
   ].filter(Boolean).join(" "));
+  const titleText = normalizeText([
+    product.displayTitle,
+    product.originalTitle,
+    product.title,
+  ].filter(Boolean).join(" "));
 
   const isAccessory = Boolean(intelligence.isAccessory ?? product.isAccessory)
     || ["accessory", "piece", "compatible"].includes(productType)
@@ -668,7 +673,7 @@ function matchProductType(product = {}, queryCategory = "", accessoryIntent = fa
     return /\b(roteador|router|mesh|wifi|wi-fi|tp-link|deco|archer)\b/.test(`${text} ${productCategory} ${productDepartment} ${productSubcategory}`);
   }
   if (queryKey === "ferramenta") {
-    return !isAccessory && /\b(ferramenta|furadeira|parafusadeira|serra|alicate|martelete|martelo)\b/.test(`${text} ${productCategory} ${productDepartment} ${productSubcategory}`);
+    return !isAccessory && /\b(ferramenta|furadeira|parafusadeira|serra|alicate|martelete|martelo)\b/.test(titleText);
   }
   if (queryKey === "flores e presentes" || queryKey === "presente") {
     return /\b(flor|flores|buque|buquê|bouquet|rosa|cesta|presente|presentes|chocolate)\b/.test(`${text} ${productCategory} ${productDepartment} ${productSubcategory}`);

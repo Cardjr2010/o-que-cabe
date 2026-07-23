@@ -111,12 +111,14 @@ test("/api/search expõe insights de mercado no produto e no advisor", async () 
 
   try {
     const res = createResponse();
-    await handler({ url: "/api/search?q=iphone&mode=total&totalBudget=5000" }, res);
+    await handler({ url: "/api/search?q=celular&mode=total&totalBudget=1500" }, res);
     const body = parseBody(res);
 
     assert.equal(res.statusCode, 200);
     assert.equal(body.ok, true);
     assert.equal(body.dataMode, "real");
+    assert.ok(Array.isArray(body.products));
+    assert.ok(body.products.length > 0);
     assert.ok(body.products[0].market);
     assert.ok(body.products[0].market.priceIndicator);
     assert.ok(body.advisor.market);

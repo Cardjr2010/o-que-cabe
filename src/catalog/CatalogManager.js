@@ -98,13 +98,15 @@ function looksLikeAccessory(item = {}) {
 }
 
 function sourceKey(item = {}) {
-  return String([
-    item.marketplace,
-    item.source,
-    item.sourceType,
-    item.seller,
-    item.store,
-  ].filter(Boolean).join(" ") || "unknown").trim() || "unknown";
+  return String(
+    item.sourceName
+    || item.store
+    || item.seller
+    || item.marketplace
+    || item.source
+    || item.sourceType
+    || "unknown",
+  ).trim() || "unknown";
 }
 
 function isVisibleSource(item = {}) {

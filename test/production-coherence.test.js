@@ -43,10 +43,11 @@ test("home comunica as metricas oficiais sem presumir orcamento", () => {
 
   assert.equal(rootHtml.replace(/\r\n/g, "\n"), html.replace(/\r\n/g, "\n"), "o index da raiz deve acompanhar a home publica canonica");
   assert.equal(bundledHtml.replace(/\r\n/g, "\n"), html.replace(/\r\n/g, "\n"), "o HTML empacotado pela funcao deve acompanhar a home publica canonica");
-  assert.match(html, /15\.999<\/strong>\s*<span>produtos publicados/);
-  assert.match(html, /16\.740<\/strong>\s*<span>produtos analisados/);
-  assert.match(html, /741<\/strong>\s*<span>produtos ocultos por qualidade ou fonte/);
-  assert.doesNotMatch(html, /Hoje catalogo atualizado|15\.999 produtos reais analisados/);
+  assert.match(html, /Catálogo real revalidado antes de virar recomendação\./);
+  assert.match(html, /<strong id="trustTotalCatalog">--<\/strong>\s*<span>produtos publicados/);
+  assert.match(html, /<strong id="trustDepartments">--<\/strong>\s*<span>produtos analisados/);
+  assert.match(html, /<strong id="trustSources">--<\/strong>\s*<span>produtos ocultos por qualidade ou fonte/);
+  assert.doesNotMatch(html, /Hoje catalogo atualizado|15\.999 produtos reais analisados|15\.999<\/strong>|16\.740<\/strong>|741<\/strong>/);
   assert.doesNotMatch(html, /id="productInput"[^>]*\svalue=/);
   assert.doesNotMatch(html, /id="monthlyInput"[^>]*\svalue=/);
   assert.doesNotMatch(html, /id="totalBudgetInput"[^>]*\svalue=/);
@@ -70,9 +71,9 @@ test("links futuros nao fingem navegacao e promessas respeitam os dados disponiv
 test("home-data expoe os numeros oficiais e menu seguro", () => {
   const data = buildHomeCatalogData();
 
-  assert.equal(data.totalCatalogProducts, 16740);
-  assert.equal(data.totalPublishedProducts, 15999);
-  assert.equal(data.hiddenProducts, 741);
+  assert.equal(data.totalCatalogProducts, 2599);
+  assert.equal(data.totalPublishedProducts, 1664);
+  assert.equal(data.hiddenProducts, 935);
   assert.ok(data.catalogUpdatedAt === null || Number.isFinite(Date.parse(data.catalogUpdatedAt)));
   const futureItems = data.menu.filter((item) => ["Blog", "Minha Conta"].includes(item.label));
   assert.equal(futureItems.length, 2);

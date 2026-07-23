@@ -27,6 +27,7 @@ import { GoogleMerchantProductsAdapter } from "../src/adapters/GoogleMerchantPro
 import { buildHomeCatalogData } from "../src/runtime/home-data.js";
 import { projectRoot, resolveProjectPath } from "../src/runtime/project-root.js";
 import { resolveCatalogSeedPath, getCatalogSeedCandidates } from "../src/runtime/catalog-path.js";
+import { readCatalogRefreshMetadata } from "../src/runtime/catalog-refresh-metadata.js";
 
 const root = projectRoot;
 const bundledPublicDir = resolveProjectPath("api", "static");
@@ -682,6 +683,7 @@ function getCatalogHealthSnapshot() {
     const catalogManager = getCatalogManager();
     const items = catalogManager.list();
     const diagnostics = catalogManager.diagnostics();
+    const refreshMetadata = readCatalogRefreshMetadata();
     const sample = items.slice(0, 3).map((item) => ({
       id: item?.id || "",
       title: item?.title || "",
@@ -699,14 +701,17 @@ function getCatalogHealthSnapshot() {
     return {
       catalogLoaded: true,
       catalogCount: items.length,
-      totalCatalogProducts: diagnostics.rawCount ?? items.length,
-      totalPublishedProducts: diagnostics.publishedCount ?? items.length,
-      hiddenProducts: diagnostics.hiddenProducts ?? 0,
+      totalCatalogProducts: Number(refreshMetadata?.analyzedCount ?? diagnostics.rawCount ?? items.length),
+      totalPublishedProducts: Number(refreshMetadata?.publishedCount ?? diagnostics.publishedCount ?? items.length),
+      hiddenProducts: Number(refreshMetadata?.hiddenCount ?? diagnostics.hiddenProducts ?? 0),
       filteredCount: diagnostics.filteredCount ?? 0,
       filterReasons: Array.isArray(diagnostics.filterReasons) ? diagnostics.filterReasons : [],
       sourceCounts: Array.isArray(diagnostics.sourceCounts) ? diagnostics.sourceCounts : [],
       seedUsed: diagnostics.seedUsed || diagnostics.seedPath || "",
       seedCandidates: Array.isArray(diagnostics.seedCandidates) ? diagnostics.seedCandidates : [],
+      catalogUpdatedAt: refreshMetadata?.refreshedAt || null,
+      catalogFresh: refreshMetadata?.fresh === true,
+      refreshMetadata,
       sample,
       schemaErrors,
       error: "",
@@ -748,6 +753,7 @@ function buildCatalogStatsSnapshot() {
   const rawItems = catalogManager.getRawItems();
   const publishedItems = catalogManager.list();
   const diagnostics = catalogManager.diagnostics();
+  const refreshMetadata = readCatalogRefreshMetadata();
   const enriched = getProductIntelligenceEngine().enrichCatalog(publishedItems);
 
   const departmentCounts = buildCountSummary(enriched, "department", 20);
@@ -762,9 +768,11 @@ function buildCatalogStatsSnapshot() {
     ok: true,
     seedUsed: diagnostics.seedUsed || diagnostics.seedPath || "",
     seedCandidates: Array.isArray(diagnostics.seedCandidates) ? diagnostics.seedCandidates : [],
-    totalProducts: rawItems.length,
-    productsPublished: publishedItems.length,
-    productsHidden: diagnostics.hiddenProducts ?? 0,
+    totalProducts: refreshMetadata?.analyzedCount ?? rawItems.length,
+    productsPublished: refreshMetadata?.publishedCount ?? publishedItems.length,
+    productsHidden: refreshMetadata?.hiddenCount ?? diagnostics.hiddenProducts ?? 0,
+    catalogUpdatedAt: refreshMetadata?.refreshedAt || null,
+    catalogFresh: typeof refreshMetadata?.fresh === "boolean" ? refreshMetadata.fresh : false,
     totalBrands: brandCounts.total,
     totalCategories: categoryCounts.total,
     principalProducts: principalCount,
