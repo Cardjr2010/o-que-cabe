@@ -162,7 +162,6 @@ function buildOfferRadarHighlights() {
     const matchingOffers = freshOffers
       .filter((offer) => {
         const match = findOfferRadarTarget([
-          target.query,
           offer.displayTitle,
           offer.title,
           offer.brand,

@@ -17,7 +17,9 @@ test("home data expõe catálogo real e departamentos coerentes", () => {
   assert.ok(categories.length > 0);
   assert.ok(Array.isArray(data.shortcuts));
   assert.ok(Array.isArray(data.decisionHighlights));
-  assert.equal(data.decisionHighlights.length, 0);
+  assert.ok(data.decisionHighlights.length >= 2);
+  assert.ok(data.decisionHighlights.some((entry) => String(entry.query || "").includes("iphone 17 pro 256gb")));
+  assert.ok(data.decisionHighlights.some((entry) => String(entry.query || "").includes("galaxy s26 ultra 256gb")));
   assert.ok(Array.isArray(data.activeCampaigns));
   assert.ok(data.activeCampaigns.length === 0);
   assert.equal(data.catalogFresh, false);

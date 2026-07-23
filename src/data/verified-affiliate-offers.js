@@ -139,7 +139,7 @@ export const VERIFIED_AFFILIATE_OFFERS = [
       "s26 ultra",
       "s26 ultra 256gb",
     ],
-    verifiedAt: "2026-07-19T00:00:00.000Z",
+    verifiedAt: "2026-07-23T00:30:00.000Z",
   },
   {
     id: "verified-ml-iphone-17-pro-max-256gb",
@@ -231,7 +231,7 @@ export const VERIFIED_AFFILIATE_OFFERS = [
       "iphone 17 pro 256gb",
       "apple iphone 17 pro",
     ],
-    verifiedAt: "2026-07-19T00:00:00.000Z",
+    verifiedAt: "2026-07-23T00:30:00.000Z",
   },
   {
     id: "verified-magalu-iphone-17-pro-max-256gb",
@@ -282,6 +282,12 @@ export const VERIFIED_AFFILIATE_OFFERS = [
 ];
 
 const MAX_VERIFIED_OFFER_AGE_HOURS = 72;
+const BLOCKED_AUTOMATED_VERIFIED_OFFER_SOURCES = new Set([
+  "magalu",
+  "magazinevoce",
+  "magazine voce",
+  "magazine_voce",
+]);
 
 function toVerifiedDate(value) {
   if (!value) return null;
@@ -296,6 +302,26 @@ export function isVerifiedAffiliateOfferFresh(offer = {}, referenceDate = new Da
   return ageMs >= 0 && ageMs <= MAX_VERIFIED_OFFER_AGE_HOURS * 60 * 60 * 1000;
 }
 
+export function isVerifiedAffiliateOfferAutomatedSourceAllowed(offer = {}) {
+  const source = String(
+    offer?.sourceName
+    || offer?.sourceLabel
+    || offer?.seller?.name
+    || offer?.store
+    || offer?.source
+    || "",
+  )
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+
+  return !BLOCKED_AUTOMATED_VERIFIED_OFFER_SOURCES.has(source);
+}
+
 export function listFreshVerifiedAffiliateOffers(referenceDate = new Date()) {
-  return VERIFIED_AFFILIATE_OFFERS.filter((offer) => isVerifiedAffiliateOfferFresh(offer, referenceDate));
+  return VERIFIED_AFFILIATE_OFFERS.filter((offer) => (
+    isVerifiedAffiliateOfferFresh(offer, referenceDate)
+    && isVerifiedAffiliateOfferAutomatedSourceAllowed(offer)
+  ));
 }

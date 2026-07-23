@@ -1,5 +1,9 @@
 import { normalizeText, scoreProductMatch } from "../catalog/ProductNormalizer.js";
-import { VERIFIED_AFFILIATE_OFFERS, isVerifiedAffiliateOfferFresh } from "../data/verified-affiliate-offers.js";
+import {
+  VERIFIED_AFFILIATE_OFFERS,
+  isVerifiedAffiliateOfferAutomatedSourceAllowed,
+  isVerifiedAffiliateOfferFresh,
+} from "../data/verified-affiliate-offers.js";
 import { isScreenedOfferVisible } from "../data/offer-campaigns.js";
 
 function toNumber(value, fallback = 0) {
@@ -65,7 +69,11 @@ export default class VerifiedAffiliateOfferProvider {
   }
 
   getDiagnostics() {
-    const visibleOffers = this.offers.filter((offer) => isScreenedOfferVisible(offer) && isVerifiedAffiliateOfferFresh(offer));
+    const visibleOffers = this.offers.filter((offer) => (
+      isScreenedOfferVisible(offer)
+      && isVerifiedAffiliateOfferFresh(offer)
+      && isVerifiedAffiliateOfferAutomatedSourceAllowed(offer)
+    ));
     return {
       configured: visibleOffers.length > 0,
       hasCatalog: visibleOffers.length > 0,
@@ -79,7 +87,11 @@ export default class VerifiedAffiliateOfferProvider {
     const limit = Math.max(1, toNumber(options.limit, 12));
     const normalizedQuery = normalizeText(query);
     const ranked = this.offers
-      .filter((offer) => isScreenedOfferVisible(offer) && isVerifiedAffiliateOfferFresh(offer))
+      .filter((offer) => (
+        isScreenedOfferVisible(offer)
+        && isVerifiedAffiliateOfferFresh(offer)
+        && isVerifiedAffiliateOfferAutomatedSourceAllowed(offer)
+      ))
       .map((offer) => ({
         ...offer,
         matchScore: offerSearchScore(offer, normalizedQuery),
