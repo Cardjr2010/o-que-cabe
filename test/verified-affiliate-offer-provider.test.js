@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import VerifiedAffiliateOfferProvider from "../src/providers/VerifiedAffiliateOfferProvider.js";
 import { isScreenedOfferVisible, listActiveOfferCampaigns } from "../src/data/offer-campaigns.js";
+import { isVerifiedAffiliateOfferFresh } from "../src/data/verified-affiliate-offers.js";
 
 test("campanha capturada por screener respeita a data de validade", () => {
   const activeOnDay = listActiveOfferCampaigns(new Date("2026-07-20T12:00:00-03:00"));
@@ -34,6 +35,7 @@ test("oferta verificada com janela expirada nao entra na busca", async () => {
         category: "celular",
         normalizedCategory: "celular",
         visibleUntil: "2026-07-23T23:59:59-03:00",
+        verifiedAt: "2026-07-20T12:00:00-03:00",
         affiliateUrl: "https://example.com/active",
       },
     ],
@@ -54,4 +56,33 @@ test("isScreenedOfferVisible aceita oferta sem janela e bloqueia janela futura",
     ),
     false,
   );
+});
+
+test("oferta verificada antiga deixa de aparecer mesmo com link manual", async () => {
+  assert.equal(
+    isVerifiedAffiliateOfferFresh(
+      { verifiedAt: "2026-07-19T00:00:00.000Z" },
+      new Date("2026-07-23T12:00:00.000Z"),
+    ),
+    false,
+  );
+
+  const provider = new VerifiedAffiliateOfferProvider({
+    offers: [
+      {
+        id: "offer-stale",
+        title: "Apple iPhone 17 Pro Max 256GB",
+        displayTitle: "Apple iPhone 17 Pro Max 256GB",
+        brand: "Apple",
+        model: "iPhone 17 Pro Max 256GB",
+        category: "celular",
+        normalizedCategory: "celular",
+        verifiedAt: "2026-07-19T00:00:00.000Z",
+        affiliateUrl: "https://example.com/stale",
+      },
+    ],
+  });
+
+  const result = await provider.searchProducts("iphone 17 pro max", { limit: 10 });
+  assert.equal(result.products.length, 0);
 });

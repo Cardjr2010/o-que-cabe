@@ -280,3 +280,22 @@ export const VERIFIED_AFFILIATE_OFFERS = [
     verifiedAt: "2026-07-19T00:00:00.000Z",
   },
 ];
+
+const MAX_VERIFIED_OFFER_AGE_HOURS = 72;
+
+function toVerifiedDate(value) {
+  if (!value) return null;
+  const parsed = new Date(value);
+  return Number.isFinite(parsed.getTime()) ? parsed : null;
+}
+
+export function isVerifiedAffiliateOfferFresh(offer = {}, referenceDate = new Date()) {
+  const verifiedAt = toVerifiedDate(offer?.verifiedAt || offer?.lastCheckedAt || offer?.updatedAt);
+  if (!verifiedAt) return false;
+  const ageMs = referenceDate.getTime() - verifiedAt.getTime();
+  return ageMs >= 0 && ageMs <= MAX_VERIFIED_OFFER_AGE_HOURS * 60 * 60 * 1000;
+}
+
+export function listFreshVerifiedAffiliateOffers(referenceDate = new Date()) {
+  return VERIFIED_AFFILIATE_OFFERS.filter((offer) => isVerifiedAffiliateOfferFresh(offer, referenceDate));
+}

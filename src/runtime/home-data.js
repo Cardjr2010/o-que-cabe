@@ -4,7 +4,7 @@ import ProductIntelligenceEngine from "../catalog/ProductIntelligenceEngine.js";
 import SEOIntelligenceEngine from "../seo/SEOIntelligenceEngine.js";
 import { resolveCatalogSeedPath } from "./catalog-path.js";
 import { resolveProjectPath } from "./project-root.js";
-import { VERIFIED_AFFILIATE_OFFERS } from "../data/verified-affiliate-offers.js";
+import { listFreshVerifiedAffiliateOffers } from "../data/verified-affiliate-offers.js";
 import { OFFER_RADAR_TARGETS, findOfferRadarTarget, normalizeRadarText } from "../data/offer-radar-targets.js";
 import { buildCampaignCards } from "../data/offer-campaigns.js";
 
@@ -157,8 +157,9 @@ const FEATURED_VIDEO_GUIDES = [
 ];
 
 function buildOfferRadarHighlights() {
+  const freshOffers = listFreshVerifiedAffiliateOffers();
   return OFFER_RADAR_TARGETS.map((target) => {
-    const matchingOffers = VERIFIED_AFFILIATE_OFFERS
+    const matchingOffers = freshOffers
       .filter((offer) => {
         const match = findOfferRadarTarget([
           target.query,
