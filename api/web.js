@@ -565,9 +565,30 @@ function getGoogleSiteVerificationValue() {
   ).trim();
 }
 
+function findStaticGoogleVerificationFile() {
+  const candidates = [
+    resolveProjectPath("api", "static"),
+    resolveProjectPath("public"),
+    resolveProjectPath(),
+  ];
+  for (const baseDir of candidates) {
+    if (!fs.existsSync(baseDir)) continue;
+    const match = fs.readdirSync(baseDir).find((fileName) => /^google[a-z0-9]+\.html$/i.test(fileName));
+    if (match) {
+      const filePath = path.join(baseDir, match);
+      const body = fs.readFileSync(filePath, "utf8");
+      return {
+        fileName: match,
+        body,
+      };
+    }
+  }
+  return null;
+}
+
 function buildGoogleVerificationFile() {
   const raw = getGoogleSiteVerificationValue();
-  if (!raw) return null;
+  if (!raw) return findStaticGoogleVerificationFile();
   const normalized = raw.endsWith(".html")
     ? raw
     : raw.startsWith("google")
