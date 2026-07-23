@@ -392,8 +392,9 @@ export function buildHomeCatalogData() {
     const seoHomeButtons = seoEngine.buildHomeButtons(catalogForHome);
     const decisionHighlights = buildOfferRadarHighlights();
     const catalogUpdatedAt = resolveCatalogUpdatedAt(catalogForHome);
+    const catalogFresh = isCatalogFreshEnough(catalogUpdatedAt, 7);
     const activeCampaigns = buildCampaignCards();
-    const visibleCampaigns = isCatalogFreshEnough(catalogUpdatedAt, 7) ? activeCampaigns : [];
+    const visibleCampaigns = catalogFresh ? activeCampaigns : [];
     const menu = [
       { label: "Início", href: "/", active: true },
       { label: "Departamentos", href: "#departments", active: true },
@@ -407,6 +408,7 @@ export function buildHomeCatalogData() {
     const curatedDepartments = buildCuratedHomeItems(publicCollections, publicCollections);
     const topCategories = categories;
     const shortcuts = Array.isArray(analysis.shortcuts) ? analysis.shortcuts : [];
+    const visibleShortcuts = catalogFresh ? shortcuts : [];
     const activeSources = [...new Map(
       catalogForHome
         .map((item) => normalizedCatalogCategoryKey(item?.source || item?.marketplace || item?.seller || ""))
@@ -418,6 +420,18 @@ export function buildHomeCatalogData() {
     ).values()]
       .sort((a, b) => b.count - a.count)
       .slice(0, 8);
+    const visibleActiveSources = catalogFresh ? activeSources : [];
+    const visibleBrandSummary = catalogFresh && Array.isArray(analysis.brandSummary) ? analysis.brandSummary.slice(0, 8) : [];
+    const visibleTopBrands = catalogFresh && Array.isArray(analysis.topBrands) ? analysis.topBrands.slice(0, 8) : [];
+    const visibleMarketplaceSummary = catalogFresh && Array.isArray(analysis.marketplaceSummary)
+      ? analysis.marketplaceSummary.map((item) => ({
+          marketplace: item.source || item.marketplace || "",
+          count: item.count,
+          categories: item.categories || [],
+          sellers: item.sellers || [],
+        })).slice(0, 8)
+      : [];
+    const visibleSellerSummary = catalogFresh && Array.isArray(analysis.sellerSummary) ? analysis.sellerSummary.slice(0, 8) : [];
 
     return {
       ok: true,
@@ -427,7 +441,7 @@ export function buildHomeCatalogData() {
       hiddenProducts: catalogDiagnostics.hiddenProducts ?? 0,
       analyzedProducts: analysis.analyzedProducts || catalogForHome.length,
       catalogUpdatedAt,
-      catalogFresh: isCatalogFreshEnough(catalogUpdatedAt, 7),
+      catalogFresh,
       focusLabel: analysis.focusLabel || "Consultor de compras",
       menu,
       categories,
@@ -435,27 +449,20 @@ export function buildHomeCatalogData() {
       departments: curatedDepartments,
       topDepartments: curatedDepartments,
       topCategories,
-      topSources: activeSources,
+      topSources: visibleActiveSources,
       searchCategories: homeButtons.length ? homeButtons : curatedDepartments,
       departmentCategories: curatedDepartments,
       decisionHighlights,
       activeCampaigns: visibleCampaigns,
-      pechinchas: shortcuts,
-      shortcuts,
+      pechinchas: visibleShortcuts,
+      shortcuts: visibleShortcuts,
       seoHotSearches,
       featuredVideos: FEATURED_VIDEO_GUIDES,
-      activeSources,
-      marketplaceSummary: Array.isArray(analysis.marketplaceSummary)
-        ? analysis.marketplaceSummary.map((item) => ({
-          marketplace: item.source || item.marketplace || "",
-          count: item.count,
-          categories: item.categories || [],
-          sellers: item.sellers || [],
-        })).slice(0, 8)
-        : [],
-      sellerSummary: Array.isArray(analysis.sellerSummary) ? analysis.sellerSummary.slice(0, 8) : [],
-      brandSummary: Array.isArray(analysis.brandSummary) ? analysis.brandSummary.slice(0, 8) : [],
-      topBrands: Array.isArray(analysis.topBrands) ? analysis.topBrands.slice(0, 8) : [],
+      activeSources: visibleActiveSources,
+      marketplaceSummary: visibleMarketplaceSummary,
+      sellerSummary: visibleSellerSummary,
+      brandSummary: visibleBrandSummary,
+      topBrands: visibleTopBrands,
       departmentSummary: curatedDepartments,
       categorySummary: categories,
       beforeOutros: analysis.beforeOutros ?? 0,

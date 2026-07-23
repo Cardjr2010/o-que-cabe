@@ -1,115 +1,78 @@
-# Relatório — Regressões Pendentes OQC
+## Relatório de regressões pendentes OQC
 
-Data: 22/07/2026
-Branch base: `origin/main`
-Branch de trabalho: `release/visual-polish-0722`
+Data: 23/07/2026
 
-## Resumo
+### Escopo auditado
 
-- O preview `preview/redesign-oqc-clear-decisions` existe na Vercel.
-- A validação visual automática do preview ficou bloqueada por autenticação da própria Vercel.
-- Foi criado um worktree limpo em cima de `origin/main` para evitar arrastar resíduos do worktree antigo.
-- A suíte reproduziu 15 falhas reais nesse branch limpo.
-- As 15 falhas foram resolvidas sem reabrir regressões visuais aprovadas.
-- Resultado final:
-  - `node --test`: 147/147
-  - `node --check public/app.js`: OK
-  - `node --check api/web.js`: OK
-  - `node --check server.mjs`: OK
-  - `node --check src/engines/RankingEngine.js`: OK
+- Domínio público em `e8d16dc413b7955abc7ffd9bfdda422cfc5e107d`
+- Home pública
+- `/api/home-data`
+- buscas críticas de catálogo vivo
 
-## Causa das 15 falhas
+### Problemas reais encontrados
 
-### 1. Testes desatualizados após endurecimento do catálogo
+1. A home ainda expunha sinais derivados de catálogo velho:
+   - atalhos/pechinchas antigos;
+   - chips de fontes e marcas a partir de uma base desatualizada;
+   - esses blocos ainda apareciam mesmo com `catalogFresh = false`.
 
-Impacto:
-- `test/catalog-manager.test.js`
-- `test/csv-product-importer.test.js`
-- `test/feed-provider.test.js`
-- `test/marketplace-provider.test.js`
-- `test/product-importer.test.js`
+2. A busca estrita de produto comercial ainda aceitava matches frouxos:
+   - consulta `iphone 17 pro max 256gb`;
+   - produto antigo como `iPhone 7` podia entrar por coincidência textual.
 
-Problema:
-- os testes ainda assumiam `Mercado Livre` e `Mi Shop` como fontes públicas válidas no catálogo principal;
-- o runtime atual filtra essas fontes da superfície pública;
-- algumas expectativas ainda apontavam para links genéricos ou marketplaces hoje ocultos.
+### Causa raiz
 
-Correção:
-- alinhei fixtures e expectativas para fontes públicas realmente visíveis;
-- mantive o comportamento do runtime, só corrigi a suíte.
+1. `src/runtime/home-data.js`
+   - a API já sabia que o catálogo não estava fresco;
+   - mesmo assim continuava retornando atalhos, fontes e marcas derivadas desse estado.
 
-### 2. Divergência entre integração atual do Mercado Livre e o branch limpo
+2. `src/search/SearchOrchestrator.js`
+   - o contador de hits usava substring simples;
+   - token curto como `pro` batia em palavras irrelevantes e inflava o match.
 
-Impacto:
-- `src/connectors/MercadoLivreConnector.js`
-- `src/providers/MercadoLivreProvider.js`
-- `src/catalog/CategoryBuilder.js`
+### Correções aplicadas
 
-Problema:
-- o branch limpo em cima de `origin/main` ainda não tinha parte dos ajustes já presentes no outro worktree;
-- isso afetava normalização, rótulo da origem, suporte a `itemId`, `freeShipping`, `sellerReputation` e cobertura de `Info Store`.
+1. Home stale-safe
+   - quando `catalogFresh = false`, a home agora oculta:
+     - `shortcuts`;
+     - `pechinchas`;
+     - `activeSources`;
+     - `topSources`;
+     - `brandSummary`;
+     - `topBrands`;
+     - `marketplaceSummary`;
+     - `sellerSummary`.
 
-Correção:
-- trouxe apenas os arquivos necessários para o branch limpo;
-- mantive o desenho visual já aprovado.
+2. Busca com match mais estrito
+   - o match de tokens passou a usar fronteira de palavra;
+   - isso impede que `iphone 7` apareça em uma busca exata por `iphone 17 pro max 256gb`.
 
-### 3. Testes presos em datas vencidas de campanha
+### Arquivos alterados
 
-Impacto:
-- `test/coupon-provider.test.js`
+- `src/runtime/home-data.js`
+- `src/search/SearchOrchestrator.js`
+- `test/home-data.test.js`
 - `test/search-orchestrator.test.js`
-- `test/verified-affiliate-offer-provider.test.js`
 
-Problema:
-- havia testes esperando cupom `VIPMELI` ativo mesmo após a janela real já ter expirado;
-- havia fixture de oferta “ativa” com `visibleUntil` já no passado em relação a 22/07/2026.
+### Validação executada
 
-Correção:
-- onde a intenção era testar cálculo de cupom, passei a fixture explícita do cupom verificado;
-- onde a intenção era testar comportamento atual da busca, atualizei a expectativa para campanha expirada;
-- onde a intenção era testar janela de visibilidade, corrigi a data do item ainda ativo.
+Comandos:
 
-### 4. Expectativa antiga de navegação após redesign da home
+```powershell
+node --test
+node --check public/app.js
+node --check api/web.js
+node --check server.mjs
+node --check src/engines/RankingEngine.js
+```
 
-Impacto:
-- `test/production-coherence.test.js`
+Resultado:
 
-Problema:
-- o teste ainda exigia link público de `Blog` na home;
-- a versão redesenhada usa `Guias` e remove navegação falsa do topo.
+- `149/149` testes aprovados
+- checks sintáticos aprovados
 
-Correção:
-- ajustei a expectativa para a navegação atual e mantive a regra importante:
-  - sem link falso;
-  - sem promessa exagerada;
-  - sem orçamento presumido.
+### Efeito esperado após publicação
 
-## Arquivos alterados
-
-- `src/catalog/CategoryBuilder.js`
-- `src/connectors/MercadoLivreConnector.js`
-- `src/providers/MercadoLivreProvider.js`
-- `test/catalog-manager.test.js`
-- `test/coupon-provider.test.js`
-- `test/csv-product-importer.test.js`
-- `test/feed-provider.test.js`
-- `test/google-merchant-adapter.test.js`
-- `test/marketplace-provider.test.js`
-- `test/product-importer.test.js`
-- `test/production-coherence.test.js`
-- `test/search-orchestrator.test.js`
-- `test/verified-affiliate-offer-provider.test.js`
-
-## Prova técnica
-
-Última validação executada no branch limpo:
-
-- `node --test` → 147 pass / 0 fail
-- `node --check public/app.js` → OK
-- `node --check api/web.js` → OK
-- `node --check server.mjs` → OK
-- `node --check src/engines/RankingEngine.js` → OK
-
-## Observação sobre preview
-
-O preview da Vercel foi localizado, mas a inspeção visual externa retornou a tela de login da própria Vercel, então a validação visual automatizada ficou bloqueada por proteção do deployment preview.
+1. A home pública deixa de mostrar sinais velhos de catálogo/cupom.
+2. Produtos comerciais antigos e irrelevantes deixam de vazar em buscas estritas.
+3. O domínio público fica mais honesto até a próxima revalidação real do catálogo.

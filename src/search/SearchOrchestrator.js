@@ -494,7 +494,12 @@ function getMeaningfulQueryTokens(text = "") {
 
 function countTokenHitsInText(text = "", tokens = []) {
   const haystack = normalizeRadarText(text);
-  return (Array.isArray(tokens) ? tokens : []).filter((token) => haystack.includes(normalizeRadarText(token))).length;
+  return (Array.isArray(tokens) ? tokens : []).filter((token) => {
+    const normalizedToken = normalizeRadarText(token);
+    if (!normalizedToken) return false;
+    const escaped = normalizedToken.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`(^|\\W)${escaped}(\\W|$)`).test(haystack);
+  }).length;
 }
 
 function getTrackedCommercialTarget(intent = {}) {

@@ -1328,7 +1328,7 @@ function renderProofSection(data = {}) {
   const topSources = Array.isArray(data.topSources) ? data.topSources.filter(Boolean).slice(0, 4) : [];
   const topBrands = Array.isArray(data.topBrands) ? data.topBrands.filter(Boolean).slice(0, 6) : [];
 
-  if (!publishedProducts && !topSources.length && !topBrands.length) {
+  if (!publishedProducts || (!topSources.length && !topBrands.length)) {
     proofSection.hidden = true;
     return;
   }
