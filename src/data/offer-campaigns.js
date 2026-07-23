@@ -12,6 +12,8 @@ function toDate(value) {
   return Number.isFinite(parsed.getTime()) ? parsed : null;
 }
 
+const MAX_CAMPAIGN_VERIFICATION_AGE_HOURS = 48;
+
 export const ACTIVE_OFFER_CAMPAIGNS = [
   {
     id: "magalu-pushfullsu-screened",
@@ -145,8 +147,18 @@ export function isCampaignActive(campaign = {}, referenceDate = new Date()) {
   return validUntil.getTime() >= referenceDate.getTime();
 }
 
+export function isCampaignFresh(campaign = {}, referenceDate = new Date()) {
+  const verifiedAt = toDate(campaign?.coupon?.verifiedAt || campaign?.verifiedAt);
+  if (!verifiedAt) return false;
+  const ageMs = referenceDate.getTime() - verifiedAt.getTime();
+  return ageMs >= 0 && ageMs <= MAX_CAMPAIGN_VERIFICATION_AGE_HOURS * 60 * 60 * 1000;
+}
+
 export function listActiveOfferCampaigns(referenceDate = new Date()) {
-  return ACTIVE_OFFER_CAMPAIGNS.filter((campaign) => isCampaignActive(campaign, referenceDate));
+  return ACTIVE_OFFER_CAMPAIGNS.filter((campaign) => (
+    isCampaignActive(campaign, referenceDate)
+    && isCampaignFresh(campaign, referenceDate)
+  ));
 }
 
 export function isScreenedOfferVisible(offer = {}, referenceDate = new Date()) {
@@ -189,4 +201,5 @@ export default {
   listActiveOfferCampaigns,
   resolveCampaignCouponForProduct,
   isScreenedOfferVisible,
+  isCampaignFresh,
 };

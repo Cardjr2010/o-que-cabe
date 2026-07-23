@@ -332,6 +332,13 @@ function resolveCatalogUpdatedAt(items = []) {
   return latest ? new Date(latest).toISOString() : null;
 }
 
+function isCatalogFreshEnough(updatedAt, maxAgeDays = 7) {
+  const timestamp = Date.parse(updatedAt || "");
+  if (!Number.isFinite(timestamp)) return false;
+  const ageMs = Date.now() - timestamp;
+  return ageMs >= 0 && ageMs <= maxAgeDays * 24 * 60 * 60 * 1000;
+}
+
 function buildPublicHomeCollections(items = []) {
   const groups = new Map();
 
@@ -384,7 +391,9 @@ export function buildHomeCatalogData() {
     const seoHotSearches = seoEngine.buildSeoHotSearches(6);
     const seoHomeButtons = seoEngine.buildHomeButtons(catalogForHome);
     const decisionHighlights = buildOfferRadarHighlights();
+    const catalogUpdatedAt = resolveCatalogUpdatedAt(catalogForHome);
     const activeCampaigns = buildCampaignCards();
+    const visibleCampaigns = isCatalogFreshEnough(catalogUpdatedAt, 7) ? activeCampaigns : [];
     const menu = [
       { label: "Início", href: "/", active: true },
       { label: "Departamentos", href: "#departments", active: true },
@@ -417,7 +426,8 @@ export function buildHomeCatalogData() {
       totalPublishedProducts: catalogDiagnostics.publishedCount ?? items.length,
       hiddenProducts: catalogDiagnostics.hiddenProducts ?? 0,
       analyzedProducts: analysis.analyzedProducts || catalogForHome.length,
-      catalogUpdatedAt: resolveCatalogUpdatedAt(catalogForHome),
+      catalogUpdatedAt,
+      catalogFresh: isCatalogFreshEnough(catalogUpdatedAt, 7),
       focusLabel: analysis.focusLabel || "Consultor de compras",
       menu,
       categories,
@@ -429,7 +439,7 @@ export function buildHomeCatalogData() {
       searchCategories: homeButtons.length ? homeButtons : curatedDepartments,
       departmentCategories: curatedDepartments,
       decisionHighlights,
-      activeCampaigns,
+      activeCampaigns: visibleCampaigns,
       pechinchas: shortcuts,
       shortcuts,
       seoHotSearches,
@@ -469,6 +479,7 @@ export function buildHomeCatalogData() {
       hiddenProducts: 0,
       analyzedProducts: 0,
       catalogUpdatedAt: null,
+      catalogFresh: false,
       focusLabel: "Consultor de compras",
       menu: [
         { label: "Início", href: "/", active: true },

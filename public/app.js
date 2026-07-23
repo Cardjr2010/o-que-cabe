@@ -1370,7 +1370,7 @@ function renderProofSection(data = {}) {
     proofSummaryStats.innerHTML = [
       `${formatCompactNumber(analyzedProducts, "0")} analisados`,
       `${formatCompactNumber(hiddenProducts, "0")} ocultos`,
-      data.catalogUpdatedAt ? "Catalogo com leitura recente" : "Catalogo ativo",
+      data.catalogFresh ? "Catalogo com leitura recente" : "Catalogo ativo",
     ].map((item) => `<span>${escapeHtml(item)}</span>`).join("");
   }
 
@@ -1538,11 +1538,14 @@ function renderTrustBand(data = {}) {
   if (trustUpdated) {
     const updatedAt = data.catalogUpdatedAt ? new Date(data.catalogUpdatedAt) : null;
     const validTimestamp = updatedAt && Number.isFinite(updatedAt.getTime());
-    trustUpdated.textContent = validTimestamp ? "Catálogo atualizado" : "Catálogo ativo";
+    const isFresh = Boolean(data.catalogFresh);
+    trustUpdated.textContent = validTimestamp && isFresh ? "Catálogo atualizado" : "Catálogo ativo";
     if (trustUpdatedLabel) {
-      trustUpdatedLabel.textContent = validTimestamp
+      trustUpdatedLabel.textContent = validTimestamp && isFresh
         ? `em ${updatedAt.toLocaleDateString("pt-BR")} às ${updatedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
-        : "status da base";
+        : validTimestamp
+          ? `última leitura em ${updatedAt.toLocaleDateString("pt-BR")}`
+          : "status da base";
     }
   }
 }
