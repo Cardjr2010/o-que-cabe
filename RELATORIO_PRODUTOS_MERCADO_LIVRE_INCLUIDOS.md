@@ -4,15 +4,15 @@ Data da auditoria: 24/07/2026
 
 ## Resumo
 
-Foram incluidos 4 produtos do Mercado Livre no fluxo de ofertas verificadas por parceiro/screener.
+Foram incluidos 6 produtos do Mercado Livre no fluxo de ofertas verificadas por parceiro/screener.
 
 O Mercado Livre via API oficial ainda nao esta operacional neste ambiente, porque as chamadas reais retornaram 403 sem token OAuth valido. Portanto, estes produtos foram incluidos como ofertas monitoradas por screener publico, com link direto de produto, preco, parcela e data de verificacao.
 
 ## Contagem atual
 
-- Ofertas totais no arquivo: 9
-- Ofertas frescas e publicaveis: 6
-- Mercado Livre publicavel: 4
+- Ofertas totais no arquivo: 11
+- Ofertas frescas e publicaveis: 8
+- Mercado Livre publicavel: 6
 - Amazon publicavel: 2
 - Magalu automatico: 0, mantido bloqueado por 403/captcha
 
@@ -24,6 +24,8 @@ O Mercado Livre via API oficial ainda nao esta operacional neste ambiente, porqu
 | Apple iPhone 17 Pro Max 256GB Azul-profundo | Mercado Livre | R$ 10.999,00 | 10x R$ 1.099,90 sem juros | Sim | Novo |
 | Samsung Galaxy S26 Ultra 256GB Azul - caixa aberta | Mercado Livre | R$ 7.450,00 | 10x R$ 745,00 sem juros | Sim | Novo |
 | Roteador Xiaomi BE6500 Pro Wi-Fi 7 | Mercado Livre | R$ 2.169,00 | 12x R$ 208,57 | Sim | Novo |
+| Roteador Xiaomi BE6500 Wi-Fi Mesh 6500 Mbps | Mercado Livre | R$ 895,49 | 10x R$ 89,55 sem juros | Sim | Novo |
+| Roteador Xiaomi BE6500 Wi-Fi Mesh 6500 Mbps | Mercado Livre | R$ 880,00 | 12x R$ 85,10 | Sim | Novo |
 
 ## Evidencia usada
 
@@ -35,7 +37,7 @@ O Mercado Livre via API oficial ainda nao esta operacional neste ambiente, porqu
 
 - Screener publico:
   - Busca externa encontrou paginas diretas do Mercado Livre com preco e parcela para iPhone 17 Pro Max.
-  - Busca externa encontrou pagina direta para Xiaomi BE6500 Pro.
+  - Busca externa encontrou paginas diretas para Xiaomi BE6500 e Xiaomi BE6500 Pro.
   - Busca externa encontrou pagina direta para Galaxy S26 Ultra 256GB caixa aberta.
 
 ## Resultado no OQC
@@ -60,8 +62,8 @@ Buscas locais pelo SearchOrchestrator:
 - `xiaomi be6500`
   - dataMode: real
   - fallbackUsed: true
-  - resultados: 1
-  - Mercado Livre: 1 oferta
+  - resultados: 3
+  - Mercado Livre: 3 ofertas
 
 ## Correcoes de qualidade
 
