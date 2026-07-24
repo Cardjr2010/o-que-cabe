@@ -320,6 +320,19 @@ function labelHomeSource(value = "") {
   return String(value || "").replace(/\s+/g, " ").trim();
 }
 
+function buildRefreshSourceSummary(refreshMetadata = null) {
+  const entries = Array.isArray(refreshMetadata?.activeSourceCounts) ? refreshMetadata.activeSourceCounts : [];
+  return entries
+    .map((entry) => ({
+      source: labelHomeSource(entry?.label || entry?.source || ""),
+      count: Number(entry?.publishedCount || 0),
+      analyzedCount: Number(entry?.analyzedCount || 0),
+      hiddenCount: Number(entry?.hiddenCount || 0),
+    }))
+    .filter((entry) => entry.count > 0 || entry.analyzedCount > 0)
+    .sort((a, b) => b.count - a.count || b.analyzedCount - a.analyzedCount || a.source.localeCompare(b.source, "pt-BR"));
+}
+
 function resolveCatalogUpdatedAt(items = []) {
   const now = Date.now();
   let latest = 0;
@@ -414,7 +427,7 @@ export function buildHomeCatalogData() {
     const topCategories = categories;
     const shortcuts = Array.isArray(analysis.shortcuts) ? analysis.shortcuts : [];
     const visibleShortcuts = catalogFresh ? shortcuts : [];
-    const activeSources = [...new Map(
+    const activeSourcesFromCatalog = [...new Map(
       catalogForHome
         .map((item) => normalizedCatalogCategoryKey(item?.source || item?.marketplace || item?.seller || ""))
         .filter(Boolean)
@@ -425,6 +438,9 @@ export function buildHomeCatalogData() {
     ).values()]
       .sort((a, b) => b.count - a.count)
       .slice(0, 8);
+    const activeSources = buildRefreshSourceSummary(refreshMetadata).length
+      ? buildRefreshSourceSummary(refreshMetadata).slice(0, 8)
+      : activeSourcesFromCatalog;
     const visibleActiveSources = catalogFresh ? activeSources : [];
     const visibleBrandSummary = catalogFresh && Array.isArray(analysis.brandSummary) ? analysis.brandSummary.slice(0, 8) : [];
     const visibleTopBrands = catalogFresh && Array.isArray(analysis.topBrands) ? analysis.topBrands.slice(0, 8) : [];

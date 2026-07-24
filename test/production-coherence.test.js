@@ -75,6 +75,9 @@ test("home-data expoe os numeros oficiais e menu seguro", () => {
   assert.equal(data.totalPublishedProducts, 1664);
   assert.equal(data.hiddenProducts, 935);
   assert.ok(data.catalogUpdatedAt === null || Number.isFinite(Date.parse(data.catalogUpdatedAt)));
+  assert.ok(Array.isArray(data.topSources));
+  assert.equal(data.topSources[0].source, "Info Store - Informática");
+  assert.equal(data.topSources[0].count, 1462);
   const futureItems = data.menu.filter((item) => ["Blog", "Minha Conta"].includes(item.label));
   assert.equal(futureItems.length, 2);
   assert.ok(futureItems.every((item) => item.future === true && item.active === false && item.href === ""));

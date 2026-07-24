@@ -26,6 +26,8 @@ test("home data expõe catálogo real e departamentos coerentes", () => {
   assert.equal(data.catalogFresh, true);
   assert.ok(Array.isArray(data.activeSources));
   assert.ok(data.activeSources.length > 0);
+  assert.equal(data.activeSources[0].source, "Info Store - Informática");
+  assert.equal(data.activeSources[0].count, 1462);
   assert.ok(Array.isArray(data.topBrands));
   assert.ok(data.topBrands.length > 0);
   assert.ok(categoryKeys.some((category) => ["celulares", "notebooks", "tablets", "tvs"].includes(category)));

@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import { resolveProjectPath } from "./project-root.js";
+import bundledCatalogRefreshMetadata from "../data/catalog-refresh-metadata.generated.js";
 
 const METADATA_CANDIDATES = [
   resolveProjectPath("src", "data", "catalog-refresh-metadata.json"),
@@ -26,6 +27,12 @@ export function resolveCatalogRefreshMetadata() {
     if (data && typeof data === "object") {
       return { path: filePath, data };
     }
+  }
+  if (bundledCatalogRefreshMetadata && typeof bundledCatalogRefreshMetadata === "object") {
+    return {
+      path: "src/data/catalog-refresh-metadata.generated.js",
+      data: bundledCatalogRefreshMetadata,
+    };
   }
   return { path: METADATA_CANDIDATES[0], data: null };
 }

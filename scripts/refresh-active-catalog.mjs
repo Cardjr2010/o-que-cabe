@@ -14,6 +14,9 @@ const metadataTargets = [
   resolveProjectPath("data", "catalog-refresh-metadata.json"),
   resolveProjectPath("public", "data", "catalog-refresh-metadata.json"),
 ];
+const metadataModuleTargets = [
+  resolveProjectPath("src", "data", "catalog-refresh-metadata.generated.js"),
+];
 const reportPath = resolveProjectPath("RELATORIO_CATALOGO_REFRESH_REAL.md");
 const saldaoFeedPath = resolveProjectPath("data", "saldao-feed.xml");
 const infoStoreSitemaps = [
@@ -316,6 +319,15 @@ function buildMarkdownReport(summary) {
   return lines.join("\n");
 }
 
+function toMetadataModuleSource(metadata) {
+  return [
+    "const catalogRefreshMetadata = " + JSON.stringify(metadata, null, 2) + ";",
+    "",
+    "export default catalogRefreshMetadata;",
+    "",
+  ].join("\n");
+}
+
 const sourceRuns = await Promise.all([
   refreshSource({
     source: "saldao_informatica",
@@ -361,6 +373,11 @@ for (const filePath of seedTargets) {
 for (const filePath of metadataTargets) {
   ensureParentDir(filePath);
   fs.writeFileSync(filePath, JSON.stringify(metadata, null, 2), "utf8");
+}
+
+for (const filePath of metadataModuleTargets) {
+  ensureParentDir(filePath);
+  fs.writeFileSync(filePath, toMetadataModuleSource(metadata), "utf8");
 }
 
 ensureParentDir(reportPath);

@@ -678,6 +678,19 @@ function describeCatalogSeedSource(seedPathResolved, seedFileExists, catalogCoun
   return seedFileExists ? "data/products.seed.json" : "fallback";
 }
 
+function buildRefreshSourceCounts(refreshMetadata = null, fallback = []) {
+  const entries = Array.isArray(refreshMetadata?.activeSourceCounts) ? refreshMetadata.activeSourceCounts : [];
+  if (!entries.length) return Array.isArray(fallback) ? fallback : [];
+  return entries
+    .map((entry) => ({
+      source: String(entry?.label || entry?.source || "").trim() || "unknown",
+      count: Number(entry?.publishedCount || 0),
+      analyzedCount: Number(entry?.analyzedCount || 0),
+      hiddenCount: Number(entry?.hiddenCount || 0),
+    }))
+    .sort((a, b) => b.count - a.count || b.analyzedCount - a.analyzedCount || a.source.localeCompare(b.source, "pt-BR"));
+}
+
 function getCatalogHealthSnapshot() {
   try {
     const catalogManager = getCatalogManager();
@@ -706,7 +719,7 @@ function getCatalogHealthSnapshot() {
       hiddenProducts: Number(refreshMetadata?.hiddenCount ?? diagnostics.hiddenProducts ?? 0),
       filteredCount: diagnostics.filteredCount ?? 0,
       filterReasons: Array.isArray(diagnostics.filterReasons) ? diagnostics.filterReasons : [],
-      sourceCounts: Array.isArray(diagnostics.sourceCounts) ? diagnostics.sourceCounts : [],
+      sourceCounts: buildRefreshSourceCounts(refreshMetadata, diagnostics.sourceCounts),
       seedUsed: diagnostics.seedUsed || diagnostics.seedPath || "",
       seedCandidates: Array.isArray(diagnostics.seedCandidates) ? diagnostics.seedCandidates : [],
       catalogUpdatedAt: refreshMetadata?.refreshedAt || null,
@@ -759,7 +772,7 @@ function buildCatalogStatsSnapshot() {
   const departmentCounts = buildCountSummary(enriched, "department", 20);
   const categoryCounts = buildCountSummary(enriched, "category", 20);
   const brandCounts = buildCountSummary(enriched, "brand", 20);
-  const sourceCounts = Array.isArray(diagnostics.sourceCounts) ? diagnostics.sourceCounts.slice(0, 20) : [];
+  const sourceCounts = buildRefreshSourceCounts(refreshMetadata, diagnostics.sourceCounts).slice(0, 20);
   const topSearches = buildHomeCatalogData().seoHotSearches || [];
   const principalCount = enriched.filter((item) => !item?.isAccessory && ["principal", "product"].includes(String(item?.productType || "").toLowerCase())).length;
   const accessoryCount = enriched.filter((item) => Boolean(item?.isAccessory || ["accessory", "piece", "compatible"].includes(String(item?.productType || "").toLowerCase()))).length;
