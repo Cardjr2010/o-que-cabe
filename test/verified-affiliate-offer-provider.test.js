@@ -142,3 +142,51 @@ test("fonte Magalu sai do fluxo automatico mesmo quando o link existe", async ()
   assert.equal(result.products.length, 1);
   assert.equal(result.products[0].id, "offer-amazon");
 });
+test("oferta automatica some quando o link revalidado nao leva ao produto", () => {
+  assert.equal(
+    isVerifiedAffiliateOfferLinkHealthy(
+      {
+        affiliateUrl: "https://meli.la/exemplo",
+        linkValidation: {
+          status: "social_redirect",
+          checkedAt: "2026-07-24T10:07:00.000Z",
+        },
+      },
+      new Date("2026-07-24T12:00:00.000Z"),
+    ),
+    false,
+  );
+
+  assert.equal(
+    isVerifiedAffiliateOfferFresh(
+      {
+        verifiedAt: "2026-07-24T10:07:00.000Z",
+        lastCheckedAt: "2026-07-24T10:07:00.000Z",
+        linkValidation: {
+          status: "direct_product",
+          checkedAt: "2026-07-24T10:07:00.000Z",
+        },
+      },
+      new Date("2026-07-24T12:00:00.000Z"),
+    ),
+    true,
+  );
+});
+
+test("ofertas monitoradas do Mercado Livre entram sem misturar familias", async () => {
+  const provider = new VerifiedAffiliateOfferProvider();
+
+  const iphone = await provider.searchProducts("iphone 17 pro max 256gb", { limit: 10 });
+  assert.ok(iphone.products.some((product) => product.id === "verified-ml-iphone-17-pro-max-256gb"));
+  assert.ok(iphone.products.every((product) => /iphone|apple/i.test(`${product.title} ${product.brand}`)));
+
+  const galaxy = await provider.searchProducts("s26 ultra", { limit: 10 });
+  assert.ok(galaxy.products.some((product) => product.id === "verified-ml-galaxy-s26-ultra-256gb-caixa-aberta"));
+  assert.ok(galaxy.products.every((product) => /samsung|galaxy/i.test(`${product.title} ${product.brand}`)));
+
+  const xiaomi = await provider.searchProducts("xiaomi be6500", { limit: 10 });
+  assert.ok(xiaomi.products.length >= 3);
+  assert.ok(xiaomi.products.every((product) => /xiaomi|be6500/i.test(`${product.title} ${product.brand} ${product.model}`)));
+  assert.ok(xiaomi.products.some((product) => product.id === "verified-ml-xiaomi-be6500-mesh-895"));
+  assert.ok(xiaomi.products.some((product) => product.id === "verified-ml-xiaomi-be6500-mesh-880"));
+});

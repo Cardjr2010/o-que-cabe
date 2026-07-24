@@ -394,10 +394,13 @@ test("Ofertas afiliadas verificadas entram na busca do iPhone 17 Pro Max com par
   assert.match(String(result.products[0].sourceLabel || result.products[0].sourceName || result.products[0].source || ""), /mercado_livre/i);
   assert.ok(!result.products.some((product) => /iphone 7/i.test(String(product.displayTitle || product.title || ""))));
   assert.equal(result.products[0].coupon?.code || null, null);
-  assert.equal(result.products[0].finalPrice, 10499);
+  assert.equal(result.products[0].finalPrice, 10999);
+  assert.ok(result.products.some((product) => String(product.sourceLabel || "").includes("mercado_livre")));
   assert.ok(result.products.some((product) => String(product.sourceLabel || "").includes("amazon")));
   assert.ok(result.products.every((product) => product.installments));
   assert.ok(result.products.every((product) => Number(product.installments.count || product.installments.months || 0) > 0));
+  assert.ok(!result.products.some((product) => /magalu/i.test(String(product.sourceLabel || product.sourceName || product.source || ""))));
+  assert.ok(!result.products.some((product) => /Galaxy|Xiaomi/i.test(String(product.displayTitle || product.title || ""))));
 });
 
 test("Ofertas afiliadas verificadas entram na busca do Galaxy S26 Ultra com prioridade para os modelos Ultra", async () => {
