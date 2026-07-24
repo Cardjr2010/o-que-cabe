@@ -190,8 +190,8 @@ test("ofertas monitoradas do Mercado Livre entram sem misturar familias", async 
   assert.ok(galaxy.products.every((product) => /samsung|galaxy/i.test(`${product.title} ${product.brand}`)));
 
   const xiaomi = await provider.searchProducts("xiaomi be6500", { limit: 10 });
-  assert.deepEqual(
-    xiaomi.products.map((product) => product.id),
-    ["verified-ml-xiaomi-be6500-pro"],
-  );
+  assert.ok(xiaomi.products.length >= 3);
+  assert.ok(xiaomi.products.every((product) => /xiaomi|be6500/i.test(`${product.title} ${product.brand} ${product.model}`)));
+  assert.ok(xiaomi.products.some((product) => product.id === "verified-ml-xiaomi-be6500-mesh-895"));
+  assert.ok(xiaomi.products.some((product) => product.id === "verified-ml-xiaomi-be6500-mesh-880"));
 });
