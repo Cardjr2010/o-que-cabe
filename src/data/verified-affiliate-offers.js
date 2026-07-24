@@ -46,7 +46,12 @@ export const VERIFIED_AFFILIATE_OFFERS = [
       "s26 ultra 256gb",
     ],
     verifiedAt: "2026-07-19T00:00:00.000Z",
-    lastCheckedAt: "2026-07-23T01:41:28.728Z",
+    lastCheckedAt: "2026-07-24T10:07:00.000Z",
+    linkValidation: {
+      status: "social_redirect",
+      checkedAt: "2026-07-24T10:07:00.000Z",
+      finalUrl: "https://www.mercadolivre.com.br/social/duca3564347",
+    },
   },
   {
     id: "verified-magalu-galaxy-s26-ultra-512gb",
@@ -93,6 +98,12 @@ export const VERIFIED_AFFILIATE_OFFERS = [
       "s26 ultra 512gb",
     ],
     verifiedAt: "2026-07-19T00:00:00.000Z",
+    lastCheckedAt: "2026-07-24T10:07:00.000Z",
+    linkValidation: {
+      status: "http_403",
+      checkedAt: "2026-07-24T10:07:00.000Z",
+      finalUrl: "https://www.magazineluiza.com.br/celular-samsung-galaxy-s26-ultra-5g-512gb-12gb-ram-galaxy-ai-camera-tripla-de-501210-tela-de-6-3-preto/p/ab1ceagba2/te/gs26/",
+    },
   },
   {
     id: "verified-amazon-galaxy-s26-ultra-256gb",
@@ -140,8 +151,13 @@ export const VERIFIED_AFFILIATE_OFFERS = [
       "s26 ultra",
       "s26 ultra 256gb",
     ],
-    verifiedAt: "2026-07-23T00:30:00.000Z",
-    lastCheckedAt: "2026-07-23T01:41:28.728Z",
+    verifiedAt: "2026-07-24T10:07:00.000Z",
+    lastCheckedAt: "2026-07-24T10:07:00.000Z",
+    linkValidation: {
+      status: "direct_product",
+      checkedAt: "2026-07-24T10:07:00.000Z",
+      finalUrl: "https://www.amazon.com.br/dp/B0GKQTTCMM",
+    },
   },
   {
     id: "verified-ml-iphone-17-pro-max-256gb",
@@ -189,7 +205,12 @@ export const VERIFIED_AFFILIATE_OFFERS = [
       "apple iphone 17 pro max",
     ],
     verifiedAt: "2026-07-19T00:00:00.000Z",
-    lastCheckedAt: "2026-07-23T01:41:28.728Z",
+    lastCheckedAt: "2026-07-24T10:07:00.000Z",
+    linkValidation: {
+      status: "social_redirect",
+      checkedAt: "2026-07-24T10:07:00.000Z",
+      finalUrl: "https://www.mercadolivre.com.br/social/duca3564347",
+    },
   },
   {
     id: "verified-amazon-iphone-17-pro-256gb",
@@ -234,8 +255,13 @@ export const VERIFIED_AFFILIATE_OFFERS = [
       "iphone 17 pro 256gb",
       "apple iphone 17 pro",
     ],
-    verifiedAt: "2026-07-23T00:30:00.000Z",
-    lastCheckedAt: "2026-07-23T01:41:28.728Z",
+    verifiedAt: "2026-07-24T10:07:00.000Z",
+    lastCheckedAt: "2026-07-24T10:07:00.000Z",
+    linkValidation: {
+      status: "direct_product",
+      checkedAt: "2026-07-24T10:07:00.000Z",
+      finalUrl: "https://www.amazon.com.br/dp/B0FQHFY4RH",
+    },
   },
   {
     id: "verified-magalu-iphone-17-pro-max-256gb",
@@ -282,10 +308,17 @@ export const VERIFIED_AFFILIATE_OFFERS = [
       "apple iphone 17 pro max",
     ],
     verifiedAt: "2026-07-19T00:00:00.000Z",
+    lastCheckedAt: "2026-07-24T10:07:00.000Z",
+    linkValidation: {
+      status: "http_403",
+      checkedAt: "2026-07-24T10:07:00.000Z",
+      finalUrl: "https://www.magazinevoce.com.br/magazineheroisderessaca/apple-iphone-17-pro-max-256gb-laranja-cosmico-69-48mp-ios-5g/p/240585900/te/17pm/?seller_id=magazineluiza",
+    },
   },
 ];
 
 const MAX_VERIFIED_OFFER_AGE_HOURS = 72;
+const MAX_LINK_VALIDATION_AGE_HOURS = 36;
 const BLOCKED_AUTOMATED_VERIFIED_OFFER_SOURCES = new Set([
   "magalu",
   "magazinevoce",
@@ -297,6 +330,24 @@ function toVerifiedDate(value) {
   if (!value) return null;
   const parsed = new Date(value);
   return Number.isFinite(parsed.getTime()) ? parsed : null;
+}
+
+function isDirectProductValidationStatus(value = "") {
+  return String(value || "").trim().toLowerCase() === "direct_product";
+}
+
+function isFreshEnough(dateValue, referenceDate = new Date(), maxAgeHours = MAX_LINK_VALIDATION_AGE_HOURS) {
+  const parsed = toVerifiedDate(dateValue);
+  if (!parsed) return false;
+  const ageMs = referenceDate.getTime() - parsed.getTime();
+  return ageMs >= 0 && ageMs <= maxAgeHours * 60 * 60 * 1000;
+}
+
+export function isVerifiedAffiliateOfferLinkHealthy(offer = {}, referenceDate = new Date()) {
+  const validation = offer?.linkValidation;
+  if (!validation || typeof validation !== "object") return true;
+  if (!isDirectProductValidationStatus(validation.status)) return false;
+  return isFreshEnough(validation.checkedAt, referenceDate, MAX_LINK_VALIDATION_AGE_HOURS);
 }
 
 function resolveOfferFreshnessDate(offer = {}) {
@@ -313,6 +364,7 @@ function resolveOfferFreshnessDate(offer = {}) {
 }
 
 export function isVerifiedAffiliateOfferFresh(offer = {}, referenceDate = new Date()) {
+  if (!isVerifiedAffiliateOfferLinkHealthy(offer, referenceDate)) return false;
   const verifiedAt = resolveOfferFreshnessDate(offer);
   if (!verifiedAt) return false;
   const ageMs = referenceDate.getTime() - verifiedAt.getTime();

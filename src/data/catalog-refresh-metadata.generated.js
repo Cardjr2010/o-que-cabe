@@ -1,50 +1,65 @@
 const catalogRefreshMetadata = {
-  refreshedAt: "2026-07-23T02:26:43.398Z",
-  fresh: true,
-  analyzedCount: 2599,
-  publishedCount: 1664,
-  hiddenCount: 935,
-  activeSourceCounts: [
+  "refreshedAt": "2026-07-24T10:06:38.798Z",
+  "fresh": true,
+  "analyzedCount": 2607,
+  "publishedCount": 1660,
+  "hiddenCount": 947,
+  "activeSourceCounts": [
     {
-      source: "saldao_informatica",
-      label: "Saldao da Informatica",
-      analyzedCount: 610,
-      publishedCount: 202,
-      hiddenCount: 408,
+      "source": "saldao_informatica",
+      "label": "Saldão da Informática",
+      "analyzedCount": 610,
+      "publishedCount": 200,
+      "hiddenCount": 410
     },
     {
-      source: "infostore",
-      label: "Info Store - Informatica",
-      analyzedCount: 1989,
-      publishedCount: 1462,
-      hiddenCount: 527,
-    },
+      "source": "infostore",
+      "label": "Info Store - Informática",
+      "analyzedCount": 1997,
+      "publishedCount": 1460,
+      "hiddenCount": 537
+    }
   ],
-  sources: [
+  "sources": [
     {
-      source: "saldao_informatica",
-      label: "Saldao da Informatica",
-      analyzedCount: 610,
-      publishedCount: 202,
-      hiddenCount: 408,
-      rejectedReasons: [
-        { reason: "JSON_LD_PRODUCT_MISSING", count: 344 },
-        { reason: "UNAVAILABLE_UNAVAILABLE", count: 64 },
-      ],
+      "source": "saldao_informatica",
+      "label": "Saldão da Informática",
+      "analyzedCount": 610,
+      "publishedCount": 200,
+      "hiddenCount": 410,
+      "rejectedReasons": [
+        {
+          "reason": "JSON_LD_PRODUCT_MISSING",
+          "count": 345
+        },
+        {
+          "reason": "UNAVAILABLE_UNAVAILABLE",
+          "count": 65
+        }
+      ]
     },
     {
-      source: "infostore",
-      label: "Info Store - Informatica",
-      analyzedCount: 1989,
-      publishedCount: 1462,
-      hiddenCount: 527,
-      rejectedReasons: [
-        { reason: "UNAVAILABLE_UNAVAILABLE", count: 477 },
-        { reason: "JSON_LD_PRODUCT_MISSING", count: 44 },
-        { reason: "HTTP_404", count: 6 },
-      ],
-    },
-  ],
+      "source": "infostore",
+      "label": "Info Store - Informática",
+      "analyzedCount": 1997,
+      "publishedCount": 1460,
+      "hiddenCount": 537,
+      "rejectedReasons": [
+        {
+          "reason": "UNAVAILABLE_UNAVAILABLE",
+          "count": 473
+        },
+        {
+          "reason": "JSON_LD_PRODUCT_MISSING",
+          "count": 47
+        },
+        {
+          "reason": "HTTP_404",
+          "count": 17
+        }
+      ]
+    }
+  ]
 };
 
 export default catalogRefreshMetadata;

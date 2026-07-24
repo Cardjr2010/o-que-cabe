@@ -360,8 +360,8 @@ function renderCouponPricing(product = {}, storePrice = 0) {
     ? `Cupom ${coupon.code}`
     : "Campanha verificada";
   const disclaimer = coupon?.validUntil
-    ? `Verificado ate ${formatCampaignDate(coupon.validUntil)}. Confirme a elegibilidade do anuncio na loja.`
-    : "Campanha verificada. Confirme a elegibilidade do anuncio na loja.";
+    ? `Verificado até ${formatCampaignDate(coupon.validUntil)}. Confirme a elegibilidade do anúncio na loja.`
+    : "Campanha verificada. Confirme a elegibilidade do anúncio na loja.";
 
   return `
     <div class="price-highlight">
@@ -1320,8 +1320,8 @@ function renderActiveCampaigns(items = []) {
       <strong>${escapeHtml(item.headline || item.label || "Campanha ativa")}</strong>
       <p>${escapeHtml(item.description || item.label || "")}</p>
       <div class="campaign-meta">
-        ${item.code ? `<span>Codigo ${escapeHtml(item.code)}</span>` : `<span>Oferta monitorada</span>`}
-        ${item.validUntil ? `<span>Valido ate ${escapeHtml(formatCampaignDate(item.validUntil))}</span>` : `<span>Abra para revisar no OQC</span>`}
+        ${item.code ? `<span>C?digo ${escapeHtml(item.code)}</span>` : `<span>Oferta monitorada</span>`}
+        ${item.validUntil ? `<span>V?lido at? ${escapeHtml(formatCampaignDate(item.validUntil))}</span>` : `<span>Abra para revisar no OQC</span>`}
       </div>
     </button>
   `).join("");
@@ -1370,7 +1370,7 @@ function renderProofSection(data = {}) {
     proofSummaryStats.innerHTML = [
       `${formatCompactNumber(analyzedProducts, "0")} analisados`,
       `${formatCompactNumber(hiddenProducts, "0")} ocultos`,
-      data.catalogFresh ? "Catalogo com leitura recente" : "Base aguardando atualizacao",
+      data.catalogFresh ? "Cat?logo com leitura recente" : "Base aguardando atualiza??o",
     ].map((item) => `<span>${escapeHtml(item)}</span>`).join("");
   }
 

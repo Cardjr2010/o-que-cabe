@@ -375,7 +375,7 @@ test("Catálogo OQC forte não chama fallback do Mercado Livre", async () => {
   assert.match(String(result.products[0].title || result.products[0].displayTitle || ""), /iPhone/i);
 });
 
-test("Ofertas afiliadas verificadas entram na busca do iPhone 17 Pro Max com parcelamento real", async () => {
+test("Busca do iPhone 17 Pro Max usa apenas ofertas verificadas com link direto e parcelamento real", async () => {
   const orchestrator = new SearchOrchestrator({
     catalogManager: createCatalogManager([]),
   });
@@ -390,14 +390,15 @@ test("Ofertas afiliadas verificadas entram na busca do iPhone 17 Pro Max com par
   assert.equal(result.fallbackUsed, true);
   assert.match(String(result.fallbackSource || ""), /verified_partner_offers/);
   assert.ok(result.products.length >= 1);
-  assert.match(String(result.products[0].displayTitle || result.products[0].title), /iPhone 17 Pro Max/i);
-  assert.match(String(result.products[0].sourceLabel || result.products[0].sourceName || result.products[0].source || ""), /mercado_livre/i);
+  assert.match(String(result.products[0].displayTitle || result.products[0].title), /iPhone 17 Pro/i);
+  assert.match(String(result.products[0].sourceLabel || result.products[0].sourceName || result.products[0].source || ""), /amazon/i);
   assert.ok(!result.products.some((product) => /iphone 7/i.test(String(product.displayTitle || product.title || ""))));
   assert.equal(result.products[0].coupon?.code || null, null);
-  assert.equal(result.products[0].finalPrice, 10499);
+  assert.equal(result.products[0].finalPrice, 8792.1);
   assert.ok(result.products.some((product) => String(product.sourceLabel || "").includes("amazon")));
   assert.ok(result.products.every((product) => product.installments));
   assert.ok(result.products.every((product) => Number(product.installments.count || product.installments.months || 0) > 0));
+  assert.ok(!result.products.some((product) => /mercado_livre|magalu/i.test(String(product.sourceLabel || product.sourceName || product.source || ""))));
 });
 
 test("Ofertas afiliadas verificadas entram na busca do Galaxy S26 Ultra com prioridade para os modelos Ultra", async () => {

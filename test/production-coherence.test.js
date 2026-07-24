@@ -71,13 +71,13 @@ test("links futuros nao fingem navegacao e promessas respeitam os dados disponiv
 test("home-data expoe os numeros oficiais e menu seguro", () => {
   const data = buildHomeCatalogData();
 
-  assert.equal(data.totalCatalogProducts, 2599);
-  assert.equal(data.totalPublishedProducts, 1664);
-  assert.equal(data.hiddenProducts, 935);
+  assert.equal(data.totalCatalogProducts, 2607);
+  assert.equal(data.totalPublishedProducts, 1660);
+  assert.equal(data.hiddenProducts, 947);
   assert.ok(data.catalogUpdatedAt === null || Number.isFinite(Date.parse(data.catalogUpdatedAt)));
   assert.ok(Array.isArray(data.topSources));
   assert.equal(data.topSources[0].source, "Info Store - Informática");
-  assert.equal(data.topSources[0].count, 1462);
+  assert.equal(data.topSources[0].count, 1460);
   const futureItems = data.menu.filter((item) => ["Blog", "Minha Conta"].includes(item.label));
   assert.equal(futureItems.length, 2);
   assert.ok(futureItems.every((item) => item.future === true && item.active === false && item.href === ""));

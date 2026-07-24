@@ -678,12 +678,33 @@ function describeCatalogSeedSource(seedPathResolved, seedFileExists, catalogCoun
   return seedFileExists ? "data/products.seed.json" : "fallback";
 }
 
+function normalizePublicSourceLabel(value = "") {
+  const source = String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+
+  if (!source) return "unknown";
+  if (source.includes("saldao")) return "Saldão da Informática";
+  if (source.includes("info store") || source.includes("infostore")) return "Info Store - Informática";
+  if (source.includes("flores online")) return "Flores Online";
+  if (source.includes("isabela flores")) return "Isabela Flores";
+  if (source === "ccp") return "CCP";
+  if (source === "authentical") return "Authentical";
+  if (source === "magalu") return "Magalu";
+  if (source === "amazon") return "Amazon";
+  if (source.includes("mercado livre") || source.includes("mercado_livre")) return "Mercado Livre";
+  return String(value || "").replace(/\s+/g, " ").trim() || "unknown";
+}
+
 function buildRefreshSourceCounts(refreshMetadata = null, fallback = []) {
   const entries = Array.isArray(refreshMetadata?.activeSourceCounts) ? refreshMetadata.activeSourceCounts : [];
   if (!entries.length) return Array.isArray(fallback) ? fallback : [];
   return entries
     .map((entry) => ({
-      source: String(entry?.label || entry?.source || "").trim() || "unknown",
+      source: normalizePublicSourceLabel(entry?.label || entry?.source || ""),
       count: Number(entry?.publishedCount || 0),
       analyzedCount: Number(entry?.analyzedCount || 0),
       hiddenCount: Number(entry?.hiddenCount || 0),

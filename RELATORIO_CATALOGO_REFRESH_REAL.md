@@ -1,25 +1,25 @@
 # RELATORIO_CATALOGO_REFRESH_REAL
 
-- atualizado em: 2026-07-23T02:26:43.398Z
-- produtos analisados: 2599
-- produtos publicados: 1664
-- produtos rejeitados: 935
+- atualizado em: 2026-07-24T10:06:38.798Z
+- produtos analisados: 2607
+- produtos publicados: 1660
+- produtos rejeitados: 947
 
 ## Fontes
 
 ### Saldão da Informática
 - analisados: 610
-- publicados: 202
-- rejeitados: 408
+- publicados: 200
+- rejeitados: 410
 - motivos principais:
-  - JSON_LD_PRODUCT_MISSING: 344
-  - UNAVAILABLE_UNAVAILABLE: 64
+  - JSON_LD_PRODUCT_MISSING: 345
+  - UNAVAILABLE_UNAVAILABLE: 65
 
 ### Info Store - Informática
-- analisados: 1989
-- publicados: 1462
-- rejeitados: 527
+- analisados: 1997
+- publicados: 1460
+- rejeitados: 537
 - motivos principais:
-  - UNAVAILABLE_UNAVAILABLE: 477
-  - JSON_LD_PRODUCT_MISSING: 44
-  - HTTP_404: 6
+  - UNAVAILABLE_UNAVAILABLE: 473
+  - JSON_LD_PRODUCT_MISSING: 47
+  - HTTP_404: 17
