@@ -177,3 +177,21 @@ test("oferta automatica some quando o link revalidado nao leva ao produto", () =
     true,
   );
 });
+
+test("ofertas monitoradas do Mercado Livre entram sem misturar familias", async () => {
+  const provider = new VerifiedAffiliateOfferProvider();
+
+  const iphone = await provider.searchProducts("iphone 17 pro max 256gb", { limit: 10 });
+  assert.ok(iphone.products.some((product) => product.id === "verified-ml-iphone-17-pro-max-256gb"));
+  assert.ok(iphone.products.every((product) => /iphone|apple/i.test(`${product.title} ${product.brand}`)));
+
+  const galaxy = await provider.searchProducts("s26 ultra", { limit: 10 });
+  assert.ok(galaxy.products.some((product) => product.id === "verified-ml-galaxy-s26-ultra-256gb-caixa-aberta"));
+  assert.ok(galaxy.products.every((product) => /samsung|galaxy/i.test(`${product.title} ${product.brand}`)));
+
+  const xiaomi = await provider.searchProducts("xiaomi be6500", { limit: 10 });
+  assert.deepEqual(
+    xiaomi.products.map((product) => product.id),
+    ["verified-ml-xiaomi-be6500-pro"],
+  );
+});

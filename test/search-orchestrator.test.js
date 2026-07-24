@@ -390,15 +390,17 @@ test("Busca do iPhone 17 Pro Max usa apenas ofertas verificadas com link direto 
   assert.equal(result.fallbackUsed, true);
   assert.match(String(result.fallbackSource || ""), /verified_partner_offers/);
   assert.ok(result.products.length >= 1);
-  assert.match(String(result.products[0].displayTitle || result.products[0].title), /iPhone 17 Pro/i);
-  assert.match(String(result.products[0].sourceLabel || result.products[0].sourceName || result.products[0].source || ""), /amazon/i);
+  assert.match(String(result.products[0].displayTitle || result.products[0].title), /iPhone 17 Pro Max/i);
+  assert.match(String(result.products[0].sourceLabel || result.products[0].sourceName || result.products[0].source || ""), /mercado_livre/i);
   assert.ok(!result.products.some((product) => /iphone 7/i.test(String(product.displayTitle || product.title || ""))));
   assert.equal(result.products[0].coupon?.code || null, null);
-  assert.equal(result.products[0].finalPrice, 8792.1);
+  assert.equal(result.products[0].finalPrice, 10999);
+  assert.ok(result.products.some((product) => String(product.sourceLabel || "").includes("mercado_livre")));
   assert.ok(result.products.some((product) => String(product.sourceLabel || "").includes("amazon")));
   assert.ok(result.products.every((product) => product.installments));
   assert.ok(result.products.every((product) => Number(product.installments.count || product.installments.months || 0) > 0));
-  assert.ok(!result.products.some((product) => /mercado_livre|magalu/i.test(String(product.sourceLabel || product.sourceName || product.source || ""))));
+  assert.ok(!result.products.some((product) => /magalu/i.test(String(product.sourceLabel || product.sourceName || product.source || ""))));
+  assert.ok(!result.products.some((product) => /Galaxy|Xiaomi/i.test(String(product.displayTitle || product.title || ""))));
 });
 
 test("Ofertas afiliadas verificadas entram na busca do Galaxy S26 Ultra com prioridade para os modelos Ultra", async () => {

@@ -21,6 +21,41 @@ function tokenHits(query = "", haystack = "") {
   return tokens.filter((token) => text.includes(token)).length;
 }
 
+function hasAnyToken(text = "", tokens = []) {
+  const normalized = normalizeText(text);
+  return tokens.some((token) => normalized.includes(normalizeText(token)));
+}
+
+function isRelevantOfferForQuery(offer = {}, query = "") {
+  const normalizedQuery = normalizeText(query);
+  const haystack = [
+    offer.title,
+    offer.displayTitle,
+    offer.brand,
+    offer.model,
+    Array.isArray(offer.searchKeywords) ? offer.searchKeywords.join(" ") : "",
+  ].filter(Boolean).join(" ");
+
+  const guardedFamilies = [
+    { query: ["iphone", "apple"], offer: ["iphone", "apple"] },
+    { query: ["galaxy", "samsung", "s26", "s25", "s24"], offer: ["galaxy", "samsung", "s26", "s25", "s24"] },
+    { query: ["xiaomi", "be6500"], offer: ["xiaomi", "be6500"] },
+  ];
+  const mismatchedFamily = guardedFamilies.some((family) => (
+    hasAnyToken(normalizedQuery, family.query)
+    && !hasAnyToken(haystack, family.offer)
+  ));
+  if (mismatchedFamily) return false;
+
+  const tokens = normalizedQuery.split(/\s+/).filter((token) => token.length > 1);
+  if (tokens.length >= 3) {
+    const hits = tokenHits(normalizedQuery, haystack);
+    return hits >= Math.max(2, Math.ceil(tokens.length * 0.35));
+  }
+
+  return true;
+}
+
 function offerSearchScore(offer = {}, query = "") {
   const haystack = [
     offer.title,
@@ -91,6 +126,7 @@ export default class VerifiedAffiliateOfferProvider {
         isScreenedOfferVisible(offer)
         && isVerifiedAffiliateOfferFresh(offer)
         && isVerifiedAffiliateOfferAutomatedSourceAllowed(offer)
+        && isRelevantOfferForQuery(offer, normalizedQuery)
       ))
       .map((offer) => ({
         ...offer,
