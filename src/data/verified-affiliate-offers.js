@@ -565,6 +565,7 @@ export const VERIFIED_AFFILIATE_OFFERS = [
 ];
 
 const MAX_VERIFIED_OFFER_AGE_HOURS = 72;
+const MAX_LINK_VALIDATION_AGE_HOURS = 36;
 const BLOCKED_AUTOMATED_VERIFIED_OFFER_SOURCES = new Set([
   "magalu",
   "magazinevoce",
@@ -576,6 +577,24 @@ function toVerifiedDate(value) {
   if (!value) return null;
   const parsed = new Date(value);
   return Number.isFinite(parsed.getTime()) ? parsed : null;
+}
+
+function isDirectProductValidationStatus(value = "") {
+  return String(value || "").trim().toLowerCase() === "direct_product";
+}
+
+function isFreshEnough(dateValue, referenceDate = new Date(), maxAgeHours = MAX_LINK_VALIDATION_AGE_HOURS) {
+  const parsed = toVerifiedDate(dateValue);
+  if (!parsed) return false;
+  const ageMs = referenceDate.getTime() - parsed.getTime();
+  return ageMs >= 0 && ageMs <= maxAgeHours * 60 * 60 * 1000;
+}
+
+export function isVerifiedAffiliateOfferLinkHealthy(offer = {}, referenceDate = new Date()) {
+  const validation = offer?.linkValidation;
+  if (!validation || typeof validation !== "object") return true;
+  if (!isDirectProductValidationStatus(validation.status)) return false;
+  return isFreshEnough(validation.checkedAt, referenceDate, MAX_LINK_VALIDATION_AGE_HOURS);
 }
 
 function resolveOfferFreshnessDate(offer = {}) {
@@ -592,6 +611,7 @@ function resolveOfferFreshnessDate(offer = {}) {
 }
 
 export function isVerifiedAffiliateOfferFresh(offer = {}, referenceDate = new Date()) {
+  if (!isVerifiedAffiliateOfferLinkHealthy(offer, referenceDate)) return false;
   const verifiedAt = resolveOfferFreshnessDate(offer);
   if (!verifiedAt) return false;
   const ageMs = referenceDate.getTime() - verifiedAt.getTime();

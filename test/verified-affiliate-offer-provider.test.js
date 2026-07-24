@@ -5,6 +5,7 @@ import { isScreenedOfferVisible, listActiveOfferCampaigns } from "../src/data/of
 import {
   isVerifiedAffiliateOfferAutomatedSourceAllowed,
   isVerifiedAffiliateOfferFresh,
+  isVerifiedAffiliateOfferLinkHealthy,
 } from "../src/data/verified-affiliate-offers.js";
 
 test("campanha capturada por screener respeita a data de validade", () => {
@@ -37,8 +38,10 @@ test("oferta verificada com janela expirada nao entra na busca", async () => {
         model: "iPhone 17 Pro Max 256GB",
         category: "celular",
         normalizedCategory: "celular",
-        visibleUntil: "2026-07-23T23:59:59-03:00",
-        verifiedAt: "2026-07-20T12:00:00-03:00",
+        visibleUntil: "2026-07-25T23:59:59-03:00",
+        verifiedAt: "2026-07-24T10:07:00.000Z",
+        lastCheckedAt: "2026-07-24T10:07:00.000Z",
+        linkValidation: { status: "direct_product", checkedAt: "2026-07-24T10:07:00.000Z" },
         affiliateUrl: "https://example.com/active",
       },
     ],
