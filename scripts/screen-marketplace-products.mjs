@@ -400,11 +400,11 @@ function writeReport(products, diagnostics) {
     "Produtos Amazon e Mercado Livre foram coletados por screener publico e marcados como sourceType public_search_screener/public_offer_screener. Isso nao torna as APIs oficiais operacionais.",
     "",
   ];
-  fs.writeFileSync(resolveProjectPath("RELATORIO_INCLUSAO_200_AMAZON_200_ML.md"), lines.join("\n"), "utf8");
+  fs.writeFileSync(resolveProjectPath("RELATORIO_INCLUSAO_SCREENED_AMAZON_MERCADO_LIVRE.md"), lines.join("\n"), "utf8");
 }
 
-const amazonLimit = Number(process.env.SCREEN_AMAZON_LIMIT || process.argv.find((arg) => arg.startsWith("--amazon="))?.split("=")[1] || 200);
-const mercadoLivreLimit = Number(process.env.SCREEN_ML_LIMIT || process.argv.find((arg) => arg.startsWith("--ml="))?.split("=")[1] || 200);
+const amazonLimit = Number(process.env.SCREEN_AMAZON_LIMIT || process.argv.find((arg) => arg.startsWith("--amazon="))?.split("=")[1] || 400);
+const mercadoLivreLimit = Number(process.env.SCREEN_ML_LIMIT || process.argv.find((arg) => arg.startsWith("--ml="))?.split("=")[1] || 300);
 
 const [amazon, mercadoLivre] = await Promise.all([
   screenAmazon(amazonLimit),
