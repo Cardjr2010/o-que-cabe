@@ -143,6 +143,19 @@ Gerado em: 2026-07-25.
 - `node --check src/engines/RankingEngine.js`: aprovado.
 - `node --check src/providers/VerifiedAffiliateOfferProvider.js`: aprovado.
 
+## Validacao em producao
+
+Commit publicado: `f8fc132c6746b1a7c67fc87a76217343d366da32`.
+
+| Busca publica | Resultado |
+|---|---|
+| iphone 17 pro max ate R$ 12.000 | dataMode real; 3 recomendacoes; primeira oferta Mercado Livre; R$ 10.999,00 |
+| galaxy s26 ultra ate R$ 12.000 | dataMode real; 2 recomendacoes; primeira oferta Amazon; R$ 7.997,67 |
+| notebook i5 16gb ate R$ 4.000 | dataMode real; 3 recomendacoes; primeira oferta Mercado Livre; R$ 3.699,00 |
+| monitor gamer 144hz ate R$ 1.500 | dataMode real; 3 recomendacoes; primeira oferta Amazon; R$ 607,05 |
+| tv 55 ate R$ 3.000 | dataMode real; 3 recomendacoes; primeira oferta Amazon; R$ 2.711,80 |
+| furadeira ate R$ 500 | dataMode real; 3 recomendacoes; primeira oferta Mercado Livre; R$ 140,60 |
+
 ## Proximo passo recomendado
 
 O proximo passo e criar uma pagina de categoria/listagem para abrir todos os produtos de uma categoria, com ordenacao por:
