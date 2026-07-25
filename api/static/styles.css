@@ -5697,6 +5697,13 @@ body.category-active .decision-summary-note {
     padding: 8px;
   }
 
+  body[data-category-page="true"] .category-results-hero,
+  body[data-category-page="true"] .decision-summary-card,
+  body[data-category-page="true"] .oqc-product-group {
+    width: calc(100vw - 54px);
+    max-width: calc(100vw - 54px);
+  }
+
   body[data-category-page="true"] .oqc-product-group-head p {
     max-width: 100%;
     font-size: 13px;
@@ -5718,7 +5725,8 @@ body.category-active .decision-summary-note {
   .result-card.result-card-slim {
     display: flex;
     align-items: flex-start;
-    width: 100%;
+    width: calc(100vw - 88px);
+    max-width: calc(100vw - 88px);
     border-radius: 18px;
   }
 
