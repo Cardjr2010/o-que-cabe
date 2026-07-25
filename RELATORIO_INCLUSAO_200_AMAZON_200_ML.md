@@ -20,6 +20,21 @@ Total aceito: 400
 - tablet: 18
 - ferramenta: 16
 
+## Politica de exibicao em busca
+
+- Mercado Livre: somente ofertas com sinal de loja oficial/autorizada confirmado pelo screener entram na busca publica.
+- Amazon: entram ofertas de paginas diretas da Amazon.com.br; o selo publico de "Loja oficial" so deve aparecer quando houver evidencia propria do produto.
+- Acessorios sao bloqueados quando a busca e por produto principal, por exemplo iPhone, Galaxy, monitor, notebook ou TV.
+- Consultas com modelo especifico, como BE6500, S26 ou 144Hz, exigem que o modelo apareca no titulo/modelo do produto. O termo da busca usado no screener nao basta.
+
+## Resultado apos filtro de confianca
+
+- Ofertas parceiras frescas totais carregadas: 415
+- Ofertas elegiveis apos filtro de confianca: 375
+- Amazon elegivel: produtos com vendedor Amazon.com.br
+- Mercado Livre elegivel: produtos com officialStore=true
+- Xiaomi BE6500: sem oferta oficial exata elegivel nesta rodada; por isso nao deve ser exibido como recomendacao principal.
+
 ## Diagnostico por alvo
 
 - amazon / iphone: HTTP 200; recebidos 52; aceitos 13

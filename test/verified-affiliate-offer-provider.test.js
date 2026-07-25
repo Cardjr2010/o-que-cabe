@@ -135,6 +135,7 @@ test("fonte Magalu sai do fluxo automatico mesmo quando o link existe", async ()
         category: "celular",
         normalizedCategory: "celular",
         sourceLabel: "amazon",
+        seller: { name: "Amazon.com.br" },
         verifiedAt: "2026-07-23T00:30:00.000Z",
         affiliateUrl: "https://example.com/amazon",
       },
@@ -184,12 +185,13 @@ test("ofertas monitoradas do Mercado Livre entram sem misturar familias", async 
   assert.ok(iphone.products.every((product) => /iphone|apple/i.test(`${product.title} ${product.brand}`)));
 
   const galaxy = await provider.searchProducts("s26 ultra", { limit: 10 });
-  assert.ok(galaxy.products.some((product) => product.id === "verified-ml-galaxy-s26-ultra-256gb-caixa-aberta"));
+  assert.ok(galaxy.products.some((product) => /Galaxy S26 Ultra/i.test(String(product.title || ""))));
+  assert.ok(galaxy.products.every((product) => (
+    String(product.sourceName || product.sourceLabel || "").includes("amazon")
+    || product.officialStore === true
+  )));
   assert.ok(galaxy.products.every((product) => /samsung|galaxy/i.test(`${product.title} ${product.brand}`)));
 
   const xiaomi = await provider.searchProducts("xiaomi be6500", { limit: 10 });
-  assert.ok(xiaomi.products.length >= 3);
-  assert.ok(xiaomi.products.every((product) => /xiaomi|be6500/i.test(`${product.title} ${product.brand} ${product.model}`)));
-  assert.ok(xiaomi.products.some((product) => product.id === "verified-ml-xiaomi-be6500-mesh-895"));
-  assert.ok(xiaomi.products.some((product) => product.id === "verified-ml-xiaomi-be6500-mesh-880"));
+  assert.equal(xiaomi.products.length, 0);
 });

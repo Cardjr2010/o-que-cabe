@@ -26,8 +26,46 @@ function hasAnyToken(text = "", tokens = []) {
   return tokens.some((token) => normalized.includes(normalizeText(token)));
 }
 
+function sellerName(offer = {}) {
+  return String(typeof offer.seller === "object" ? offer.seller?.name : offer.seller || "").trim();
+}
+
+function isTrustedPartnerOffer(offer = {}) {
+  const source = normalizeText(offer.sourceName || offer.sourceLabel || offer.source || "");
+  if (source.includes("mercado_livre")) return offer.officialStore === true;
+  if (source.includes("amazon")) return normalizeText(sellerName(offer)).includes("amazon.com.br");
+  return true;
+}
+
+function isPrincipalDeviceQuery(query = "") {
+  const normalized = normalizeText(query);
+  return /\b(iphone|galaxy|samsung|redmi|poco|motorola|moto|celular|smartphone|notebook|monitor|tv|roteador)\b/.test(normalized);
+}
+
+function isAccessoryTitle(text = "") {
+  return /\b(capa|case|pelicula|pelicula|vidro|carregador|cabo|adaptador|suporte|fone|headphone|earbud|airpods|pulseira|strap|protector|protetor|controle remoto|remote|bateria|tela)\b/.test(normalizeText(text));
+}
+
+function getSpecificModelTokens(query = "") {
+  return normalizeText(query)
+    .split(/\s+/)
+    .filter((token) => (
+      /[a-z]+\d|\d+[a-z]/.test(token)
+      || /^s\d{2}$/.test(token)
+      || /^a\d{2}$/.test(token)
+      || /^\d{3,4}hz$/.test(token)
+      || /^be\d{3,5}$/.test(token)
+    ));
+}
+
 function isRelevantOfferForQuery(offer = {}, query = "") {
   const normalizedQuery = normalizeText(query);
+  const strictTitleHaystack = [
+    offer.title,
+    offer.displayTitle,
+    offer.brand,
+    offer.model,
+  ].filter(Boolean).join(" ");
   const haystack = [
     offer.title,
     offer.displayTitle,
@@ -35,6 +73,16 @@ function isRelevantOfferForQuery(offer = {}, query = "") {
     offer.model,
     Array.isArray(offer.searchKeywords) ? offer.searchKeywords.join(" ") : "",
   ].filter(Boolean).join(" ");
+
+  if (isPrincipalDeviceQuery(normalizedQuery) && isAccessoryTitle(haystack) && !isAccessoryTitle(normalizedQuery)) {
+    return false;
+  }
+
+  const strictModelTokens = getSpecificModelTokens(normalizedQuery);
+  const normalizedTitleHaystack = normalizeText(strictTitleHaystack);
+  if (strictModelTokens.length && !strictModelTokens.every((token) => normalizedTitleHaystack.includes(token))) {
+    return false;
+  }
 
   const guardedFamilies = [
     { query: ["iphone", "apple"], offer: ["iphone", "apple"] },
@@ -108,6 +156,7 @@ export default class VerifiedAffiliateOfferProvider {
       isScreenedOfferVisible(offer)
       && isVerifiedAffiliateOfferFresh(offer)
       && isVerifiedAffiliateOfferAutomatedSourceAllowed(offer)
+      && isTrustedPartnerOffer(offer)
     ));
     return {
       configured: visibleOffers.length > 0,
@@ -126,6 +175,7 @@ export default class VerifiedAffiliateOfferProvider {
         isScreenedOfferVisible(offer)
         && isVerifiedAffiliateOfferFresh(offer)
         && isVerifiedAffiliateOfferAutomatedSourceAllowed(offer)
+        && isTrustedPartnerOffer(offer)
         && isRelevantOfferForQuery(offer, normalizedQuery)
       ))
       .map((offer) => ({
