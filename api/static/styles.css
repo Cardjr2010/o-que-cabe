@@ -5753,11 +5753,12 @@ body.category-active .decision-summary-note {
   }
 
   .result-card.result-card-slim .result-card-body {
-    flex: 1 1 auto;
+    flex: 1 1 calc(100% - 78px);
     box-sizing: border-box;
+    width: calc(100% - 78px);
     padding: 9px 8px 10px 0;
     min-width: 0;
-    max-width: 100%;
+    max-width: calc(100% - 78px);
     overflow: hidden;
   }
 
