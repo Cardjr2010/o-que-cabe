@@ -5698,7 +5698,6 @@ body.category-active .decision-summary-note {
   }
 
   body[data-category-page="true"] .category-results-hero,
-  body[data-category-page="true"] .decision-summary-card,
   body[data-category-page="true"] .oqc-product-group {
     width: calc(100vw - 48px);
     max-width: calc(100vw - 48px);
@@ -5728,6 +5727,9 @@ body.category-active .decision-summary-note {
   }
 
   body.category-active .decision-summary-card {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
     padding: 9px;
     border-radius: 16px;
   }
