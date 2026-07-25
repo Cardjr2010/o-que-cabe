@@ -53,7 +53,7 @@ function isRelevantOfferForQuery(offer = {}, query = "") {
     return hits >= Math.max(2, Math.ceil(tokens.length * 0.35));
   }
 
-  return true;
+  return tokenHits(normalizedQuery, haystack) >= 1;
 }
 
 function offerSearchScore(offer = {}, query = "") {

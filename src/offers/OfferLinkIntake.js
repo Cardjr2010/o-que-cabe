@@ -94,6 +94,10 @@ function extractPrice(html = "") {
     extractMeta(html, "product:price:amount"),
     extractMeta(html, "og:price:amount"),
     extractMeta(html, "twitter:data1"),
+    String(html || "").match(/"displayPrice":"([^"]+)"/)?.[1],
+    String(html || "").match(/priceToPay[\s\S]{0,1000}?R\$\s*([\d.,]+)/)?.[1],
+    String(html || "").match(/apexPriceToPay[\s\S]{0,1000}?R\$\s*([\d.,]+)/)?.[1],
+    String(html || "").match(/a-offscreen">\s*(R\$\s*[\d.,]+)/)?.[1],
   ].filter(Boolean);
   for (const candidate of candidates) {
     const parsed = parseMoney(candidate);
@@ -103,7 +107,13 @@ function extractPrice(html = "") {
 }
 
 function extractImage(html = "") {
-  return cleanText(extractMeta(html, "og:image") || extractMeta(html, "twitter:image"));
+  return cleanText(
+    extractMeta(html, "og:image")
+    || extractMeta(html, "twitter:image")
+    || String(html || "").match(/data-old-hires="([^"]+)"/)?.[1]
+    || String(html || "").match(/<img[^>]+id="landingImage"[^>]+src="([^"]+)"/)?.[1]
+    || "",
+  );
 }
 
 function hasUnavailableSignal(html = "") {

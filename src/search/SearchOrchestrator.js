@@ -8,6 +8,7 @@ import MercadoLivreSearchProvider from "../providers/MercadoLivreSearchProvider.
 import AmazonRapidApiSearchProvider from "../providers/AmazonRapidApiSearchProvider.js";
 import VerifiedAffiliateOfferProvider from "../providers/VerifiedAffiliateOfferProvider.js";
 import { findOfferRadarTarget, normalizeRadarText } from "../data/offer-radar-targets.js";
+import { listFreshVerifiedAffiliateOffers } from "../data/verified-affiliate-offers.js";
 import { buildOfferPricing } from "../pricing/CouponProvider.js";
 import { resolveProjectPath } from "../runtime/project-root.js";
 
@@ -37,7 +38,7 @@ const CATEGORY_RULES = [
 ];
 
 const BRAND_RULES = [
-  { brand: "Apple", terms: ["iphone", "ipad", "apple watch", "macbook"] },
+  { brand: "Apple", terms: ["iphone", "ipad", "apple watch", "macbook", "magic mouse"] },
   { brand: "Xiaomi", terms: ["xiaomi", "mi ", "mi note", "xiaomi pad"] },
   { brand: "Redmi", terms: ["redmi"] },
   { brand: "POCO", terms: ["poco"] },
@@ -51,6 +52,8 @@ const BRAND_RULES = [
   { brand: "Philips", terms: ["philips"] },
   { brand: "JBL", terms: ["jbl"] },
   { brand: "TP-Link", terms: ["tp-link", "tplink", "deco", "archer"] },
+  { brand: "Tenda", terms: ["tenda"] },
+  { brand: "GoPro", terms: ["gopro", "go pro"] },
 ];
 
 const TOOL_QUERY_MARKERS = [
@@ -356,8 +359,32 @@ function shouldUseMercadoLivreFallback(intent = {}, products = []) {
   return principalCount < 3;
 }
 
+function hasVerifiedAffiliateOfferCoverage(intent = {}) {
+  const query = intent.searchText || intent.query || "";
+  const queryTokens = getMeaningfulQueryTokens(query);
+  if (queryTokens.length < 2) return false;
+  return listFreshVerifiedAffiliateOffers().some((offer) => {
+    const offerText = [
+      offer.displayTitle,
+      offer.originalTitle,
+      offer.title,
+      offer.brand,
+      offer.model,
+      offer.category,
+      offer.normalizedCategory,
+      offer.department,
+      Array.isArray(offer.searchKeywords) ? offer.searchKeywords.join(" ") : "",
+    ].filter(Boolean).join(" ");
+    const hits = countTokenHitsInText(offerText, queryTokens);
+    if (hits >= Math.min(2, queryTokens.length)) return true;
+    const normalizedQuery = normalizeRadarText(query);
+    return normalizedQuery && normalizeRadarText(offerText).includes(normalizedQuery);
+  });
+}
+
 function shouldEnrichWithExternal(intent = {}, products = []) {
   if (isHomeIntent(intent)) return false;
+  if (hasVerifiedAffiliateOfferCoverage(intent)) return true;
   if (isTrackedCommercialIntent(intent)) return true;
   const normalizedQuery = normalizeText(intent.query || intent.searchText || "");
   const termCount = normalizedQuery.split(/\s+/).filter(Boolean).length;
@@ -512,6 +539,7 @@ function isTrackedCommercialIntent(intent = {}) {
 
 function isStrictCommercialIntent(intent = {}) {
   if (isTrackedCommercialIntent(intent)) return true;
+  if (hasVerifiedAffiliateOfferCoverage(intent)) return true;
   const query = normalizeText(intent.searchText || intent.query || "");
   const tokens = query.split(/\s+/).filter(Boolean);
   if (intent.model && tokens.length >= 2) return true;
@@ -611,7 +639,7 @@ function detectBrand(text = "") {
 }
 
 function detectAccessoryIntent(text = "") {
-  return /\b(capa|case|pelicula|pel[íi]cula|carregador|cabo|fone|headphone|earbud|airpods|strap|pulseira|acessorio|acess[óo]rio|suporte|power bank|powerbank|protector|protetor|controle remoto|remote control|remote)\b/i.test(String(text || ""));
+  return /\b(capa|case|pelicula|pel[íi]cula|carregador|cabo|fone|headphone|earbud|airpods|mouse|teclado|keyboard|strap|pulseira|acessorio|acess[óo]rio|suporte|power bank|powerbank|protector|protetor|controle remoto|remote control|remote)\b/i.test(String(text || ""));
 }
 
 function isHomeLivingProduct(product = {}, intelligence = {}) {

@@ -66,9 +66,11 @@ test("probeOfferLink gera diagnostico sanitizado com dados extraidos", async () 
       <html>
         <head>
           <meta property="og:title" content="Apple iPhone 17 Pro 256GB">
-          <meta property="og:image" content="https://example.com/image.jpg">
-          <meta property="product:price:amount" content="8792.10">
         </head>
+        <body>
+          <span id="priceToPay"><span class="a-offscreen">R$ 8.792,10</span></span>
+          <img data-old-hires="https://example.com/image.jpg">
+        </body>
       </html>
     `,
   });

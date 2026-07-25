@@ -22,6 +22,7 @@ import travelMockAdapter from "./src/adapters/travel.mock.js";
 import BudgetEngine from "./src/engines/BudgetEngine.js";
 import ScoreEngine from "./src/engines/ScoreEngine.js";
 import RankingEngine from "./src/engines/RankingEngine.js";
+import SearchOrchestrator from "./src/search/SearchOrchestrator.js";
 
 const root = projectRoot;
 const envPath = path.join(root, ".env");
@@ -38,6 +39,17 @@ const awinFeedProvider = AwinFeedProvider;
 const actionpayProvider = actionpayProviderDefault instanceof ActionpayProvider ? actionpayProviderDefault : new ActionpayProvider();
 const actionpayCatalogSeedPath = process.env.ACTIONPAY_CATALOG_SEED_PATH || resolveCatalogSeedPath(path.join(root, "data", "products.seed.json"));
 const feedCatalogSeedPath = process.env.FEED_CATALOG_SEED_PATH || resolveCatalogSeedPath(path.join(root, "data", "products.seed.json"));
+let searchOrchestratorInstance = null;
+
+function getSearchOrchestrator() {
+  if (!searchOrchestratorInstance) {
+    searchOrchestratorInstance = new SearchOrchestrator({
+      catalogManager: new CatalogManager({ seedPath: feedCatalogSeedPath }),
+    });
+  }
+  return searchOrchestratorInstance;
+}
+
 function getFeedProviderNames() {
   return ["saldao_informatica", "mi_shop", "csv", "actionpay", "awin"];
 }
@@ -1246,15 +1258,18 @@ export async function requestHandler(req, res) {
     }
 
     try {
-      const connectorResult = await MercadoLivreProvider.searchProducts(query, {
-        limit: 20,
+      const searchResult = await getSearchOrchestrator().search({
+        query,
         mode,
         monthly,
         months,
         totalBudget,
       });
-      const sourceProducts = Array.isArray(connectorResult.products) ? connectorResult.products : [];
-      const dataMode = connectorResult.dataMode || (connectorResult.strategyUsed === "demo" ? "demo" : "real-authenticated");
+      const sourceProducts = (Array.isArray(searchResult.products) ? searchResult.products : [])
+        .filter((item) => String(item?.dataMode || item?.mode || "").toLowerCase() !== "demo");
+      const dataMode = sourceProducts.some((item) => String(item.dataMode || item.mode || "").toLowerCase().startsWith("real") || String(item.dataMode || item.mode || "").toLowerCase() === "seed")
+        ? "real"
+        : (searchResult.strategyUsed === "refinement-needed" ? (searchResult.dataMode || "real") : "none");
       const response = buildOqcSearchResponse({
         products: sourceProducts,
         query,
@@ -1264,9 +1279,22 @@ export async function requestHandler(req, res) {
         totalBudget,
         dataMode,
       });
-      if (!sourceProducts.length) {
-        response.warning = "N?o encontramos produtos com an?ncio dispon?vel para este or?amento.";
-      }
+      response.strategyUsed = searchResult.strategyUsed;
+      response.fallbackUsed = Boolean(searchResult.fallbackUsed);
+      response.fallbackAttempted = Boolean(searchResult.fallbackAttempted);
+      response.fallbackSource = searchResult.fallbackSource || "";
+      response.fallbackCount = Number(searchResult.fallbackCount || 0);
+      response.returnedCount = searchResult.returnedCount;
+      response.refinementSuggestions = Array.isArray(searchResult.refinementSuggestions) ? searchResult.refinementSuggestions : [];
+      response.warning = searchResult.fallbackUsed && Number(searchResult.fallbackCount || 0) > 0
+        ? "Também encontramos anúncios diretos em fontes externas."
+        : searchResult.fallbackAttempted
+          ? "Não encontramos opções adicionais nesta fonte."
+          : sourceProducts.length > 0 && sourceProducts.length < 3
+            ? "Encontramos poucas opções no catálogo atual."
+            : sourceProducts.length
+              ? ""
+              : "Não encontramos uma oferta confirmada para esta busca.";
 
       sendJson(res, 200, response);
     } catch (error) {

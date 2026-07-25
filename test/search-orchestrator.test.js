@@ -425,6 +425,35 @@ test("Ofertas afiliadas verificadas entram na busca do Galaxy S26 Ultra com prio
   assert.ok(result.products.every((product) => product.installments));
 });
 
+test("Ofertas verificadas recentes entram para produtos Amazon de marca e modelo", async () => {
+  const orchestrator = new SearchOrchestrator({
+    catalogManager: createCatalogManager([]),
+  });
+
+  const tenda = await orchestrator.search({
+    query: "tenda ax3000",
+    mode: "total",
+    totalBudget: 300,
+  });
+
+  assert.equal(tenda.dataMode, "real");
+  assert.equal(tenda.fallbackUsed, true);
+  assert.match(String(tenda.fallbackSource || ""), /verified_partner_offers/);
+  assert.match(String(tenda.products[0]?.displayTitle || tenda.products[0]?.title || ""), /Tenda AX3000/i);
+  assert.match(String(tenda.products[0]?.sourceLabel || tenda.products[0]?.sourceName || ""), /amazon/i);
+
+  const magicMouse = await orchestrator.search({
+    query: "magic mouse",
+    mode: "total",
+    totalBudget: 1000,
+  });
+
+  assert.equal(magicMouse.dataMode, "real");
+  assert.equal(magicMouse.fallbackUsed, true);
+  assert.match(String(magicMouse.products[0]?.displayTitle || magicMouse.products[0]?.title || ""), /Magic Mouse/i);
+  assert.doesNotMatch(String(magicMouse.products[0]?.displayTitle || magicMouse.products[0]?.title || ""), /iPhone/i);
+});
+
 test("Consulta exata monitorada prioriza oferta verificada sobre catalogo antigo parecido", async () => {
   const orchestrator = new SearchOrchestrator({
     catalogManager: createCatalogManager([
