@@ -5716,8 +5716,16 @@ body.category-active .decision-summary-note {
   }
 
   .result-card.result-card-slim {
-    grid-template-columns: 84px minmax(0, 1fr);
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
     border-radius: 18px;
+  }
+
+  .result-card.result-card-slim .result-card-media {
+    flex: 0 0 84px;
+    width: 84px;
+    min-width: 84px;
   }
 
   .result-card.result-card-slim .result-card-media .image-box {
@@ -5732,11 +5740,15 @@ body.category-active .decision-summary-note {
   }
 
   .result-card.result-card-slim .result-card-body {
+    flex: 1 1 auto;
     padding: 9px 9px 10px 0;
+    min-width: 0;
+    max-width: calc(100% - 84px);
   }
 
   .result-card.result-card-slim .result-card-top h2 {
     font-size: 14px;
+    max-width: 100%;
   }
 
   .result-card.result-card-slim .result-card-top {
