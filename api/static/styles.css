@@ -5754,9 +5754,11 @@ body.category-active .decision-summary-note {
 
   .result-card.result-card-slim .result-card-body {
     flex: 1 1 auto;
+    box-sizing: border-box;
     padding: 9px 8px 10px 0;
     min-width: 0;
-    max-width: calc(100% - 78px);
+    max-width: 100%;
+    overflow: hidden;
   }
 
   .result-card.result-card-slim .result-card-top h2 {
@@ -5796,13 +5798,26 @@ body.category-active .decision-summary-note {
     grid-template-columns: 1fr;
     gap: 6px;
     margin-top: 8px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
   }
 
   .result-card.result-card-slim .result-offer-button,
   .result-card.result-card-slim .offer-unavailable,
   .result-card.result-card-slim .result-why summary {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
     min-height: 34px;
     border-radius: 12px;
+  }
+
+  .result-card.result-card-slim .result-why {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
   }
 
   .result-card.result-card-slim .store {
