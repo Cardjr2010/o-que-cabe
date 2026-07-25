@@ -53,6 +53,9 @@ const heroSection = document.querySelector("#heroSection");
 const homeSecondarySections = document.querySelectorAll(".home-secondary-section");
 const appView = document.body.dataset.view || "home";
 const apiEndpoint = document.body.dataset.endpoint || "/api/search";
+const categoryPageMode = document.body.dataset.categoryPage === "true";
+const categoryPageQuery = document.body.dataset.categoryQuery || "";
+const categoryPageCategory = document.body.dataset.categoryCategory || "";
 let searchTimer = null;
 let searchMode = form?.dataset.mode || "monthly";
 let activeSort = "recommended";
@@ -66,6 +69,20 @@ function setActiveSort(sort = "recommended") {
   });
 }
 
+function categorySlug(value = "") {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function categoryUrl(value = "") {
+  const slug = categorySlug(value);
+  return slug ? `/categoria/${slug}` : "/";
+}
+
 function openCategoryResults(query = "", category = "") {
   const cleanQuery = String(query || "").trim();
   if (!cleanQuery) return;
@@ -75,7 +92,23 @@ function openCategoryResults(query = "", category = "") {
   productInput.value = cleanQuery;
   setMode("total");
   if (!Number(totalBudgetInput?.value || 0)) totalBudgetInput.value = "999999";
+  const nextUrl = categoryUrl(activeBrowseCategory || cleanQuery);
+  if (!categoryPageMode && window.location.pathname !== nextUrl) {
+    window.history.pushState({ category: activeBrowseCategory || cleanQuery }, "", nextUrl);
+  }
   form.requestSubmit();
+}
+
+function initCategoryPageFromDataset() {
+  if (!categoryPageMode || !categoryPageQuery) return false;
+  activeBrowseMode = "category";
+  activeBrowseCategory = categoryPageCategory || categoryPageQuery;
+  productInput.value = categoryPageQuery;
+  setActiveSort("recommended");
+  setMode("total");
+  if (totalBudgetInput) totalBudgetInput.value = "999999";
+  requestAnimationFrame(() => form?.requestSubmit());
+  return true;
 }
 
 function submitWithDeclaredBudget() {
@@ -1247,14 +1280,14 @@ function renderPurchaseIntentions(items = []) {
   const entries = buildIntentCardItems(items);
   intentGrid.innerHTML = entries.length
     ? entries.map((item) => `
-      <button type="button" class="intent-card" data-category="${escapeHtml(item.category)}" data-query="${escapeHtml(item.query || item.category || "")}" data-mode="${escapeHtml(item.intent?.mode || "monthly")}" data-monthly="${escapeHtml(String(item.intent?.monthly || item.intent?.totalBudget || 0))}" data-total-budget="${escapeHtml(String(item.intent?.totalBudget || item.intent?.monthly || 0))}" data-months="${escapeHtml(String(item.intent?.months || 12))}">
+      <a href="${escapeHtml(categoryUrl(item.category || item.query || ""))}" class="intent-card" data-category="${escapeHtml(item.category)}" data-query="${escapeHtml(item.query || item.category || "")}" data-mode="${escapeHtml(item.intent?.mode || "monthly")}" data-monthly="${escapeHtml(String(item.intent?.monthly || item.intent?.totalBudget || 0))}" data-total-budget="${escapeHtml(String(item.intent?.totalBudget || item.intent?.monthly || 0))}" data-months="${escapeHtml(String(item.intent?.months || 12))}">
         <div class="intent-card-icon">${categoryIconSvg(item.category)}</div>
         <div class="intent-card-copy">
           <strong>${escapeHtml(item.label || `Quero ${normalizeHomeCategoryLabel(item.category).toLowerCase()}`)}</strong>
           <span>${escapeHtml(`${Number(item.count || 0)} itens reais`)}</span>
         </div>
         <span class="home-card-arrow" aria-hidden="true">→</span>
-      </button>
+      </a>
     `).join("")
     : "";
 
@@ -1274,10 +1307,10 @@ function renderDepartmentMenu(items = [], placeholder = false) {
   }).slice(0, 6);
   departmentsMenu.innerHTML = entries.length
     ? entries.map((item) => `
-      <button type="button" class="department-link" data-category="${escapeHtml(item.category || "")}">
+      <a href="${escapeHtml(categoryUrl(item.category || ""))}" class="department-link" data-category="${escapeHtml(item.category || "")}">
         <strong>${escapeHtml(item.label || normalizeHomeCategoryLabel(item.category))}</strong>
         ${placeholder ? "" : `<span>${escapeHtml(`${Number(item.count || 0)} itens reais`)}</span>`}
-      </button>
+      </a>
     `).join("")
     : "";
 
@@ -1708,17 +1741,17 @@ async function loadHomeCatalogData() {
         .filter((item) => item && item.category && !String(item.category).toLowerCase().includes("outros") && !String(item.category).toLowerCase().includes("pecas"))
         .slice(0, 6)
         .map((item) => `
-          <article data-category="${escapeHtml(item.category)}" data-query="${escapeHtml(item.query || item.category || "")}" data-mode="${escapeHtml(item.intent?.mode || "monthly")}" data-monthly="${escapeHtml(String(item.intent?.monthly || item.intent?.totalBudget || 0))}" data-total-budget="${escapeHtml(String(item.intent?.totalBudget || item.intent?.monthly || 0))}" data-months="${escapeHtml(String(item.intent?.months || 12))}">
+          <a href="${escapeHtml(categoryUrl(item.category || item.query || ""))}" data-category="${escapeHtml(item.category)}" data-query="${escapeHtml(item.query || item.category || "")}" data-mode="${escapeHtml(item.intent?.mode || "monthly")}" data-monthly="${escapeHtml(String(item.intent?.monthly || item.intent?.totalBudget || 0))}" data-total-budget="${escapeHtml(String(item.intent?.totalBudget || item.intent?.monthly || 0))}" data-months="${escapeHtml(String(item.intent?.months || 12))}">
             <div class="category-icon">${categoryIconSvg(item.category)}</div>
             <h3>${escapeHtml(item.label || normalizeHomeCategoryLabel(item.category))}</h3>
             <p>${escapeHtml(`${Number(item.count || 0)} itens reais`)}</p>
             <span class="home-card-arrow" aria-hidden="true">→</span>
-          </article>
+          </a>
         `)
         .join("");
       categoryGrid.innerHTML = cards || "";
 
-      categoryGrid.querySelectorAll("article[data-category]").forEach((card) => {
+      categoryGrid.querySelectorAll("[data-category]").forEach((card) => {
         card.addEventListener("click", () => {
           const category = card.dataset.category || "";
           openCategoryResults(card.dataset.query || category, category);
@@ -1971,7 +2004,7 @@ if (appView === "home") {
     });
   });
   loadHomeCatalogData();
-  initSearchFromUrl();
+  if (!initCategoryPageFromDataset()) initSearchFromUrl();
 }
 
 setMode(searchMode);

@@ -120,6 +120,18 @@ test("Browse de categoria abre lista publicada e ordena sem puxar acessorios obv
   }
 });
 
+test("Rota publica de categoria renderiza pagina dedicada com busca pre-carregada", async () => {
+  const res = createResponse();
+  await handler({ url: "/categoria/tv" }, res);
+
+  assert.equal(res.statusCode, 200);
+  assert.match(res.headers["Content-Type"] || res.headers["content-type"] || "", /text\/html/);
+  assert.match(res.body, /data-category-page="true"/);
+  assert.match(res.body, /data-category-query="tv"/);
+  assert.match(res.body, /data-category-category="TVs"/);
+  assert.match(res.body, /TVs que cabem no orçamento \| O Que Cabe/);
+});
+
 test("Busca do catalogo real mantem categorias coerentes por busca", async () => {
   const originalFetch = global.fetch;
   global.fetch = async () => {

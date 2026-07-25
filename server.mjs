@@ -461,7 +461,7 @@ function isAccessoryForBrowse(product = {}) {
   const accessoryTerms = [
     "acessorio", "accessory", "peca", "piece", "controle remoto", "cabo", "adaptador", "fonte",
     "memoria ram", "memoria", "case", "capa", "pelicula", "carregador", "bateria", "suporte",
-    "teclado", "mouse", "refil", "conector",
+    "teclado", "mouse", "refil", "conector", "luva", "sleeve", "dedo", "gaming sleeve",
   ];
   return accessoryTerms.some((term) => typeText.includes(term) || titleText.includes(term));
 }
@@ -1368,6 +1368,62 @@ function renderCollectionPage() {
   </html>`;
 }
 
+function normalizeCategorySlug(value = "") {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+const PUBLIC_CATEGORY_PAGES = {
+  tv: { category: "TVs", query: "tv", label: "TVs" },
+  tvs: { category: "TVs", query: "tv", label: "TVs" },
+  celular: { category: "Celulares", query: "celular", label: "Celulares" },
+  celulares: { category: "Celulares", query: "celular", label: "Celulares" },
+  notebook: { category: "Notebooks", query: "notebook", label: "Notebooks" },
+  notebooks: { category: "Notebooks", query: "notebook", label: "Notebooks" },
+  monitor: { category: "Monitores", query: "monitor", label: "Monitores" },
+  monitores: { category: "Monitores", query: "monitor", label: "Monitores" },
+  tablet: { category: "Tablets", query: "tablet", label: "Tablets" },
+  tablets: { category: "Tablets", query: "tablet", label: "Tablets" },
+  audio: { category: "Áudio", query: "fone", label: "Áudio" },
+  fone: { category: "Áudio", query: "fone", label: "Áudio" },
+  fones: { category: "Áudio", query: "fone", label: "Áudio" },
+  ferramenta: { category: "Ferramentas", query: "ferramenta", label: "Ferramentas" },
+  ferramentas: { category: "Ferramentas", query: "ferramenta", label: "Ferramentas" },
+  casa: { category: "Casa", query: "casa", label: "Casa" },
+  rede: { category: "Rede", query: "roteador", label: "Rede" },
+  roteador: { category: "Rede", query: "roteador", label: "Rede" },
+};
+
+function resolvePublicCategoryPage(pathname = "") {
+  const match = String(pathname || "").match(/^\/categoria\/([^/?#]+)\/?$/i);
+  if (!match) return null;
+  const slug = normalizeCategorySlug(decodeURIComponent(match[1] || ""));
+  if (!slug) return null;
+  return PUBLIC_CATEGORY_PAGES[slug] || {
+    category: slug,
+    query: slug,
+    label: slug.replace(/-/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase()),
+  };
+}
+
+function renderCategoryPage(page) {
+  const html = fs.readFileSync(path.join(root, "public", "index.html"), "utf8");
+  const title = `${page.label} que cabem no orçamento | O Que Cabe`;
+  const description = `Compare ${page.label.toLowerCase()} publicados no O Que Cabe por relevância, menor preço e melhor parcelamento.`;
+  return html
+    .replace(/<title>.*?<\/title>/i, `<title>${escapeHtml(title)}</title>`)
+    .replace(/<meta name="description" content="[^"]*"\s*\/?>/i, `<meta name="description" content="${escapeHtml(description)}" />`)
+    .replace(/<link rel="canonical" href="[^"]*"\s*\/?>/i, `<link rel="canonical" href="https://o-que-cabe.vercel.app/categoria/${normalizeCategorySlug(page.query)}" />`)
+    .replace(
+      /<body([^>]*)>/i,
+      `<body$1 data-category-page="true" data-category-query="${escapeHtml(page.query)}" data-category-category="${escapeHtml(page.category)}" data-category-label="${escapeHtml(page.label)}">`,
+    );
+}
+
 export async function requestHandler(req, res) {
   const requestUrl = new URL(req.url, `http://localhost:${port}`);
   const method = String(req.method || "GET").toUpperCase();
@@ -1978,6 +2034,13 @@ export async function requestHandler(req, res) {
       steps,
       report: "/RELATORIO_MERCADOLIVRE_403.md",
     });
+    return;
+  }
+
+  const publicCategoryPage = resolvePublicCategoryPage(requestUrl.pathname);
+  if (publicCategoryPage) {
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(renderCategoryPage(publicCategoryPage));
     return;
   }
 
