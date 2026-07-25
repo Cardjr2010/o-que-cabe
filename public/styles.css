@@ -5567,6 +5567,8 @@ body.category-active .decision-summary-source {
 }
 
 body.category-active .decision-summary-card h3 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
   margin: 8px 0 6px;
   font-size: 15px;
   line-height: 1.18;
@@ -5600,6 +5602,8 @@ body.category-active .decision-summary-note {
 }
 
 .result-card.result-card-slim .result-card-top h2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
   margin-top: 4px;
   font-size: 16px;
   line-height: 1.2;
