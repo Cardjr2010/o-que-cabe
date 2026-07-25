@@ -5498,6 +5498,22 @@ body[data-category-page="true"] .section-head {
   overflow: hidden;
 }
 
+body[data-category-page="true"].category-active .results-area > .section-head .panel-label {
+  display: none;
+}
+
+body[data-category-page="true"].category-active .results-area > .section-head h2 {
+  margin: 0;
+  font-size: 30px;
+}
+
+body[data-category-page="true"].category-active .marketline {
+  max-width: 100%;
+  margin: 8px 0 12px;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
 body[data-category-page="true"] .section-head > div,
 body[data-category-page="true"] .category-results-hero > div,
 body[data-category-page="true"] .oqc-product-group-head > div,
@@ -5544,6 +5560,10 @@ body.category-active .decision-summary-card {
   min-height: 0;
   padding: 12px;
   border-radius: 18px;
+}
+
+body.category-active .decision-summary-source {
+  display: none;
 }
 
 body.category-active .decision-summary-card h3 {
@@ -5671,6 +5691,12 @@ body.category-active .decision-summary-note {
   body[data-category-page="true"] .results-toolbar {
     overflow: hidden;
     padding: 8px;
+  }
+
+  body[data-category-page="true"] .oqc-product-group-head p {
+    max-width: 100%;
+    font-size: 13px;
+    line-height: 1.35;
   }
 
   body[data-category-page="true"] .source-badge {
