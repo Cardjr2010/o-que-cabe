@@ -218,6 +218,13 @@ function resolveProductTitle(product) {
   );
 }
 
+function resolveCompactProductTitle(product, maxLength = 58) {
+  const title = resolveProductTitle(product).replace(/\s+/g, " ").trim();
+  if (title.length <= maxLength) return title;
+  const compact = title.slice(0, maxLength).replace(/\s+\S*$/, "").trim();
+  return `${compact || title.slice(0, maxLength).trim()}...`;
+}
+
 function normalizeStatusLabel(value = "") {
   const text = String(value || "").trim().toUpperCase();
   if (!text) return "CABE";
@@ -833,6 +840,8 @@ function buildProductCardHtml(product) {
   const reputation = resolveSellerReputation(product);
   const reasons = buildReasonList(product);
   const slimClass = activeBrowseMode === "category" ? " result-card-slim" : "";
+  const fullTitle = resolveProductTitle(product);
+  const visibleTitle = activeBrowseMode === "category" ? resolveCompactProductTitle(product, 58) : fullTitle;
 
   return `
     <article class="result-card${slimClass}">
@@ -841,7 +850,7 @@ function buildProductCardHtml(product) {
         <div class="result-card-top">
           <div>
             <span class="store">${escapeHtml(sourceLabel)}</span>
-            <h2>${escapeHtml(resolveProductTitle(product))}</h2>
+            <h2 title="${escapeHtml(fullTitle)}">${escapeHtml(visibleTitle)}</h2>
           </div>
           <span class="result-budget-badge result-budget-badge-${budget.tone}">${escapeHtml(budget.label)}</span>
         </div>
