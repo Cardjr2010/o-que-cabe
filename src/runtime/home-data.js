@@ -157,6 +157,101 @@ const FEATURED_VIDEO_GUIDES = [
   },
 ];
 
+const BUYING_GUIDE_CARDS = [
+  {
+    category: "celulares",
+    label: "Celulares",
+    title: "Como escolher celular sem se enrolar no orçamento",
+    description: "Um guia direto para comparar preço, parcela, geração e uso real antes de trocar de celular.",
+    href: "/blog/como-escolher-celular-sem-se-enrolar-no-orcamento.html",
+    query: "celular ate 1500",
+  },
+  {
+    category: "notebooks",
+    label: "Notebooks",
+    title: "Como escolher notebook sem cair em ficha técnica inflada",
+    description: "O que observar em processador, RAM, SSD e tela para não pagar por força que não aparece no uso.",
+    href: "/blog/como-escolher-notebook-sem-cair-em-ficha-tecnica-inflada.html",
+    query: "notebook i5 16gb",
+  },
+  {
+    category: "celulares",
+    label: "Comparativo",
+    title: "iPhone 17 Pro Max vs Galaxy S26 Ultra",
+    description: "Comparação prática entre os dois topos de linha, com foco em dinheiro, parcela e decisão.",
+    href: "/blog/iphone-17-pro-max-vs-galaxy-s26-ultra.html",
+    query: "iphone 17 pro max",
+  },
+];
+
+const VERIFIED_OFFER_CATEGORY_COPY = new Map([
+  ["celular", { label: "Celulares premium", query: "iphone 17 256gb", category: "celulares" }],
+  ["celulares", { label: "Celulares premium", query: "iphone 17 256gb", category: "celulares" }],
+  ["rede", { label: "Rede e Wi-Fi", query: "tenda ax3000", category: "rede" }],
+  ["informatica", { label: "Informática e rede", query: "tenda ax3000", category: "informatica" }],
+  ["camera", { label: "Câmeras", query: "gopro max 360", category: "camera" }],
+  ["acessorios", { label: "Acessórios", query: "magic mouse", category: "acessorios" }],
+]);
+
+function resolveVerifiedOfferCategory(offer = {}) {
+  const key = normalizedCatalogCategoryKey(offer.normalizedCategory || offer.category || offer.department || "");
+  if (VERIFIED_OFFER_CATEGORY_COPY.has(key)) return key;
+  const text = normalizedCatalogCategoryKey([
+    offer.title,
+    offer.displayTitle,
+    offer.brand,
+    offer.model,
+    Array.isArray(offer.searchKeywords) ? offer.searchKeywords.join(" ") : "",
+  ].filter(Boolean).join(" "));
+  if (/iphone|galaxy|samsung|celular|smartphone/.test(text)) return "celular";
+  if (/roteador|router|wifi|wi-fi|mesh|tenda|tp-link|be6500|ax3000/.test(text)) return "rede";
+  if (/gopro|camera|c[âa]mera/.test(text)) return "camera";
+  if (/magic mouse|mouse|teclado|acessorio|acessorios/.test(text)) return "acessorios";
+  return key || "ofertas";
+}
+
+function buildVerifiedOfferCategoryCards() {
+  const groups = new Map();
+  for (const offer of listFreshVerifiedAffiliateOffers()) {
+    const categoryKey = resolveVerifiedOfferCategory(offer);
+    if (!groups.has(categoryKey)) groups.set(categoryKey, []);
+    groups.get(categoryKey).push(offer);
+  }
+
+  return [...groups.entries()]
+    .map(([categoryKey, offers]) => {
+      const sorted = [...offers].sort((left, right) => Number(left.price || 0) - Number(right.price || 0));
+      const bestOffer = sorted[0] || {};
+      const copy = VERIFIED_OFFER_CATEGORY_COPY.get(categoryKey) || {
+        label: categoryKey.charAt(0).toUpperCase() + categoryKey.slice(1),
+        query: bestOffer.query || bestOffer.searchKeywords?.[0] || bestOffer.title || categoryKey,
+        category: categoryKey,
+      };
+      const sources = [...new Set(sorted
+        .map((offer) => labelHomeSource(offer.sourceName || offer.sourceLabel || offer.source || ""))
+        .filter(Boolean))];
+      return {
+        category: copy.category || categoryKey,
+        label: copy.label,
+        query: copy.query || bestOffer.title || categoryKey,
+        count: sorted.length,
+        minPrice: Number(bestOffer.cashPrice || bestOffer.price || 0),
+        subtitle: `${sorted.length} oferta${sorted.length > 1 ? "s" : ""} verificada${sorted.length > 1 ? "s" : ""}`,
+        sources,
+        sampleTitles: sorted.slice(0, 2).map((offer) => offer.displayTitle || offer.title || "").filter(Boolean),
+        intent: {
+          mode: "total",
+          totalBudget: Math.max(300, Math.ceil(Number(bestOffer.price || 0) * 1.2)),
+          months: 12,
+          query: copy.query || bestOffer.title || categoryKey,
+        },
+      };
+    })
+    .filter((entry) => entry.count > 0)
+    .sort((left, right) => right.count - left.count || left.label.localeCompare(right.label, "pt-BR"))
+    .slice(0, 6);
+}
+
 function buildOfferRadarHighlights() {
   const freshOffers = listFreshVerifiedAffiliateOffers();
   return OFFER_RADAR_TARGETS.map((target) => {
@@ -313,6 +408,8 @@ function labelHomeSource(value = "") {
   if (source === "isabela_flores" || source === "isabela flores") return "Isabela Flores";
   if (source === "ccp") return "CCP";
   if (source === "authentical") return "Authentical";
+  if (source === "amazon" || source === "amazon.com.br") return "Amazon";
+  if (source === "mercado_livre" || source === "mercado livre" || source === "mercadolivre") return "Mercado Livre";
   if (source === "mi_shop" || source === "mi shop" || source === "mishop") return "Mi Shop";
   if (source === "actionpay") return "Actionpay";
   if (source === "awin") return "Awin";
@@ -406,6 +503,7 @@ export function buildHomeCatalogData() {
     const seoHotSearches = seoEngine.buildSeoHotSearches(6);
     const seoHomeButtons = seoEngine.buildHomeButtons(catalogForHome);
     const decisionHighlights = buildOfferRadarHighlights();
+    const offerCategories = buildVerifiedOfferCategoryCards();
     const catalogUpdatedAt = refreshMetadata?.refreshedAt || resolveCatalogUpdatedAt(catalogForHome);
     const catalogFresh = refreshMetadata?.fresh === true || isCatalogFreshEnough(catalogUpdatedAt, 7);
     const totalCatalogProducts = Number(refreshMetadata?.analyzedCount ?? catalogDiagnostics.rawCount ?? items.length);
@@ -474,11 +572,13 @@ export function buildHomeCatalogData() {
       searchCategories: homeButtons.length ? homeButtons : curatedDepartments,
       departmentCategories: curatedDepartments,
       decisionHighlights,
+      offerCategories,
       activeCampaigns: visibleCampaigns,
       pechinchas: visibleShortcuts,
       shortcuts: visibleShortcuts,
       seoHotSearches,
       featuredVideos: FEATURED_VIDEO_GUIDES,
+      guideCards: BUYING_GUIDE_CARDS,
       activeSources: visibleActiveSources,
       marketplaceSummary: visibleMarketplaceSummary,
       sellerSummary: visibleSellerSummary,
@@ -525,11 +625,13 @@ export function buildHomeCatalogData() {
       searchCategories: [],
       departmentCategories: [],
       decisionHighlights: buildOfferRadarHighlights(),
+      offerCategories: buildVerifiedOfferCategoryCards(),
       activeCampaigns: buildCampaignCards(),
       pechinchas: [],
       shortcuts: [],
       seoHotSearches: [],
       featuredVideos: FEATURED_VIDEO_GUIDES,
+      guideCards: BUYING_GUIDE_CARDS,
       activeSources: [],
       marketplaceSummary: [],
       sellerSummary: [],

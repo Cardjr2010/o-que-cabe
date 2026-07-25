@@ -27,8 +27,12 @@ const intentGrid = document.querySelector("#intentGrid");
 const departmentsMenu = document.querySelector("#departmentsMenu");
 const decisionHighlightsSection = document.querySelector("#decisions");
 const decisionHighlightsGrid = document.querySelector("#decisionHighlightsGrid");
+const offerRadarSection = document.querySelector("#offerRadarSection");
+const offerRadarGrid = document.querySelector("#offerRadarGrid");
 const campaignsSection = document.querySelector("#campaignsSection");
 const campaignGrid = document.querySelector("#campaignGrid");
+const guideCardsSection = document.querySelector("#guideCardsSection");
+const guideCardsGrid = document.querySelector("#guideCardsGrid");
 const proofSection = document.querySelector("#proofSection");
 const proofPublishedProducts = document.querySelector("#proofPublishedProducts");
 const proofSummaryText = document.querySelector("#proofSummaryText");
@@ -1299,6 +1303,52 @@ function renderDecisionHighlights(items = []) {
   });
 }
 
+function renderOfferCategories(items = []) {
+  if (!offerRadarSection || !offerRadarGrid) return;
+  const entries = (Array.isArray(items) ? items : [])
+    .filter((item) => item && item.count > 0)
+    .slice(0, 4);
+
+  if (!entries.length) {
+    offerRadarSection.hidden = true;
+    offerRadarGrid.innerHTML = "";
+    return;
+  }
+
+  offerRadarSection.hidden = false;
+  offerRadarGrid.innerHTML = entries.map((item) => {
+    const minPrice = Number(item.minPrice || 0);
+    const priceText = minPrice > 0
+      ? new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(minPrice)
+      : "Ver ofertas";
+    const sources = Array.isArray(item.sources) && item.sources.length
+      ? item.sources.slice(0, 2).join(" + ")
+      : "Fonte verificada";
+    return `
+      <button type="button" class="offer-category-card" data-query="${escapeHtml(item.query || item.label || "")}" data-category="${escapeHtml(item.category || "")}" data-mode="${escapeHtml(item.intent?.mode || "total")}" data-total-budget="${escapeHtml(String(item.intent?.totalBudget || item.minPrice || 0))}" data-months="${escapeHtml(String(item.intent?.months || 12))}">
+        <div class="offer-category-icon">${categoryIconSvg(item.category || item.label || "")}</div>
+        <div class="offer-category-copy">
+          <span>${escapeHtml(item.label || "Ofertas verificadas")}</span>
+          <strong>${escapeHtml(priceText)}</strong>
+          <small>${escapeHtml(`${item.count} oferta${item.count > 1 ? "s" : ""} · ${sources}`)}</small>
+        </div>
+        <span class="home-card-arrow" aria-hidden="true">→</span>
+      </button>
+    `;
+  }).join("");
+
+  offerRadarGrid.querySelectorAll(".offer-category-card").forEach((card) => {
+    card.addEventListener("click", () => {
+      const query = card.dataset.query || card.dataset.category || "";
+      if (query) productInput.value = query;
+      setMode("total");
+      if (totalBudgetInput) totalBudgetInput.value = card.dataset.totalBudget || totalBudgetInput.value || "1500";
+      if (monthsInput) monthsInput.value = card.dataset.months || monthsInput.value || "12";
+      form.requestSubmit();
+    });
+  });
+}
+
 function renderActiveCampaigns(items = []) {
   const section = campaignsSection;
   const grid = campaignGrid;
@@ -1335,6 +1385,39 @@ function renderActiveCampaigns(items = []) {
       if (monthsInput && card.dataset.months) monthsInput.value = card.dataset.months;
       if (totalBudgetInput && card.dataset.totalBudget) totalBudgetInput.value = card.dataset.totalBudget;
       setMode(searchMode);
+      form.requestSubmit();
+    });
+  });
+}
+
+function renderGuideCards(items = []) {
+  if (!guideCardsSection || !guideCardsGrid) return;
+  const entries = (Array.isArray(items) ? items : []).slice(0, 3);
+  if (!entries.length) {
+    guideCardsSection.hidden = true;
+    guideCardsGrid.innerHTML = "";
+    return;
+  }
+
+  guideCardsSection.hidden = false;
+  guideCardsGrid.innerHTML = entries.map((item) => `
+    <article class="guide-card">
+      <span>${escapeHtml(item.label || normalizeHomeCategoryLabel(item.category || "Guia"))}</span>
+      <h3>${escapeHtml(item.title || "Guia de compra")}</h3>
+      <p>${escapeHtml(item.description || "Conteúdo para decidir melhor antes da compra.")}</p>
+      <div class="guide-card-actions">
+        <a href="${escapeHtml(item.href || "/blog/")}">Ler guia</a>
+        <button type="button" data-query="${escapeHtml(item.query || item.category || "")}">Buscar</button>
+      </div>
+    </article>
+  `).join("");
+
+  guideCardsGrid.querySelectorAll("button[data-query]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const query = button.dataset.query || "";
+      if (query) productInput.value = query;
+      setMode("total");
+      if (totalBudgetInput && !Number(totalBudgetInput.value || 0)) totalBudgetInput.value = "2500";
       form.requestSubmit();
     });
   });
@@ -1553,7 +1636,9 @@ async function loadHomeCatalogData() {
 
   renderLoadingSkeletons(intentGrid, "intent", 6);
   renderLoadingSkeletons(decisionHighlightsGrid, "decision", 3);
+  renderLoadingSkeletons(offerRadarGrid, "decision", 4);
   renderLoadingSkeletons(campaignGrid, "decision", 3);
+  renderLoadingSkeletons(guideCardsGrid, "card", 3);
   renderLoadingSkeletons(videoGuidesGrid, "card", 3);
   renderLoadingSkeletons(categoryGrid, "card", 6);
   renderLoadingSkeletons(seoHotSearchesGrid, "chip", 6);
@@ -1586,7 +1671,9 @@ async function loadHomeCatalogData() {
           ? pechinchas
           : (Array.isArray(data.homeButtons) && data.homeButtons.length ? data.homeButtons : categories),
     );
+    renderOfferCategories(Array.isArray(data.offerCategories) ? data.offerCategories : []);
     renderActiveCampaigns(Array.isArray(data.activeCampaigns) ? data.activeCampaigns : []);
+    renderGuideCards(Array.isArray(data.guideCards) ? data.guideCards : []);
     renderProofSection(data);
     renderFeaturedVideos(Array.isArray(data.featuredVideos) ? data.featuredVideos : []);
     renderSeoHotSearches(Array.isArray(data.seoHotSearches) ? data.seoHotSearches : []);
@@ -1624,7 +1711,9 @@ async function loadHomeCatalogData() {
   } catch {
     if (intentGrid) intentGrid.innerHTML = "";
     if (decisionHighlightsGrid) decisionHighlightsGrid.innerHTML = "";
+    if (offerRadarGrid) offerRadarGrid.innerHTML = "";
     if (campaignGrid) campaignGrid.innerHTML = "";
+    if (guideCardsGrid) guideCardsGrid.innerHTML = "";
     if (videoGuidesGrid) videoGuidesGrid.innerHTML = "";
     if (categoryGrid) categoryGrid.innerHTML = "";
     if (seoHotSearchesGrid) seoHotSearchesGrid.innerHTML = "";

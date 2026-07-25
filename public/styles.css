@@ -5044,6 +5044,140 @@ footer strong {
   font-size: 22px;
 }
 
+.offer-category-card,
+.guide-card {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 12px 26px rgba(18, 34, 52, 0.06);
+}
+
+.offer-category-card {
+  min-height: 118px;
+  display: grid;
+  grid-template-columns: 46px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 16px;
+  text-align: left;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.offer-category-card:hover,
+.guide-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(23, 59, 87, 0.24);
+  box-shadow: 0 16px 34px rgba(18, 34, 52, 0.09);
+}
+
+.offer-category-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  color: var(--blue);
+  background: #eef7ff;
+}
+
+.offer-category-icon svg {
+  width: 23px;
+  height: 23px;
+}
+
+.offer-category-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.offer-category-copy span {
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.offer-category-copy strong {
+  color: var(--green);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.offer-category-copy small {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.guide-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.guide-card {
+  min-height: 150px;
+  padding: 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.guide-card > span {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #eef7ff;
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.guide-card h3 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.12;
+  color: var(--ink);
+}
+
+.guide-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.guide-card-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.guide-card-actions a,
+.guide-card-actions button {
+  min-height: 36px;
+  border-radius: 999px;
+  padding: 0 13px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--blue);
+  font-weight: 900;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.guide-card-actions a {
+  background: var(--blue);
+  color: #fff;
+  border-color: var(--blue);
+}
+
 @media (max-width: 1040px) {
   .hero {
     grid-template-columns: 1fr;
@@ -5061,6 +5195,7 @@ footer strong {
   .campaign-grid,
   .category-grid,
   .video-guides-grid,
+  .guide-cards-grid,
   .blog-spotlight-grid,
   .decision-strip,
   .comparison-summary {
@@ -5136,6 +5271,7 @@ footer strong {
   .campaign-grid,
   .category-grid,
   .video-guides-grid,
+  .guide-cards-grid,
   .blog-spotlight-grid,
   .how-grid,
   .decision-strip,
@@ -5147,8 +5283,10 @@ footer strong {
   .category-grid article,
   .intent-card,
   .campaign-card,
+  .offer-category-card,
   .video-guide-card,
-  .blog-card {
+  .blog-card,
+  .guide-card {
     min-height: 0;
   }
 
