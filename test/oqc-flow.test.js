@@ -156,9 +156,9 @@ test("Busca sem cobertura real nao inventa resultado", async () => {
 
   try {
     const cases = [
-      "/api/search?q=ferramenta&mode=total&totalBudget=500",
       "/api/search?q=flores&mode=total&totalBudget=200",
       "/api/search?q=buqu%C3%AA&mode=total&totalBudget=200",
+      "/api/search?q=xyz987produtoimpossivel&mode=total&totalBudget=200",
     ];
 
     for (const url of cases) {
@@ -174,6 +174,18 @@ test("Busca sem cobertura real nao inventa resultado", async () => {
   } finally {
     global.fetch = originalFetch;
   }
+});
+
+test("Busca de ferramenta usa oferta rastreada real quando houver cobertura", async () => {
+  const res = createResponse();
+  await handler({ url: "/api/search?q=furadeira&mode=total&totalBudget=500" }, res);
+  const body = parseBody(res);
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(body.dataMode, "real");
+  assert.ok(Array.isArray(body.products));
+  assert.ok(body.products.length > 0);
+  assert.ok(/furadeira|parafusadeira/i.test(body.products[0]?.title || ""));
 });
 
 test("Busca de TV prioriza TV principal acima de controle remoto", async () => {

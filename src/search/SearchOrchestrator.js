@@ -362,7 +362,8 @@ function shouldUseMercadoLivreFallback(intent = {}, products = []) {
 function hasVerifiedAffiliateOfferCoverage(intent = {}) {
   const query = intent.searchText || intent.query || "";
   const queryTokens = getMeaningfulQueryTokens(query);
-  if (queryTokens.length < 2) return false;
+  const allowSingleTokenCoverage = matchesAnyMarker(query, TOOL_QUERY_MARKERS);
+  if (queryTokens.length < 2 && !allowSingleTokenCoverage) return false;
   return listFreshVerifiedAffiliateOffers().some((offer) => {
     const offerText = [
       offer.displayTitle,
@@ -701,7 +702,9 @@ function matchProductType(product = {}, queryCategory = "", accessoryIntent = fa
     return /\b(roteador|router|mesh|wifi|wi-fi|tp-link|deco|archer)\b/.test(`${text} ${productCategory} ${productDepartment} ${productSubcategory}`);
   }
   if (queryKey === "ferramenta") {
-    return !isAccessory && /\b(ferramenta|furadeira|parafusadeira|serra|alicate|martelete|martelo)\b/.test(titleText);
+    const toolText = `${titleText} ${productCategory} ${productDepartment} ${productSubcategory}`;
+    const isPrimaryTool = /\b(furadeira|parafusadeira|serra|esmerilhadeira|lixadeira|martelete|martelo|alicate|solda)\b/.test(titleText);
+    return (!isAccessory || isPrimaryTool) && /\b(ferramenta|furadeira|parafusadeira|serra|esmerilhadeira|lixadeira|alicate|martelete|martelo|solda)\b/.test(toolText);
   }
   if (queryKey === "flores e presentes" || queryKey === "presente") {
     return /\b(flor|flores|buque|buquê|bouquet|rosa|cesta|presente|presentes|chocolate)\b/.test(`${text} ${productCategory} ${productDepartment} ${productSubcategory}`);
@@ -839,7 +842,15 @@ function filterCandidateList(list = [], intent = {}) {
       }
       if (intent.category) {
         const categoryText = normalizeText([product.department, product.subcategory, product.normalizedCategory, product.category, product.productType].filter(Boolean).join(" "));
-        if (normalizeText(intent.category) !== "casa" && !categoryText.includes(normalizeText(intent.category))) return false;
+        if (normalizeText(intent.category) !== "casa" && !categoryText.includes(normalizeText(intent.category))) {
+          const productText = normalizeText([
+            product.displayTitle,
+            product.originalTitle,
+            product.title,
+            Array.isArray(product.searchKeywords) ? product.searchKeywords.join(" ") : "",
+          ].filter(Boolean).join(" "));
+          if (!(normalizeText(intent.category) === "ferramenta" && matchesAnyMarker(productText, TOOL_QUERY_MARKERS))) return false;
+        }
       }
       if (!intent.category && !intent.brand && !hasQueryRelevance(product, intent)) return false;
       return true;
@@ -861,6 +872,29 @@ function dedupeProducts(products = []) {
     deduped.push(product);
   }
   return deduped;
+}
+
+function hasVerifiedOfferIntentMatch(product = {}, intent = {}) {
+  const query = normalizeText(intent.searchText || intent.query || "");
+  const text = normalizeText([
+    product.displayTitle,
+    product.originalTitle,
+    product.title,
+    product.brand,
+    product.model,
+    product.category,
+    product.normalizedCategory,
+    product.department,
+    Array.isArray(product.searchKeywords) ? product.searchKeywords.join(" ") : "",
+  ].filter(Boolean).join(" "));
+  if (!text) return false;
+  if (intent.brand && !text.includes(normalizeText(intent.brand))) return false;
+  if (normalizeText(intent.category) === "ferramenta") {
+    return matchesAnyMarker(text, TOOL_QUERY_MARKERS);
+  }
+  const tokens = getMeaningfulQueryTokens(query);
+  if (!tokens.length) return true;
+  return countTokenHitsInText(text, tokens) >= Math.min(2, tokens.length);
 }
 
 function buildRefinementSuggestions(intent = {}) {
@@ -893,7 +927,10 @@ async function searchProviderVariants({ provider, intent, source }) {
       model: intent.model || "",
       marketplace: "BR",
     });
-    accepted = filterCandidateList(lastResult.products || [], intent).filter((product) => {
+    const semanticallyValidProducts = source === "verified_partner_offers"
+      ? (lastResult.products || []).filter((product) => hasVerifiedOfferIntentMatch(product, intent))
+      : filterCandidateList(lastResult.products || [], intent);
+    accepted = semanticallyValidProducts.filter((product) => {
       if (source === "mercado_livre") {
         return isDirectMercadoLivreProduct(product);
       }
