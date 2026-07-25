@@ -1834,7 +1834,7 @@ form.addEventListener("submit", async (event) => {
     params.set("totalBudget", effectiveCeiling);
     params.set("source", "mercadolivre");
     params.set("sort", activeSort);
-    params.set("limit", activeBrowseMode ? "120" : "24");
+    params.set("limit", activeBrowseMode ? "300" : "24");
     if (activeBrowseMode) params.set("browse", activeBrowseMode);
     if (activeBrowseCategory) params.set("category", activeBrowseCategory);
     const endpoint = apiEndpoint;
@@ -1863,11 +1863,11 @@ form.addEventListener("submit", async (event) => {
     if (resultsCount) {
       const displayed = Number(data.displayedCount || confirmedProducts.length || 0);
       resultsCount.textContent = activeBrowseMode
-        ? `${displayed} de ${totalMatched} itens publicados`
+        ? `${displayed} de ${totalMatched} itens nesta categoria`
         : `${displayed} opções encontradas`;
     }
     summaryTitle.textContent = confirmedProducts.length
-      ? (activeBrowseMode ? `${normalizeHomeCategoryLabel(product)}: ${totalMatched} itens publicados` : `Opções para ${product}`)
+      ? (activeBrowseMode ? `${normalizeHomeCategoryLabel(product)}: todos os produtos encontrados` : `Opções para ${product}`)
       : `Nenhuma oferta confirmada para ${product}`;
 
     if (data.fallbackUsed && Number(data.fallbackCount || 0) > 0) {

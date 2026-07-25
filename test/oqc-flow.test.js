@@ -87,25 +87,34 @@ test("Browse de categoria abre lista publicada e ordena sem puxar acessorios obv
 
   try {
     const notebookRes = createResponse();
-    await handler({ url: "/api/search?q=notebook&category=Notebooks&mode=total&totalBudget=999999&browse=category&sort=price_asc&limit=120" }, notebookRes);
+    await handler({ url: "/api/search?q=notebook&category=Notebooks&mode=total&totalBudget=999999&browse=category&sort=price_asc&limit=300" }, notebookRes);
     const notebookBody = parseBody(notebookRes);
     const notebookTitles = notebookBody.products.map((product) => String(product.title || product.displayTitle || "").toLowerCase());
+    const notebookSources = notebookBody.products.map((product) => String(product.sourceName || product.sourceLabel || product.marketplace || product.source || "").toLowerCase());
 
     assert.equal(notebookRes.statusCode, 200);
     assert.equal(notebookBody.browseMode, "category");
     assert.equal(notebookBody.sort, "price_asc");
-    assert.ok(notebookBody.displayedCount <= 120);
+    assert.ok(notebookBody.displayedCount <= 300);
+    assert.ok(notebookBody.totalMatchedProducts > 120);
+    assert.ok(notebookSources.some((source) => source.includes("amazon") || source.includes("mercado_livre")));
     assert.ok(notebookTitles.every((title) => title.includes("notebook") || title.includes("laptop") || title.includes("chromebook") || title.includes("macbook")));
     assert.ok(notebookTitles.every((title) => !/(case|capa|fonte|adaptador|mem[oó]ria ram|carregador)/i.test(title)));
 
     const tvRes = createResponse();
-    await handler({ url: "/api/search?q=tv&category=TVs&mode=total&totalBudget=999999&browse=category&sort=price_desc&limit=120" }, tvRes);
+    await handler({ url: "/api/search?q=tv&category=TVs&mode=total&totalBudget=999999&browse=category&sort=price_asc&limit=300" }, tvRes);
     const tvBody = parseBody(tvRes);
     const tvTitles = tvBody.products.map((product) => String(product.title || product.displayTitle || "").toLowerCase());
 
     assert.equal(tvBody.browseMode, "category");
-    assert.equal(tvBody.sort, "price_desc");
-    assert.ok(tvTitles.every((title) => !title.includes("cftv") && !title.includes("controle remoto")));
+    assert.equal(tvBody.sort, "price_asc");
+    assert.ok(tvBody.totalMatchedProducts > 80);
+    assert.ok(tvTitles.every((title) => !/(cftv|controle remoto|tv stick|media player|tv box|box tv|suporte)/i.test(title)));
+
+    const installmentRes = createResponse();
+    await handler({ url: "/api/search?q=tv&category=TVs&mode=total&totalBudget=999999&browse=category&sort=installment_asc&limit=300" }, installmentRes);
+    const installmentBody = parseBody(installmentRes);
+    assert.equal(installmentBody.sort, "installment_asc");
   } finally {
     global.fetch = originalFetch;
   }

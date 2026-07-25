@@ -23,6 +23,7 @@ import BudgetEngine from "./src/engines/BudgetEngine.js";
 import ScoreEngine from "./src/engines/ScoreEngine.js";
 import RankingEngine from "./src/engines/RankingEngine.js";
 import SearchOrchestrator from "./src/search/SearchOrchestrator.js";
+import { listFreshVerifiedAffiliateOffers } from "./src/data/verified-affiliate-offers.js";
 
 const root = projectRoot;
 const envPath = path.join(root, ".env");
@@ -416,6 +417,7 @@ function normalizePublicSearchSort(value = "") {
   if (["price_asc", "menor_preco", "lowest"].includes(sort)) return "price_asc";
   if (["price_desc", "maior_preco", "highest"].includes(sort)) return "price_desc";
   if (["budget_fit", "fits", "cabem"].includes(sort)) return "budget_fit";
+  if (["installment", "installment_asc", "parcelamento", "best_installment"].includes(sort)) return "installment_asc";
   return "recommended";
 }
 
@@ -469,7 +471,10 @@ function hasPrimaryTitleSignal(product = {}, category = "") {
   const key = normalizeBrowseText(category);
   const containsAny = (terms = []) => terms.some((term) => titleText.includes(normalizeBrowseText(term)));
   if (["tv", "tvs"].includes(key)) {
-    return !titleText.includes("cftv") && (new Set(titleText.split(" ")).has("tv") || containsAny(["smart tv", "televisao"]));
+    const blockedTvAccessories = ["tv stick", "stick", "media player", "controle remoto", "suporte", "box tv", "tv box", "cabo", "antena"];
+    return !titleText.includes("cftv")
+      && !containsAny(blockedTvAccessories)
+      && (new Set(titleText.split(" ")).has("tv") || containsAny(["smart tv", "televisao"]));
   }
   if (["notebook", "notebooks"].includes(key)) return containsAny(["notebook", "laptop", "chromebook", "macbook"]);
   if (["celular", "celulares"].includes(key)) return containsAny(["celular", "smartphone", "iphone", "galaxy", "redmi", "poco", "motorola", "xiaomi"]);
@@ -506,7 +511,9 @@ function productMatchesBrowseCategory(product = {}, category = "") {
 }
 
 function listBrowseCategoryProducts(orchestrator, category = "") {
-  const products = orchestrator?.catalogManager?.list?.() || [];
+  const catalogProducts = orchestrator?.catalogManager?.list?.() || [];
+  const verifiedOffers = listFreshVerifiedAffiliateOffers();
+  const products = [...catalogProducts, ...verifiedOffers];
   return products.filter((product) => productMatchesBrowseCategory(product, category));
 }
 
@@ -535,12 +542,22 @@ function sortPublicSearchProducts(products = [], sort = "recommended") {
       return resolvePublicProductPrice(left) - resolvePublicProductPrice(right);
     });
   }
+  if (sort === "installment_asc") {
+    return list.sort((left, right) => {
+      const leftInstallment = left.installments || left.installment || {};
+      const rightInstallment = right.installments || right.installment || {};
+      const leftAmount = Number(leftInstallment.amount || leftInstallment.value || Infinity);
+      const rightAmount = Number(rightInstallment.amount || rightInstallment.value || Infinity);
+      if (leftAmount !== rightAmount) return leftAmount - rightAmount;
+      return resolvePublicProductPrice(left) - resolvePublicProductPrice(right);
+    });
+  }
   return list;
 }
 
 function applyPublicSearchPresentation(response = {}, { sort, limit }) {
   const normalizedSort = normalizePublicSearchSort(sort);
-  const safeLimit = Math.max(1, Math.min(Number(limit || 24), 140));
+  const safeLimit = Math.max(1, Math.min(Number(limit || 24), 300));
   const sortedProducts = sortPublicSearchProducts(response.products || [], normalizedSort);
   const visibleProducts = sortedProducts.slice(0, safeLimit);
   const recommendations = visibleProducts.slice(0, 3).map((product, index) => ({
@@ -1404,8 +1421,9 @@ export async function requestHandler(req, res) {
     const totalBudgetParam = Number(requestUrl.searchParams.get("totalBudget") || "0");
     const totalBudget = mode === "total" ? (totalBudgetParam > 0 ? totalBudgetParam : monthly * months) : monthly * months;
     const sort = normalizePublicSearchSort(requestUrl.searchParams.get("sort") || "recommended");
-    const limit = Math.max(1, Math.min(Number(requestUrl.searchParams.get("limit") || "24"), 140));
     const browse = String(requestUrl.searchParams.get("browse") || "").toLowerCase();
+    const maxLimit = browse === "category" ? 300 : 140;
+    const limit = Math.max(1, Math.min(Number(requestUrl.searchParams.get("limit") || "24"), maxLimit));
     const browseCategory = requestUrl.searchParams.get("category") || query;
 
     if (!query) {
