@@ -185,16 +185,84 @@ const BUYING_GUIDE_CARDS = [
 ];
 
 const VERIFIED_OFFER_CATEGORY_COPY = new Map([
-  ["celular", { label: "Celulares premium", query: "iphone 17 256gb", category: "celulares" }],
-  ["celulares", { label: "Celulares premium", query: "iphone 17 256gb", category: "celulares" }],
-  ["rede", { label: "Rede e Wi-Fi", query: "tenda ax3000", category: "rede" }],
-  ["informatica", { label: "Informática e rede", query: "tenda ax3000", category: "informatica" }],
-  ["camera", { label: "Câmeras", query: "gopro max 360", category: "camera" }],
-  ["acessorios", { label: "Acessórios", query: "magic mouse", category: "acessorios" }],
+  ["celular", { label: "Celulares", query: "celular", category: "celulares" }],
+  ["notebook", { label: "Notebooks", query: "notebook", category: "notebooks" }],
+  ["monitor", { label: "Monitores gamer", query: "monitor gamer 144hz", category: "monitores" }],
+  ["tv", { label: "TVs", query: "tv samsung 50", category: "tvs" }],
+  ["rede", { label: "Rede e Wi-Fi", query: "roteador wifi", category: "rede" }],
+  ["ferramenta", { label: "Ferramentas", query: "furadeira", category: "ferramentas" }],
+  ["audio", { label: "Áudio e fones", query: "fone bluetooth", category: "audio" }],
+  ["tablet", { label: "Tablets", query: "tablet", category: "tablets" }],
+  ["casa", { label: "Casa", query: "casa", category: "casa" }],
+]);
+
+const VERIFIED_OFFER_CATEGORY_ALIASES = new Map([
+  ["celulares", "celular"],
+  ["smartphones", "celular"],
+  ["notebooks", "notebook"],
+  ["monitores", "monitor"],
+  ["tvs", "tv"],
+  ["televisores", "tv"],
+  ["ferramentas", "ferramenta"],
+  ["fones", "audio"],
+  ["tablets", "tablet"],
+  ["informatica", "rede"],
+]);
+
+const VERIFIED_OFFER_CATEGORY_PRIORITY = [
+  "celular",
+  "notebook",
+  "monitor",
+  "tv",
+  "rede",
+  "ferramenta",
+  "audio",
+  "tablet",
+  "casa",
+];
+
+const VERIFIED_OFFER_CATEGORY_RULES = new Map([
+  ["celular", {
+    include: [/\biphone\b/, /\bgalaxy\b/, /\bsmartphone\b/, /\bcelular\b/, /\bredmi\b/, /\bpoco\b/, /\bmotorola\b/, /\bmoto g\b/, /\bxiaomi\b/],
+    exclude: [/\bsmartwatch\b/, /\bwatch\b/, /\brelogio\b/, /\brelógio\b/, /\bfit3\b/, /\bcapa\b/, /\bcase\b/, /\bpelicula\b/, /\bpelícula\b/, /\bcabo\b/, /\bcarregador\b/, /\bsuporte\b/, /\bfone\b/, /\bheadset\b/, /\bcompativel\b/, /\bcompatível\b/],
+  }],
+  ["notebook", {
+    include: [/\bnotebook\b/, /\blaptop\b/, /\bmacbook\b/, /\bchromebook\b/, /\bideapad\b/, /\bthinkpad\b/, /\bvivobook\b/, /\baspire\b/, /\binspiron\b/, /\bloq\b/],
+    exclude: [/\bsoftware\b/, /\blicenca\b/, /\blicença\b/, /\bcapa\b/, /\bcase\b/, /\bmochila\b/, /\bbase\b/, /\bsuporte\b/, /\bcooler\b/, /\bmouse\b/, /\bteclado\b/],
+  }],
+  ["monitor", {
+    include: [/\bmonitor\b/, /\b144hz\b/, /\b165hz\b/, /\b240hz\b/, /\bultrawide\b/, /\bips\b/, /\bqhd\b/],
+    exclude: [/\bsmartwatch\b/, /\bwatch\b/, /\brelogio\b/, /\brelógio\b/, /\bmonitor atividades\b/, /\bsuporte\b/, /\bcabo\b/, /\badaptador\b/, /\bnotebook\b/, /\btv box\b/, /\bcontrole\b/],
+  }],
+  ["tv", {
+    include: [/\bsmart tv\b/, /\btv\b/, /\btelevisao\b/, /\btelevisão\b/, /\boled\b/, /\bqled\b/, /\bmini led\b/, /\b4k\b/],
+    exclude: [/\bsuporte\b/, /\bcontrole\b/, /\bcabo\b/, /\bmonitor\b/, /\btv box\b/, /\bstick\b/],
+  }],
+  ["rede", {
+    include: [/\broteador\b/, /\brouter\b/, /\bmesh\b/, /\bwi-fi\b/, /\bwifi\b/, /\bax3000\b/, /\bbe550\b/, /\bbe6500\b/, /\btp-link\b/, /\btenda\b/],
+    exclude: [/\bsuporte\b/, /\bparede\b/, /\bcabo\b/, /\badaptador\b/, /\bfonte\b/],
+  }],
+  ["ferramenta", {
+    include: [/\bfuradeira\b/, /\bparafusadeira\b/, /\bserra\b/, /\blixadeira\b/, /\besmerilhadeira\b/, /\bmartelete\b/, /\balicate\b/],
+    exclude: [/\bserra copo\b/, /\bescova de carvao\b/, /\bescova de carvão\b/, /\bpeca\b/, /\bpeça\b/, /\brefil\b/, /\breposicao\b/, /\breposição\b/],
+  }],
+  ["audio", {
+    include: [/\bfone\b/, /\bheadphone\b/, /\bheadset\b/, /\bearbud\b/, /\bbuds\b/, /\bairpods\b/, /\bcaixa de som\b/, /\bsoundbar\b/, /\bbluetooth\b/],
+    exclude: [/\bcapa\b/, /\bcase\b/, /\bcabo\b/, /\bcarregador\b/, /\bsuporte\b/],
+  }],
+  ["tablet", {
+    include: [/\btablet\b/, /\bipad\b/, /\bgalaxy tab\b/, /\bredmi pad\b/, /\bxiaomi pad\b/, /\blenovo tab\b/],
+    exclude: [/\bcapa\b/, /\bcase\b/, /\bpelicula\b/, /\bpelícula\b/, /\bcabo\b/, /\bcarregador\b/, /\bsuporte\b/],
+  }],
+  ["casa", {
+    include: [/\bair fryer\b/, /\baspirador\b/, /\bcozinha\b/, /\biluminacao\b/, /\biluminação\b/, /\borganizador\b/],
+    exclude: [/\bpeca\b/, /\bpeça\b/, /\brefil\b/, /\bescova de carvao\b/, /\bescova de carvão\b/],
+  }],
 ]);
 
 function resolveVerifiedOfferCategory(offer = {}) {
   const key = normalizedCatalogCategoryKey(offer.normalizedCategory || offer.category || offer.department || "");
+  if (VERIFIED_OFFER_CATEGORY_ALIASES.has(key)) return VERIFIED_OFFER_CATEGORY_ALIASES.get(key);
   if (VERIFIED_OFFER_CATEGORY_COPY.has(key)) return key;
   const text = normalizedCatalogCategoryKey([
     offer.title,
@@ -204,16 +272,55 @@ function resolveVerifiedOfferCategory(offer = {}) {
     Array.isArray(offer.searchKeywords) ? offer.searchKeywords.join(" ") : "",
   ].filter(Boolean).join(" "));
   if (/iphone|galaxy|samsung|celular|smartphone/.test(text)) return "celular";
+  if (/notebook|laptop|macbook|chromebook|ideapad|thinkpad|vivobook|aspire|inspiron/.test(text)) return "notebook";
+  if (/monitor|144hz|165hz|240hz|ultrawide/.test(text)) return "monitor";
+  if (/smart tv|\btv\b|televisao|televisão|oled|qled|mini led/.test(text)) return "tv";
   if (/roteador|router|wifi|wi-fi|mesh|tenda|tp-link|be6500|ax3000/.test(text)) return "rede";
+  if (/furadeira|parafusadeira|serra|lixadeira|esmerilhadeira|martelete|alicate/.test(text)) return "ferramenta";
+  if (/fone|headphone|headset|earbud|buds|airpods|caixa de som|soundbar|bluetooth/.test(text)) return "audio";
+  if (/tablet|ipad|galaxy tab|redmi pad|xiaomi pad|lenovo tab/.test(text)) return "tablet";
+  if (/air fryer|aspirador|cozinha|iluminacao|iluminação|organizador/.test(text)) return "casa";
   if (/gopro|camera|c[âa]mera/.test(text)) return "camera";
   if (/magic mouse|mouse|teclado|acessorio|acessorios/.test(text)) return "acessorios";
   return key || "ofertas";
+}
+
+function hasVerifiedOfferRequiredPublicData(offer = {}) {
+  const price = Number(offer.cashPrice || offer.finalPrice || offer.price || 0);
+  const link = String(offer.permalink || offer.productUrl || offer.affiliateUrl || "").trim();
+  const image = String(offer.image || offer.thumbnail || "").trim();
+  return Number.isFinite(price) && price > 0 && Boolean(link) && Boolean(image);
+}
+
+function isPrincipalVerifiedOffer(offer = {}) {
+  const type = normalizedCatalogCategoryKey(offer.productType || "");
+  if (offer.isAccessory === true) return false;
+  if (["accessory", "acessorio", "piece", "peca", "compatible", "compativel"].includes(type)) return false;
+  return true;
+}
+
+function verifiedOfferMatchesCategory(offer = {}, categoryKey = "") {
+  const rule = VERIFIED_OFFER_CATEGORY_RULES.get(categoryKey);
+  if (!rule) return false;
+  const text = normalizedCatalogCategoryKey([
+    offer.title,
+    offer.displayTitle,
+    offer.brand,
+    offer.model,
+  ].filter(Boolean).join(" "));
+  const hasInclude = rule.include.some((pattern) => pattern.test(text));
+  const hasExclude = rule.exclude.some((pattern) => pattern.test(text));
+  return hasInclude && !hasExclude;
 }
 
 function buildVerifiedOfferCategoryCards() {
   const groups = new Map();
   for (const offer of listFreshVerifiedAffiliateOffers()) {
     const categoryKey = resolveVerifiedOfferCategory(offer);
+    if (!VERIFIED_OFFER_CATEGORY_COPY.has(categoryKey)) continue;
+    if (!hasVerifiedOfferRequiredPublicData(offer)) continue;
+    if (!isPrincipalVerifiedOffer(offer)) continue;
+    if (!verifiedOfferMatchesCategory(offer, categoryKey)) continue;
     if (!groups.has(categoryKey)) groups.set(categoryKey, []);
     groups.get(categoryKey).push(offer);
   }
@@ -231,6 +338,7 @@ function buildVerifiedOfferCategoryCards() {
         .map((offer) => labelHomeSource(offer.sourceName || offer.sourceLabel || offer.source || ""))
         .filter(Boolean))];
       return {
+        categoryKey,
         category: copy.category || categoryKey,
         label: copy.label,
         query: copy.query || bestOffer.title || categoryKey,
@@ -248,7 +356,13 @@ function buildVerifiedOfferCategoryCards() {
       };
     })
     .filter((entry) => entry.count > 0)
-    .sort((left, right) => right.count - left.count || left.label.localeCompare(right.label, "pt-BR"))
+    .sort((left, right) => {
+      const leftPriority = VERIFIED_OFFER_CATEGORY_PRIORITY.indexOf(left.categoryKey);
+      const rightPriority = VERIFIED_OFFER_CATEGORY_PRIORITY.indexOf(right.categoryKey);
+      const normalizedLeft = leftPriority === -1 ? 999 : leftPriority;
+      const normalizedRight = rightPriority === -1 ? 999 : rightPriority;
+      return normalizedLeft - normalizedRight || right.count - left.count || left.label.localeCompare(right.label, "pt-BR");
+    })
     .slice(0, 6);
 }
 

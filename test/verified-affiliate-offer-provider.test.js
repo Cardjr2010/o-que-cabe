@@ -18,6 +18,7 @@ test("campanha capturada por screener respeita a data de validade", () => {
 
 test("oferta verificada com janela expirada nao entra na busca", async () => {
   const provider = new VerifiedAffiliateOfferProvider({
+    referenceDate: new Date("2026-07-24T12:00:00.000Z"),
     offers: [
       {
         id: "offer-expired",

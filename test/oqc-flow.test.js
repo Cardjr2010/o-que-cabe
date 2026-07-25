@@ -252,6 +252,14 @@ test("/api/catalog/stats resume marcas, categorias e buscas", async () => {
     assert.ok(body.top20Categories.length > 0);
     assert.ok(Array.isArray(body.topSearches));
     assert.ok(body.topSearches.length > 0);
+    assert.ok(body.curatedOffers);
+    assert.ok(Number(body.curatedOffers.total || 0) > 0);
+    assert.ok(Array.isArray(body.curatedOffers.bySource));
+    assert.ok(body.curatedOffers.bySource.some((entry) => entry.value === "Amazon" && entry.count > 0));
+    assert.ok(body.curatedOffers.bySource.some((entry) => entry.value === "Mercado Livre" && entry.count > 0));
+    assert.ok(Array.isArray(body.inventorySummary));
+    assert.ok(body.inventorySummary.some((entry) => entry.source === "Amazon" && entry.type === "verified_affiliate_offer"));
+    assert.ok(body.inventorySummary.some((entry) => entry.source === "Mercado Livre" && entry.type === "verified_affiliate_offer"));
   } finally {
     global.fetch = originalFetch;
   }

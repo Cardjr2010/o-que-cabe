@@ -147,14 +147,16 @@ function offerRelevanceScore(offer = {}, query = "") {
 }
 
 export default class VerifiedAffiliateOfferProvider {
-  constructor({ offers = VERIFIED_AFFILIATE_OFFERS } = {}) {
+  constructor({ offers = VERIFIED_AFFILIATE_OFFERS, referenceDate = null } = {}) {
     this.offers = Array.isArray(offers) ? offers : [];
+    this.referenceDate = referenceDate instanceof Date ? referenceDate : null;
   }
 
   getDiagnostics() {
+    const referenceDate = this.referenceDate || new Date();
     const visibleOffers = this.offers.filter((offer) => (
-      isScreenedOfferVisible(offer)
-      && isVerifiedAffiliateOfferFresh(offer)
+      isScreenedOfferVisible(offer, referenceDate)
+      && isVerifiedAffiliateOfferFresh(offer, referenceDate)
       && isVerifiedAffiliateOfferAutomatedSourceAllowed(offer)
       && isTrustedPartnerOffer(offer)
     ));
@@ -169,11 +171,12 @@ export default class VerifiedAffiliateOfferProvider {
 
   async searchProducts(query = "", options = {}) {
     const limit = Math.max(1, toNumber(options.limit, 12));
+    const referenceDate = options.referenceDate instanceof Date ? options.referenceDate : (this.referenceDate || new Date());
     const normalizedQuery = normalizeText(query);
     const ranked = this.offers
       .filter((offer) => (
-        isScreenedOfferVisible(offer)
-        && isVerifiedAffiliateOfferFresh(offer)
+        isScreenedOfferVisible(offer, referenceDate)
+        && isVerifiedAffiliateOfferFresh(offer, referenceDate)
         && isVerifiedAffiliateOfferAutomatedSourceAllowed(offer)
         && isTrustedPartnerOffer(offer)
         && isRelevantOfferForQuery(offer, normalizedQuery)

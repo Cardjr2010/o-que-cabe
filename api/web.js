@@ -762,6 +762,76 @@ function buildCountSummary(items = [], field = "", limit = 20) {
   return { total: counts.size, items: entries };
 }
 
+function normalizeStatsText(value = "") {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+function labelStatsSource(value = "") {
+  const source = normalizeStatsText(value);
+  if (source === "amazon" || source === "amazon.com.br") return "Amazon";
+  if (source === "mercado_livre" || source === "mercado livre" || source === "mercadolivre") return "Mercado Livre";
+  if (source === "saldao_informatica" || source === "actionpay_saldao" || source.includes("saldao")) return "Saldão da Informática";
+  if (source === "infostore" || source === "info store" || source === "info_store" || source === "infostore_feed") return "Info Store - Informática";
+  if (source === "flores_online" || source === "flores online") return "Flores Online";
+  if (source === "isabela_flores" || source === "isabela flores") return "Isabela Flores";
+  if (source === "ccp") return "CCP";
+  if (source === "authentical") return "Authentical";
+  if (source === "magalu") return "Magalu";
+  return String(value || "Sem fonte").replace(/\s+/g, " ").trim() || "Sem fonte";
+}
+
+function resolveVerifiedOfferStatsSource(offer = {}) {
+  return labelStatsSource(
+    offer.sourceName
+    || offer.sourceLabel
+    || offer.seller?.name
+    || offer.store
+    || offer.source
+    || "",
+  );
+}
+
+function resolveVerifiedOfferStatsCategory(offer = {}) {
+  const value = normalizeStatsText(offer.normalizedCategory || offer.category || offer.department || "sem categoria");
+  const aliases = {
+    celulares: "celular",
+    smartphones: "celular",
+    notebooks: "notebook",
+    monitores: "monitor",
+    tvs: "tv",
+    televisores: "tv",
+    ferramentas: "ferramenta",
+    fones: "audio",
+    tablets: "tablet",
+    informatica: "rede",
+  };
+  return aliases[value] || value || "sem categoria";
+}
+
+function isVerifiedOfferAccessoryForStats(offer = {}) {
+  const type = normalizeStatsText(offer.productType || "");
+  return Boolean(
+    offer.isAccessory
+    || ["accessory", "acessorio", "piece", "peca", "compatible", "compativel"].includes(type),
+  );
+}
+
+function buildVerifiedOfferCountSummary(items = [], resolver, limit = 20) {
+  const counts = new Map();
+  for (const item of Array.isArray(items) ? items : []) {
+    const value = String(resolver(item) || "sem valor").trim() || "sem valor";
+    counts.set(value, (counts.get(value) || 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([value, count]) => ({ value, count }))
+    .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value, "pt-BR"))
+    .slice(0, limit);
+}
+
 function buildCatalogStatsSnapshot() {
   const catalogManager = getCatalogManager();
   const rawItems = catalogManager.getRawItems();
@@ -777,6 +847,23 @@ function buildCatalogStatsSnapshot() {
   const topSearches = buildHomeCatalogData().seoHotSearches || [];
   const principalCount = enriched.filter((item) => !item?.isAccessory && ["principal", "product"].includes(String(item?.productType || "").toLowerCase())).length;
   const accessoryCount = enriched.filter((item) => Boolean(item?.isAccessory || ["accessory", "piece", "compatible"].includes(String(item?.productType || "").toLowerCase()))).length;
+  const verifiedOffers = listFreshVerifiedAffiliateOffers();
+  const verifiedOfferAccessoryCount = verifiedOffers.filter((offer) => isVerifiedOfferAccessoryForStats(offer)).length;
+  const verifiedOfferPrincipalCount = verifiedOffers.length - verifiedOfferAccessoryCount;
+  const verifiedOffersBySource = buildVerifiedOfferCountSummary(verifiedOffers, resolveVerifiedOfferStatsSource, 20);
+  const verifiedOffersByCategory = buildVerifiedOfferCountSummary(verifiedOffers, resolveVerifiedOfferStatsCategory, 20);
+  const inventorySummary = [
+    ...sourceCounts.map((entry) => ({
+      source: entry.source,
+      count: Number(entry.count || 0),
+      type: "catalog",
+    })),
+    ...verifiedOffersBySource.map((entry) => ({
+      source: entry.value,
+      count: Number(entry.count || 0),
+      type: "verified_affiliate_offer",
+    })),
+  ].filter((entry) => entry.count > 0);
 
   return {
     ok: true,
@@ -795,6 +882,21 @@ function buildCatalogStatsSnapshot() {
     productsByCategory: categoryCounts.items,
     productsByBrand: brandCounts.items,
     productsByDepartment: departmentCounts.items,
+    verifiedAffiliateOffers: {
+      total: verifiedOffers.length,
+      principal: verifiedOfferPrincipalCount,
+      accessories: verifiedOfferAccessoryCount,
+      bySource: verifiedOffersBySource,
+      byCategory: verifiedOffersByCategory,
+    },
+    curatedOffers: {
+      total: verifiedOffers.length,
+      principal: verifiedOfferPrincipalCount,
+      accessories: verifiedOfferAccessoryCount,
+      bySource: verifiedOffersBySource,
+      byCategory: verifiedOffersByCategory,
+    },
+    inventorySummary,
     top20Brands: brandCounts.items,
     top20Categories: categoryCounts.items,
     topSearches,
