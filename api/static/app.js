@@ -124,6 +124,7 @@ function submitWithDeclaredBudget() {
 
 function setSearchExperienceState(isActive) {
   document.body.classList.toggle("search-active", Boolean(isActive));
+  document.body.classList.toggle("category-active", Boolean(isActive && activeBrowseMode === "category"));
   if (heroSection) {
     heroSection.classList.toggle("hero-compact", Boolean(isActive));
   }
@@ -724,6 +725,37 @@ function buildDecisionCards(data = {}) {
   `;
 }
 
+function buildCategoryDecisionHeader(data = {}, products = []) {
+  const total = Number(data.totalMatchedProducts || products.length || 0);
+  const displayed = Number(data.displayedCount || products.length || 0);
+  const label = normalizeHomeCategoryLabel(activeBrowseCategory || data.query || productInput?.value || "Categoria");
+  const decisions = buildPrimaryDecisionItems({ ...data, products }).length || 1;
+  return `
+    <section class="category-results-hero">
+      <div>
+        <p class="panel-label">Categoria</p>
+        <h3>${escapeHtml(label)}</h3>
+        <p>Produtos publicados nesta área, com ordenação por recomendação, menor preço e melhor parcelamento.</p>
+      </div>
+      <div class="category-results-metrics">
+        <span><strong>${total}</strong> encontrados</span>
+        <span><strong>${displayed}</strong> exibidos</span>
+        <span><strong>${decisions}</strong> decisões</span>
+      </div>
+    </section>
+  `;
+}
+
+function renderCategoryResultsExperience(data = {}, products = []) {
+  const confirmedProducts = Array.isArray(products) ? products : [];
+  if (!confirmedProducts.length) return "";
+  return `
+    ${buildCategoryDecisionHeader(data, confirmedProducts)}
+    ${buildDecisionCards({ ...data, products: confirmedProducts })}
+    ${renderGroupedProducts(data.groups || null, confirmedProducts)}
+  `;
+}
+
 function buildComparisonBlock(data = {}) {
   const products = Array.isArray(data.products) ? data.products : [];
   const official = products.find((item) => Boolean(item?.officialStore ?? item?.official_store ?? item?.seller?.official_store_name));
@@ -800,9 +832,10 @@ function buildProductCardHtml(product) {
   const trust = resolveStoreTrust(product);
   const reputation = resolveSellerReputation(product);
   const reasons = buildReasonList(product);
+  const slimClass = activeBrowseMode === "category" ? " result-card-slim" : "";
 
   return `
-    <article class="result-card">
+    <article class="result-card${slimClass}">
       <div class="result-card-media"><div class="image-box">${productImage(product)}</div></div>
       <div class="result-card-body">
         <div class="result-card-top">
@@ -1002,6 +1035,9 @@ function renderGroupedProducts(groups = null, products = []) {
 }
 
 function renderResultsExperience(data = {}, products = []) {
+  if (activeBrowseMode === "category") {
+    return renderCategoryResultsExperience(data, products);
+  }
   const advisor = data.advisor || {};
   const overview = safeText(advisor.overview || data.summary, "Mostramos apenas ofertas confirmadas e alinhadas com a sua busca.");
   const comparison = buildComparisonBlock(data);
@@ -1896,11 +1932,11 @@ form.addEventListener("submit", async (event) => {
     if (resultsCount) {
       const displayed = Number(data.displayedCount || confirmedProducts.length || 0);
       resultsCount.textContent = activeBrowseMode
-        ? `${displayed} de ${totalMatched} itens nesta categoria`
+        ? `${displayed} de ${totalMatched} produtos`
         : `${displayed} opções encontradas`;
     }
     summaryTitle.textContent = confirmedProducts.length
-      ? (activeBrowseMode ? `${normalizeHomeCategoryLabel(product)}: todos os produtos encontrados` : `Opções para ${product}`)
+      ? (activeBrowseMode ? `${normalizeHomeCategoryLabel(activeBrowseCategory || product)}` : `Opções para ${product}`)
       : `Nenhuma oferta confirmada para ${product}`;
 
     if (data.fallbackUsed && Number(data.fallbackCount || 0) > 0) {

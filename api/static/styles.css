@@ -5406,3 +5406,240 @@ footer strong {
   border-color: #bdd9fb;
   box-shadow: 0 18px 34px rgba(15, 23, 42, 0.08);
 }
+
+.category-results-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.8fr);
+  gap: 14px;
+  align-items: end;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.category-results-hero h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(24px, 3vw, 38px);
+  line-height: 1.04;
+}
+
+.category-results-hero p {
+  margin: 8px 0 0;
+  max-width: 58ch;
+  color: #66717d;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.category-results-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.category-results-metrics span {
+  display: grid;
+  gap: 2px;
+  min-height: 58px;
+  padding: 10px;
+  border: 1px solid #dfe7f2;
+  border-radius: 16px;
+  background: #fff;
+  color: #66717d;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.category-results-metrics strong {
+  color: var(--navy);
+  font-size: 20px;
+  line-height: 1;
+}
+
+body.category-active .results-area {
+  padding: 16px;
+}
+
+body.category-active .results-toolbar {
+  position: sticky;
+  top: 8px;
+  z-index: 8;
+  margin: 10px 0;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+}
+
+body.category-active .decision-strip {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+body.category-active .decision-summary-card {
+  min-height: 0;
+  padding: 12px;
+  border-radius: 18px;
+}
+
+body.category-active .decision-summary-card h3 {
+  margin: 8px 0 6px;
+  font-size: 15px;
+  line-height: 1.18;
+  -webkit-line-clamp: 2;
+}
+
+body.category-active .decision-summary-price {
+  font-size: 22px;
+}
+
+body.category-active .decision-summary-meta,
+body.category-active .decision-summary-note {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.result-card.result-card-slim {
+  grid-template-columns: 132px minmax(0, 1fr);
+  min-height: 0;
+  border-radius: 20px;
+}
+
+.result-card.result-card-slim .result-card-media .image-box {
+  min-height: 132px;
+  border-radius: 20px 0 0 20px;
+}
+
+.result-card.result-card-slim .result-card-body {
+  padding: 12px 14px;
+}
+
+.result-card.result-card-slim .result-card-top h2 {
+  margin-top: 4px;
+  font-size: 16px;
+  line-height: 1.2;
+  -webkit-line-clamp: 2;
+}
+
+.result-card.result-card-slim .result-meta-grid {
+  display: none;
+}
+
+.result-card.result-card-slim .result-pills {
+  margin-top: 8px;
+  gap: 6px;
+}
+
+.result-card.result-card-slim .result-pill {
+  min-height: 26px;
+  padding: 0 9px;
+  font-size: 11px;
+}
+
+.result-card.result-card-slim .result-price-block {
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
+.result-card.result-card-slim .result-price {
+  font-size: 24px;
+}
+
+.result-card.result-card-slim .result-installment,
+.result-card.result-card-slim .result-support {
+  margin: 3px 0 0;
+  font-size: 12px;
+}
+
+.result-card.result-card-slim .result-card-actions {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.result-card.result-card-slim .result-offer-button,
+.result-card.result-card-slim .offer-unavailable,
+.result-card.result-card-slim .result-why summary {
+  min-height: 38px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+@media (max-width: 720px) {
+  .category-results-hero {
+    grid-template-columns: 1fr;
+    padding: 14px;
+    border-radius: 20px;
+  }
+
+  .category-results-hero h3 {
+    font-size: 28px;
+  }
+
+  .category-results-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .category-results-metrics span {
+    min-height: 50px;
+    padding: 8px;
+    font-size: 10px;
+  }
+
+  .category-results-metrics strong {
+    font-size: 17px;
+  }
+
+  body.category-active .results-sort {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  body.category-active .results-sort button {
+    width: 100%;
+  }
+
+  body.category-active .decision-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .result-card.result-card-slim {
+    grid-template-columns: 96px minmax(0, 1fr);
+    border-radius: 18px;
+  }
+
+  .result-card.result-card-slim .result-card-media .image-box {
+    min-height: 112px;
+    border-right: 1px solid var(--line);
+    border-bottom: 0;
+    border-radius: 18px 0 0 18px;
+  }
+
+  .result-card.result-card-slim .result-card-body {
+    padding: 10px;
+  }
+
+  .result-card.result-card-slim .result-card-top {
+    gap: 8px;
+  }
+
+  .result-card.result-card-slim .result-budget-badge {
+    display: none;
+  }
+
+  .result-card.result-card-slim .result-pills {
+    display: none;
+  }
+
+  .result-card.result-card-slim .result-price {
+    font-size: 21px;
+  }
+
+  .result-card.result-card-slim .result-support {
+    display: none;
+  }
+
+  .result-card.result-card-slim .result-card-actions {
+    grid-template-columns: 1fr;
+  }
+}
