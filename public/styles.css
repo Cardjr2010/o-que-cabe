@@ -5704,6 +5704,10 @@ body.category-active .decision-summary-note {
     max-width: calc(100vw - 54px);
   }
 
+  body[data-category-page="true"] .category-results-hero {
+    display: none;
+  }
+
   body[data-category-page="true"] .oqc-product-group-head p {
     max-width: 100%;
     font-size: 13px;

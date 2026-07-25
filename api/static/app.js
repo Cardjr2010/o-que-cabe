@@ -1871,7 +1871,7 @@ form.addEventListener("submit", async (event) => {
   budgetTotal.textContent = activeBrowseMode ? "Categoria" : currency.format(effectiveCeiling);
     if (activeBrowseMode) {
       budgetLine.textContent = "sem orçamento aplicado";
-      if (marketline) marketline.textContent = "Mostrando todos os itens publicados dessa categoria. Use a ordenação para comparar.";
+      if (marketline) marketline.textContent = "Produtos publicados. Ordene por recomendação, preço ou parcela.";
       if (monthlyLabel) monthlyLabel.textContent = "Máx. mensal";
       if (monthsField) monthsField.hidden = true;
       if (totalField) totalField.hidden = false;
