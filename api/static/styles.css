@@ -5476,13 +5476,21 @@ body[data-category-page="true"] {
 
 body[data-category-page="true"] .topbar,
 body[data-category-page="true"] .results-area,
+body[data-category-page="true"] .results-toolbar,
+body[data-category-page="true"] .results-sort,
 body[data-category-page="true"] .section-head,
 body[data-category-page="true"] .category-results-hero,
 body[data-category-page="true"] .decision-summary-card,
 body[data-category-page="true"] .oqc-product-group,
+body[data-category-page="true"] .result-card-grid,
 body[data-category-page="true"] .result-card {
+  box-sizing: border-box;
   max-width: 100%;
   min-width: 0;
+}
+
+body[data-category-page="true"] .results-area {
+  width: min(100%, calc(100% - 20px));
 }
 
 body[data-category-page="true"] .section-head {
@@ -5648,7 +5656,7 @@ body.category-active .decision-summary-note {
 
   body.category-active .results-sort {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     width: 100%;
   }
 
@@ -5658,6 +5666,11 @@ body.category-active .decision-summary-note {
     padding-inline: 8px;
     white-space: normal;
     line-height: 1.1;
+  }
+
+  body[data-category-page="true"] .results-toolbar {
+    overflow: hidden;
+    padding: 8px;
   }
 
   body[data-category-page="true"] .source-badge {
@@ -5673,19 +5686,27 @@ body.category-active .decision-summary-note {
   }
 
   .result-card.result-card-slim {
-    grid-template-columns: 96px minmax(0, 1fr);
+    grid-template-columns: 84px minmax(0, 1fr);
     border-radius: 18px;
   }
 
   .result-card.result-card-slim .result-card-media .image-box {
-    min-height: 112px;
+    width: 66px;
+    min-width: 66px;
+    height: 66px;
+    min-height: 66px;
+    margin: 10px auto;
     border-right: 1px solid var(--line);
     border-bottom: 0;
-    border-radius: 18px 0 0 18px;
+    border-radius: 14px;
   }
 
   .result-card.result-card-slim .result-card-body {
-    padding: 10px;
+    padding: 9px 9px 10px 0;
+  }
+
+  .result-card.result-card-slim .result-card-top h2 {
+    font-size: 14px;
   }
 
   .result-card.result-card-slim .result-card-top {
@@ -5701,7 +5722,11 @@ body.category-active .decision-summary-note {
   }
 
   .result-card.result-card-slim .result-price {
-    font-size: 21px;
+    font-size: 19px;
+  }
+
+  .result-card.result-card-slim .result-installment {
+    font-size: 11px;
   }
 
   .result-card.result-card-slim .result-support {
