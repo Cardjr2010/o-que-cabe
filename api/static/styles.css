@@ -5700,8 +5700,8 @@ body.category-active .decision-summary-note {
   body[data-category-page="true"] .category-results-hero,
   body[data-category-page="true"] .decision-summary-card,
   body[data-category-page="true"] .oqc-product-group {
-    width: calc(100vw - 54px);
-    max-width: calc(100vw - 54px);
+    width: calc(100vw - 72px);
+    max-width: calc(100vw - 72px);
   }
 
   body[data-category-page="true"] .category-results-hero {
@@ -5756,7 +5756,7 @@ body.category-active .decision-summary-note {
     flex: 1 1 calc(100% - 78px);
     box-sizing: border-box;
     width: calc(100% - 78px);
-    padding: 9px 8px 10px 0;
+    padding: 9px 14px 10px 0;
     min-width: 0;
     max-width: calc(100% - 78px);
     overflow: hidden;
