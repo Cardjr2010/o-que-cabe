@@ -5462,6 +5462,28 @@ body.category-active .results-area {
   padding: 16px;
 }
 
+body[data-category-page="true"].category-active .hero {
+  display: none;
+}
+
+body[data-category-page="true"].category-active .results-area {
+  margin-top: 14px;
+}
+
+body[data-category-page="true"] .hero {
+  min-height: auto;
+  padding-top: 12px;
+}
+
+body[data-category-page="true"] .hero-copy {
+  display: none;
+}
+
+body[data-category-page="true"] .search-card {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
 body.category-active .results-toolbar {
   position: sticky;
   top: 8px;
