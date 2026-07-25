@@ -5470,6 +5470,41 @@ body[data-category-page="true"].category-active .results-area {
   margin-top: 14px;
 }
 
+body[data-category-page="true"] {
+  overflow-x: hidden;
+}
+
+body[data-category-page="true"] .topbar,
+body[data-category-page="true"] .results-area,
+body[data-category-page="true"] .section-head,
+body[data-category-page="true"] .category-results-hero,
+body[data-category-page="true"] .decision-summary-card,
+body[data-category-page="true"] .oqc-product-group,
+body[data-category-page="true"] .result-card {
+  max-width: 100%;
+  min-width: 0;
+}
+
+body[data-category-page="true"] .section-head {
+  align-items: flex-start;
+  overflow: hidden;
+}
+
+body[data-category-page="true"] .section-head > div,
+body[data-category-page="true"] .category-results-hero > div,
+body[data-category-page="true"] .oqc-product-group-head > div,
+body[data-category-page="true"] .result-card-body {
+  min-width: 0;
+}
+
+body[data-category-page="true"] #summaryTitle,
+body[data-category-page="true"] .marketline,
+body[data-category-page="true"] .category-results-hero p,
+body[data-category-page="true"] .oqc-product-group-head p,
+body[data-category-page="true"] .result-card-top h2 {
+  overflow-wrap: anywhere;
+}
+
 body[data-category-page="true"] .hero {
   min-height: auto;
   padding-top: 12px;
@@ -5619,6 +5654,18 @@ body.category-active .decision-summary-note {
 
   body.category-active .results-sort button {
     width: 100%;
+    min-width: 0;
+    padding-inline: 8px;
+    white-space: normal;
+    line-height: 1.1;
+  }
+
+  body[data-category-page="true"] .source-badge {
+    display: none;
+  }
+
+  body[data-category-page="true"] .category-results-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   body.category-active .decision-strip {
