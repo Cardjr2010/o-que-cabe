@@ -16,6 +16,9 @@ const budgetLine = document.querySelector("#budgetLine");
 const summaryTitle = document.querySelector("#summaryTitle");
 const sourceBadge = document.querySelector("#sourceBadge");
 const resultsArea = document.querySelector(".results-area");
+const resultsToolbar = document.querySelector("#resultsToolbar");
+const resultsCount = document.querySelector("#resultsCount");
+const sortButtons = document.querySelectorAll("[data-sort]");
 const pechinchaGrid = document.querySelector("#pechinchaGrid");
 const categoryGrid = document.querySelector("#categoryGrid");
 const seoHotSearchesGrid = document.querySelector("#seoHotSearchesGrid");
@@ -52,6 +55,28 @@ const appView = document.body.dataset.view || "home";
 const apiEndpoint = document.body.dataset.endpoint || "/api/search";
 let searchTimer = null;
 let searchMode = form?.dataset.mode || "monthly";
+let activeSort = "recommended";
+let activeBrowseMode = "";
+let activeBrowseCategory = "";
+
+function setActiveSort(sort = "recommended") {
+  activeSort = sort || "recommended";
+  sortButtons.forEach((button) => {
+    button.classList.toggle("active", button.dataset.sort === activeSort);
+  });
+}
+
+function openCategoryResults(query = "", category = "") {
+  const cleanQuery = String(query || "").trim();
+  if (!cleanQuery) return;
+  activeBrowseMode = "category";
+  activeBrowseCategory = String(category || query || "").trim();
+  setActiveSort("recommended");
+  productInput.value = cleanQuery;
+  setMode("total");
+  if (!Number(totalBudgetInput?.value || 0)) totalBudgetInput.value = "999999";
+  form.requestSubmit();
+}
 
 function submitWithDeclaredBudget() {
   const budgetInput = searchMode === "total" ? totalBudgetInput : monthlyInput;
@@ -883,6 +908,8 @@ function renderRecommendationBlock(recommendations = []) {
   `;
 }
 function renderGroupedProducts(groups = null, products = []) {
+  const initialVisibleLimit = activeBrowseMode ? 12 : 2;
+  const extraVisibleLimit = activeBrowseMode ? Number.POSITIVE_INFINITY : 5;
   const readGroup = (bag, keys = []) => {
     if (!bag || typeof bag !== "object") return [];
     for (const key of keys) {
@@ -931,9 +958,9 @@ function renderGroupedProducts(groups = null, products = []) {
           <span>${section.items.length} itens</span>
           </div>
           <div class="result-card-grid">
-            ${section.items.slice(0, 2).map((product) => buildProductCardHtml(product)).join("")}
+            ${section.items.slice(0, initialVisibleLimit).map((product) => buildProductCardHtml(product)).join("")}
           </div>
-          ${section.items.length > 2 ? `<details class="oqc-more-results"><summary>Ver mais resultados (${section.items.length - 2})</summary><div class="result-card-grid">${section.items.slice(2, 5).map((product) => buildProductCardHtml(product)).join("")}</div></details>` : ""}
+          ${section.items.length > initialVisibleLimit ? `<details class="oqc-more-results"><summary>Ver mais resultados (${section.items.length - initialVisibleLimit})</summary><div class="result-card-grid">${section.items.slice(initialVisibleLimit, extraVisibleLimit).map((product) => buildProductCardHtml(product)).join("")}</div></details>` : ""}
         </section>
       `)
       .join("");
@@ -1234,9 +1261,7 @@ function renderPurchaseIntentions(items = []) {
   intentGrid.querySelectorAll(".intent-card").forEach((button) => {
     button.addEventListener("click", () => {
       const category = button.dataset.category || "";
-      productInput.value = button.dataset.query || category || productInput.value || "";
-      setMode(searchMode);
-      submitWithDeclaredBudget();
+      openCategoryResults(button.dataset.query || category || productInput.value || "", category);
     });
   });
 }
@@ -1259,9 +1284,7 @@ function renderDepartmentMenu(items = [], placeholder = false) {
   departmentsMenu.querySelectorAll(".department-link").forEach((button) => {
     button.addEventListener("click", () => {
       const category = button.dataset.category || "";
-      productInput.value = category;
-      setMode(searchMode);
-      submitWithDeclaredBudget();
+      openCategoryResults(category, category);
     });
   });
 }
@@ -1698,9 +1721,7 @@ async function loadHomeCatalogData() {
       categoryGrid.querySelectorAll("article[data-category]").forEach((card) => {
         card.addEventListener("click", () => {
           const category = card.dataset.category || "";
-          productInput.value = card.dataset.query || category;
-          setMode(searchMode);
-          submitWithDeclaredBudget();
+          openCategoryResults(card.dataset.query || category, category);
         });
       });
     }
@@ -1754,6 +1775,9 @@ function initSearchFromUrl() {
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const button = form.querySelector(".submit-button");
+  if (event.submitter === button) activeBrowseMode = "";
+  if (!activeBrowseMode) activeBrowseCategory = "";
+  if (!activeBrowseMode) setActiveSort("recommended");
   const product = document.querySelector("#productInput").value.trim();
   const monthly = Number(document.querySelector("#monthlyInput").value || 0);
   const months = Number(document.querySelector("#monthsInput").value || 12);
@@ -1761,7 +1785,7 @@ form.addEventListener("submit", async (event) => {
   const totalBudget = searchMode === "total" ? totalBudgetInputValue : monthly * months;
   const ceiling = searchMode === "total" ? totalBudget : monthly * months;
 
-  if (!product || ceiling <= 0) {
+  if (!product || (ceiling <= 0 && !activeBrowseMode)) {
     if (resultsArea) resultsArea.hidden = true;
     setSearchExperienceState(false);
     return;
@@ -1774,8 +1798,16 @@ form.addEventListener("submit", async (event) => {
   resultsArea.hidden = false;
   resultsArea.classList.add("has-results");
   setSearchExperienceState(true);
-  budgetTotal.textContent = currency.format(ceiling);
-    if (searchMode === "total") {
+  const effectiveCeiling = ceiling > 0 ? ceiling : 999999;
+  budgetTotal.textContent = activeBrowseMode ? "Categoria" : currency.format(effectiveCeiling);
+    if (activeBrowseMode) {
+      budgetLine.textContent = "sem orçamento aplicado";
+      if (marketline) marketline.textContent = "Mostrando todos os itens publicados dessa categoria. Use a ordenação para comparar.";
+      if (monthlyLabel) monthlyLabel.textContent = "Máx. mensal";
+      if (monthsField) monthsField.hidden = true;
+      if (totalField) totalField.hidden = false;
+      if (totalBudgetInput) totalBudgetInput.disabled = false;
+    } else if (searchMode === "total") {
       budgetLine.textContent = `Orçamento total: ${currency.format(totalBudget)}`;
       if (marketline) marketline.textContent = `Comparando ofertas com teto total de ${currency.format(totalBudget)}.`;
       if (monthlyLabel) monthlyLabel.textContent = "Máx. mensal";
@@ -1790,7 +1822,7 @@ form.addEventListener("submit", async (event) => {
       if (totalField) totalField.hidden = true;
       if (totalBudgetInput) totalBudgetInput.disabled = true;
     }
-  summaryTitle.textContent = `Buscando ${product}...`;
+  summaryTitle.textContent = activeBrowseMode ? `Abrindo categoria ${product}...` : `Buscando ${product}...`;
   resultsArea.scrollIntoView({ behavior: "smooth", block: "start" });
 
   try {
@@ -1799,8 +1831,12 @@ form.addEventListener("submit", async (event) => {
     params.set("mode", searchMode);
     params.set("monthly", monthly);
     params.set("months", months);
-    params.set("totalBudget", totalBudget);
+    params.set("totalBudget", effectiveCeiling);
     params.set("source", "mercadolivre");
+    params.set("sort", activeSort);
+    params.set("limit", activeBrowseMode ? "120" : "24");
+    if (activeBrowseMode) params.set("browse", activeBrowseMode);
+    if (activeBrowseCategory) params.set("category", activeBrowseCategory);
     const endpoint = apiEndpoint;
     const response = await fetch(`${endpoint}?${params.toString()}`);
     if (!response.ok) throw new Error("SEARCH_UNAVAILABLE");
@@ -1822,7 +1858,17 @@ form.addEventListener("submit", async (event) => {
       if (sourceBadge) sourceBadge.textContent = "Viagem mock";
     }
 
-    summaryTitle.textContent = confirmedProducts.length ? `Opções para ${product}` : `Nenhuma oferta confirmada para ${product}`;
+    const totalMatched = Number(data.totalMatchedProducts || confirmedProducts.length || 0);
+    if (resultsToolbar) resultsToolbar.hidden = !confirmedProducts.length;
+    if (resultsCount) {
+      const displayed = Number(data.displayedCount || confirmedProducts.length || 0);
+      resultsCount.textContent = activeBrowseMode
+        ? `${displayed} de ${totalMatched} itens publicados`
+        : `${displayed} opções encontradas`;
+    }
+    summaryTitle.textContent = confirmedProducts.length
+      ? (activeBrowseMode ? `${normalizeHomeCategoryLabel(product)}: ${totalMatched} itens publicados` : `Opções para ${product}`)
+      : `Nenhuma oferta confirmada para ${product}`;
 
     if (data.fallbackUsed && Number(data.fallbackCount || 0) > 0) {
       notice.hidden = false;
@@ -1867,8 +1913,18 @@ function triggerLiveSearch() {
   }, 550);
 }
 
+sortButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const nextSort = button.dataset.sort || "recommended";
+    setActiveSort(nextSort);
+    if (!productInput?.value?.trim()) return;
+    form.requestSubmit();
+  });
+});
+
 document.querySelectorAll(".quick-row button").forEach((button) => {
   button.addEventListener("click", () => {
+    activeBrowseMode = "";
     productInput.value = button.dataset.query || button.dataset.product || "";
     if (button.dataset.mode === "total") {
       searchMode = "total";
@@ -1889,8 +1945,14 @@ document.querySelectorAll(".quick-row button").forEach((button) => {
   });
 });
 
+productInput?.addEventListener("input", () => {
+  activeBrowseMode = "";
+  activeBrowseCategory = "";
+});
+
 document.querySelectorAll(".pechincha-card").forEach((button) => {
   button.addEventListener("click", () => {
+    activeBrowseMode = "";
     productInput.value = button.dataset.query || productInput.value || "celular";
     searchMode = button.dataset.mode === "total" ? "total" : "monthly";
     monthlyInput.value = button.dataset.monthly || monthlyInput.value || "50";

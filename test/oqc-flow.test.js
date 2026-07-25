@@ -79,6 +79,38 @@ test("Modo total responde 200 e preserva totalBudget", async () => {
   }
 });
 
+test("Browse de categoria abre lista publicada e ordena sem puxar acessorios obvios", async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async () => {
+    throw new Error("offline");
+  };
+
+  try {
+    const notebookRes = createResponse();
+    await handler({ url: "/api/search?q=notebook&category=Notebooks&mode=total&totalBudget=999999&browse=category&sort=price_asc&limit=120" }, notebookRes);
+    const notebookBody = parseBody(notebookRes);
+    const notebookTitles = notebookBody.products.map((product) => String(product.title || product.displayTitle || "").toLowerCase());
+
+    assert.equal(notebookRes.statusCode, 200);
+    assert.equal(notebookBody.browseMode, "category");
+    assert.equal(notebookBody.sort, "price_asc");
+    assert.ok(notebookBody.displayedCount <= 120);
+    assert.ok(notebookTitles.every((title) => title.includes("notebook") || title.includes("laptop") || title.includes("chromebook") || title.includes("macbook")));
+    assert.ok(notebookTitles.every((title) => !/(case|capa|fonte|adaptador|mem[oó]ria ram|carregador)/i.test(title)));
+
+    const tvRes = createResponse();
+    await handler({ url: "/api/search?q=tv&category=TVs&mode=total&totalBudget=999999&browse=category&sort=price_desc&limit=120" }, tvRes);
+    const tvBody = parseBody(tvRes);
+    const tvTitles = tvBody.products.map((product) => String(product.title || product.displayTitle || "").toLowerCase());
+
+    assert.equal(tvBody.browseMode, "category");
+    assert.equal(tvBody.sort, "price_desc");
+    assert.ok(tvTitles.every((title) => !title.includes("cftv") && !title.includes("controle remoto")));
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
 test("Busca do catalogo real mantem categorias coerentes por busca", async () => {
   const originalFetch = global.fetch;
   global.fetch = async () => {

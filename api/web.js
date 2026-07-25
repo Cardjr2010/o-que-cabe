@@ -1353,6 +1353,162 @@ function buildFallbackRealResponse({ products, query, mode, monthly, months, tot
   };
 }
 
+function normalizePublicSearchSort(value = "") {
+  const sort = String(value || "recommended").toLowerCase().trim();
+  if (["price_asc", "menor_preco", "lowest"].includes(sort)) return "price_asc";
+  if (["price_desc", "maior_preco", "highest"].includes(sort)) return "price_desc";
+  if (["budget_fit", "fits", "cabem"].includes(sort)) return "budget_fit";
+  return "recommended";
+}
+
+function normalizeBrowseText(value = "") {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function browseCategoryAliases(value = "") {
+  const normalized = normalizeBrowseText(value);
+  const aliases = {
+    tv: ["tv", "tvs", "televisao", "televisores", "smart tv"],
+    tvs: ["tv", "tvs", "televisao", "televisores", "smart tv"],
+    celular: ["celular", "celulares", "smartphone", "smartphones"],
+    celulares: ["celular", "celulares", "smartphone", "smartphones"],
+    notebook: ["notebook", "notebooks", "laptop", "computador portatil"],
+    notebooks: ["notebook", "notebooks", "laptop", "computador portatil"],
+    monitor: ["monitor", "monitores"],
+    monitores: ["monitor", "monitores"],
+    tablet: ["tablet", "tablets", "ipad"],
+    tablets: ["tablet", "tablets", "ipad"],
+    audio: ["audio", "fone", "fones", "headset", "caixa de som", "soundbar"],
+    fones: ["audio", "fone", "fones", "headset", "caixa de som", "soundbar"],
+  };
+  return aliases[normalized] || [normalized];
+}
+
+function isPrimaryBrowseCategory(value = "") {
+  return ["tv", "tvs", "celular", "celulares", "notebook", "notebooks", "monitor", "monitores", "tablet", "tablets"]
+    .includes(normalizeBrowseText(value));
+}
+
+function isAccessoryForBrowse(product = {}) {
+  const intelligence = product.intelligence || product.oqcIntelligence || {};
+  const typeText = normalizeBrowseText([product.productType, intelligence.productType, product.category, intelligence.category].filter(Boolean).join(" "));
+  const titleText = normalizeBrowseText(product.displayTitle || product.title || "");
+  const accessoryTerms = [
+    "acessorio", "accessory", "peca", "piece", "controle remoto", "cabo", "adaptador", "fonte",
+    "memoria ram", "memoria", "case", "capa", "pelicula", "carregador", "bateria", "suporte",
+    "teclado", "mouse", "refil", "conector",
+  ];
+  return accessoryTerms.some((term) => typeText.includes(term) || titleText.includes(term));
+}
+
+function hasPrimaryTitleSignal(product = {}, category = "") {
+  const titleText = normalizeBrowseText(product.displayTitle || product.title || "");
+  const key = normalizeBrowseText(category);
+  const containsAny = (terms = []) => terms.some((term) => titleText.includes(normalizeBrowseText(term)));
+  if (["tv", "tvs"].includes(key)) {
+    return !titleText.includes("cftv") && (new Set(titleText.split(" ")).has("tv") || containsAny(["smart tv", "televisao"]));
+  }
+  if (["notebook", "notebooks"].includes(key)) return containsAny(["notebook", "laptop", "chromebook", "macbook"]);
+  if (["celular", "celulares"].includes(key)) return containsAny(["celular", "smartphone", "iphone", "galaxy", "redmi", "poco", "motorola", "xiaomi"]);
+  if (["monitor", "monitores"].includes(key)) return containsAny(["monitor"]);
+  if (["tablet", "tablets"].includes(key)) return containsAny(["tablet", "ipad"]);
+  return true;
+}
+
+function productMatchesBrowseCategory(product = {}, category = "") {
+  const aliases = browseCategoryAliases(category).filter(Boolean);
+  if (!aliases.length) return false;
+  const intelligence = product.intelligence || product.oqcIntelligence || {};
+  const categoryText = normalizeBrowseText([
+    product.department,
+    product.category,
+    product.normalizedCategory,
+    product.subcategory,
+    product.productType,
+    intelligence.department,
+    intelligence.category,
+    intelligence.subcategory,
+  ].filter(Boolean).join(" "));
+  const titleText = normalizeBrowseText(product.displayTitle || product.title || "");
+  const titleTokens = new Set(titleText.split(" ").filter(Boolean));
+  if (isPrimaryBrowseCategory(category) && !hasPrimaryTitleSignal(product, category)) return false;
+  return aliases.some((alias) => {
+    const normalizedAlias = normalizeBrowseText(alias);
+    if (!normalizedAlias) return false;
+    if (categoryText.includes(normalizedAlias)) return !(isPrimaryBrowseCategory(category) && isAccessoryForBrowse(product));
+    if (categoryText) return false;
+    if (normalizedAlias.length <= 2) return titleTokens.has(normalizedAlias);
+    return titleText.includes(normalizedAlias) && !(isPrimaryBrowseCategory(category) && isAccessoryForBrowse(product));
+  });
+}
+
+function listBrowseCategoryProducts(orchestrator, category = "") {
+  const products = orchestrator?.catalogManager?.list?.() || [];
+  return products.filter((product) => productMatchesBrowseCategory(product, category));
+}
+
+function resolvePublicProductPrice(product = {}) {
+  const values = [
+    product.finalPrice,
+    product.cashPrice,
+    product.price,
+    product.totalPrice,
+  ].map(Number).filter((value) => Number.isFinite(value) && value > 0);
+  return values.length ? values[0] : Number.POSITIVE_INFINITY;
+}
+
+function sortPublicSearchProducts(products = [], sort = "recommended") {
+  const list = Array.isArray(products) ? [...products] : [];
+  if (sort === "price_asc") {
+    return list.sort((left, right) => resolvePublicProductPrice(left) - resolvePublicProductPrice(right));
+  }
+  if (sort === "price_desc") {
+    return list.sort((left, right) => resolvePublicProductPrice(right) - resolvePublicProductPrice(left));
+  }
+  if (sort === "budget_fit") {
+    const rank = { CABE: 0, APERTADO: 1, "NÃO CABE": 2, NAO_CABE: 2 };
+    return list.sort((left, right) => {
+      const leftStatus = String(left.status || left.budgetStatus || "").toUpperCase();
+      const rightStatus = String(right.status || right.budgetStatus || "").toUpperCase();
+      const statusDelta = (rank[leftStatus] ?? 9) - (rank[rightStatus] ?? 9);
+      if (statusDelta !== 0) return statusDelta;
+      return resolvePublicProductPrice(left) - resolvePublicProductPrice(right);
+    });
+  }
+  return list;
+}
+
+function applyPublicSearchPresentation(response = {}, { sort, limit }) {
+  const normalizedSort = normalizePublicSearchSort(sort);
+  const safeLimit = Math.max(1, Math.min(Number(limit || 24), 140));
+  const sortedProducts = sortPublicSearchProducts(response.products || [], normalizedSort);
+  const visibleProducts = sortedProducts.slice(0, safeLimit);
+  const recommendations = visibleProducts.slice(0, 3).map((product, index) => ({
+    rank: index + 1,
+    label: index === 0 ? "Melhor escolha" : index === 1 ? "Boa alternativa" : "Opcao economica",
+    reason: "Produto real ordenado pela classificacao solicitada.",
+    product: {
+      ...product,
+      reason: "Produto real ordenado pela classificacao solicitada.",
+    },
+  }));
+  const groups = BudgetEngine.groupBudgetPriority(visibleProducts);
+  return {
+    ...response,
+    products: visibleProducts,
+    recommendations,
+    groups,
+    sort: normalizedSort,
+    requestedLimit: safeLimit,
+    totalMatchedProducts: Array.isArray(response.products) ? response.products.length : 0,
+  };
+}
+
 function renderExplorerPage({ title, heading, description, view, badge, endpoint, inputLabel, inputPlaceholder, quickLabel, quickButtons }) {
   const buttons = quickButtons
     .map((item) => `<button type="button" data-query="${escapeHtml(item.query)}" data-monthly="${item.monthly || 100}" data-months="${item.months || 12}">${escapeHtml(item.label)}</button>`)
@@ -1969,8 +2125,29 @@ export default async function handler(req, res) {
     const totalBudget = mode === "total"
       ? Number(url.searchParams.get("totalBudget") || "0")
       : Number(url.searchParams.get("totalBudget") || (monthly * months));
+    const sort = normalizePublicSearchSort(url.searchParams.get("sort") || "recommended");
+    const limit = Math.max(1, Math.min(Number(url.searchParams.get("limit") || "24"), 140));
+    const browse = String(url.searchParams.get("browse") || "").toLowerCase();
+    const browseCategory = url.searchParams.get("category") || q;
     try {
-      const searchResult = await getSearchOrchestrator().search({
+      const orchestrator = getSearchOrchestrator();
+      const browseProducts = browse === "category" ? listBrowseCategoryProducts(orchestrator, browseCategory) : [];
+      const searchResult = browse === "category"
+        ? {
+            ok: true,
+            dataMode: "real",
+            products: browseProducts,
+            returnedCount: browseProducts.length,
+            strategyUsed: "catalog-category-browse",
+            fallbackUsed: false,
+            fallbackAttempted: false,
+            fallbackSource: "",
+            fallbackCount: 0,
+            intent: { query: q, category: browseCategory, mode, monthly, months, totalBudget },
+            warnings: [],
+            refinementSuggestions: [],
+          }
+        : await orchestrator.search({
         query: q,
         mode,
         monthly,
@@ -1981,7 +2158,7 @@ export default async function handler(req, res) {
       const dataMode = selectedProducts.some((item) => String(item.dataMode || item.mode || "").toLowerCase().startsWith("real") || String(item.dataMode || item.mode || "").toLowerCase() === "seed")
         ? "real"
         : (searchResult.strategyUsed === "refinement-needed" ? (searchResult.dataMode || "real") : "none");
-      const response = buildOqcResponse({
+      const response = applyPublicSearchPresentation(buildOqcResponse({
         products: selectedProducts,
         query: q,
         mode,
@@ -1989,7 +2166,7 @@ export default async function handler(req, res) {
         months,
         totalBudget,
         dataMode,
-      });
+      }), { sort, limit });
       const advisor = buildAdvisorSnapshot(searchResult, q);
 
       const publicWarning = searchResult.fallbackUsed && Number(searchResult.fallbackCount || 0) > 0
@@ -2012,6 +2189,10 @@ export default async function handler(req, res) {
         fallbackSource: searchResult.fallbackSource || "",
         fallbackCount: Number(searchResult.fallbackCount || 0),
         returnedCount: searchResult.returnedCount,
+        displayedCount: Array.isArray(response.products) ? response.products.length : 0,
+        totalMatchedProducts: response.totalMatchedProducts,
+        browseMode: browse || "",
+        sort: response.sort,
         searchIntent: searchResult.intent,
         refinementSuggestions: Array.isArray(searchResult.refinementSuggestions) ? searchResult.refinementSuggestions : [],
         installmentWarnings: searchResult.warnings,

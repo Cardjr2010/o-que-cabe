@@ -975,7 +975,7 @@ export default class SearchOrchestrator {
         if (!key || seen.has(key)) continue;
         seen.add(key);
         collected.push(product);
-        if (collected.length >= 50) return true;
+        if (collected.length >= 140) return true;
       }
       return false;
     };
