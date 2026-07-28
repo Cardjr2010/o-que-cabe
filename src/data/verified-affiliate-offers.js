@@ -1,7 +1,9 @@
 import { SCREENED_MARKETPLACE_PRODUCTS } from "./screened-marketplace-products.generated.js";
+import { AMAZON_BESTSELLERS_OFFERS } from "./amazon-bestsellers-offers.generated.js";
 
 export const VERIFIED_AFFILIATE_OFFERS = [
   ...SCREENED_MARKETPLACE_PRODUCTS,
+  ...AMAZON_BESTSELLERS_OFFERS,
   {
     id: "verified-ml-galaxy-s26-ultra-256gb",
     itemId: "MLB6288481984",

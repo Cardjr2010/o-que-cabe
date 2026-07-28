@@ -384,8 +384,8 @@ function hasVerifiedAffiliateOfferCoverage(intent = {}) {
 }
 
 function shouldEnrichWithExternal(intent = {}, products = []) {
-  if (isHomeIntent(intent)) return false;
   if (hasVerifiedAffiliateOfferCoverage(intent)) return true;
+  if (isHomeIntent(intent)) return false;
   if (isTrackedCommercialIntent(intent)) return true;
   const normalizedQuery = normalizeText(intent.query || intent.searchText || "");
   const termCount = normalizedQuery.split(/\s+/).filter(Boolean).length;
@@ -632,7 +632,12 @@ function detectCategory(text = "") {
 function detectBrand(text = "") {
   const normalized = normalizeText(text);
   for (const rule of BRAND_RULES) {
-    if (rule.terms.some((term) => normalized.includes(normalizeText(term)))) {
+    if (rule.terms.some((term) => {
+      const normalizedTerm = normalizeText(term).trim();
+      if (!normalizedTerm) return false;
+      const escaped = normalizedTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return new RegExp(`(^|\\W)${escaped}(\\W|$)`).test(normalized);
+    })) {
       return rule.brand;
     }
   }

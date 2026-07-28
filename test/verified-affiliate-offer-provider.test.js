@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import VerifiedAffiliateOfferProvider from "../src/providers/VerifiedAffiliateOfferProvider.js";
+import { AMAZON_BESTSELLERS_OFFERS } from "../src/data/amazon-bestsellers-offers.generated.js";
 import { isScreenedOfferVisible, listActiveOfferCampaigns } from "../src/data/offer-campaigns.js";
 import {
   isVerifiedAffiliateOfferAutomatedSourceAllowed,
@@ -200,4 +201,16 @@ test("ofertas monitoradas do Mercado Livre entram sem misturar familias", async 
 
   const xiaomi = await provider.searchProducts("xiaomi be6500", { limit: 10 });
   assert.equal(xiaomi.products.length, 0);
+});
+
+test("intake da pagina de mais vendidos da Amazon entra com ASIN e tag de afiliado", async () => {
+  assert.ok(AMAZON_BESTSELLERS_OFFERS.length >= 20);
+  assert.ok(AMAZON_BESTSELLERS_OFFERS.every((offer) => offer.asin && offer.permalink.includes(`/dp/${offer.asin}`)));
+  assert.ok(AMAZON_BESTSELLERS_OFFERS.every((offer) => offer.affiliateUrl.includes("tag=candombledesm-20")));
+  assert.ok(AMAZON_BESTSELLERS_OFFERS.every((offer) => offer.price > 0));
+
+  const provider = new VerifiedAffiliateOfferProvider();
+  const result = await provider.searchProducts("garrafa termica matterhorn", { limit: 5 });
+
+  assert.ok(result.products.some((product) => product.asin === "B07K8XJF9D"));
 });

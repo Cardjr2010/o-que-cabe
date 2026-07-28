@@ -209,6 +209,24 @@ test("Busca de ferramenta usa oferta rastreada real quando houver cobertura", as
   assert.ok(/furadeira|parafusadeira/i.test(body.products[0]?.title || ""));
 });
 
+test("Busca especifica de casa pode usar oferta verificada sem liberar busca ampla", async () => {
+  const specificRes = createResponse();
+  await handler({ url: "/api/search?q=garrafa%20termica%20matterhorn&mode=total&totalBudget=100" }, specificRes);
+  const specificBody = parseBody(specificRes);
+
+  assert.equal(specificRes.statusCode, 200);
+  assert.equal(specificBody.dataMode, "real");
+  assert.ok(specificBody.products.some((product) => product.asin === "B07K8XJF9D"));
+
+  const broadRes = createResponse();
+  await handler({ url: "/api/search?q=casa&mode=total&totalBudget=50" }, broadRes);
+  const broadBody = parseBody(broadRes);
+
+  assert.equal(broadRes.statusCode, 200);
+  assert.equal(broadBody.strategyUsed, "refinement-needed");
+  assert.equal(broadBody.products.length, 0);
+});
+
 test("Busca de TV prioriza TV principal acima de controle remoto", async () => {
   const originalFetch = global.fetch;
   global.fetch = async () => {
