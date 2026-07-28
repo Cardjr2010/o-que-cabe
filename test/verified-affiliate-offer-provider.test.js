@@ -11,9 +11,12 @@ import {
 test("campanha capturada por screener respeita a data de validade", () => {
   const activeOnDay = listActiveOfferCampaigns(new Date("2026-07-20T12:00:00-03:00"));
   const expiredAfterDay = listActiveOfferCampaigns(new Date("2026-07-21T09:00:00-03:00"));
+  const amazonRadar = listActiveOfferCampaigns(new Date("2026-07-28T12:00:00-03:00"));
 
   assert.ok(activeOnDay.some((campaign) => campaign.id === "magalu-pushfullsu-screened"));
   assert.ok(!expiredAfterDay.some((campaign) => campaign.id === "magalu-pushfullsu-screened"));
+  assert.ok(amazonRadar.some((campaign) => campaign.id === "amazon-bestsellers-br-2026-07-28"));
+  assert.ok(amazonRadar.every((campaign) => !/PUSHFULLSU|VIPMELI|MELIBARATO|CUPOMPRACASA/i.test(campaign.coupon?.code || "")));
 });
 
 test("oferta verificada com janela expirada nao entra na busca", async () => {
@@ -75,6 +78,7 @@ test("oferta verificada antiga deixa de aparecer mesmo com link manual", async (
   );
 
   const provider = new VerifiedAffiliateOfferProvider({
+    referenceDate: new Date("2026-07-23T12:00:00.000Z"),
     offers: [
       {
         id: "offer-stale",
@@ -114,6 +118,7 @@ test("fonte Magalu sai do fluxo automatico mesmo quando o link existe", async ()
   );
 
   const provider = new VerifiedAffiliateOfferProvider({
+    referenceDate: new Date("2026-07-23T12:00:00.000Z"),
     offers: [
       {
         id: "offer-magalu",

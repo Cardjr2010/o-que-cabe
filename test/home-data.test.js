@@ -36,7 +36,9 @@ test("home data expõe catálogo real e departamentos coerentes", () => {
   assert.ok(data.guideCards.length >= 3);
   assert.ok(data.guideCards.every((entry) => String(entry.href || "").startsWith("/blog/")));
   assert.ok(Array.isArray(data.activeCampaigns));
-  assert.ok(data.activeCampaigns.length === 0);
+  assert.ok(data.activeCampaigns.some((entry) => entry.id === "amazon-bestsellers-br-2026-07-28"));
+  assert.ok(data.activeCampaigns.every((entry) => !["PUSHFULLSU", "VIPMELI", "MELIBARATO", "CUPOMPRACASA"].includes(String(entry.code || ""))));
+  assert.ok(data.activeCampaigns.some((entry) => String(entry.externalUrl || "").includes("amazon.com.br/gp/bestsellers")));
   assert.equal(data.catalogFresh, true);
   assert.ok(Array.isArray(data.activeSources));
   assert.ok(data.activeSources.length > 0);

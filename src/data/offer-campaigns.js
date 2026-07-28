@@ -16,6 +16,39 @@ const MAX_CAMPAIGN_VERIFICATION_AGE_HOURS = 48;
 
 export const ACTIVE_OFFER_CAMPAIGNS = [
   {
+    id: "amazon-bestsellers-br-2026-07-28",
+    source: "amazon",
+    sourceLabel: "Amazon",
+    headline: "Mais vendidos da Amazon",
+    label: "Ranking vivo para descobrir produtos fortes",
+    description: "Pagina oficial de mais vendidos da Amazon Brasil com link afiliado. Use como radar de demanda; produtos individuais so entram no OQC quando houver link direto validado.",
+    query: "mais vendidos amazon",
+    intent: {
+      query: "mais vendidos amazon",
+      mode: "total",
+      totalBudget: 1500,
+      months: 12,
+    },
+    externalUrl: "https://www.amazon.com.br/gp/bestsellers?&linkCode=ll2&tag=candombledesm-20&linkId=23c060689b1aed809c2085551d458441&ref_=as_li_ss_tl",
+    validUntil: "2026-07-30T23:59:59-03:00",
+    verifiedAt: "2026-07-28T10:00:00-03:00",
+    badge: "Radar Amazon",
+    disclaimer: "Ranking de categoria, nao produto individual. O OQC usa essa pagina para priorizar quais itens merecem monitoramento e validacao manual.",
+    coupon: {
+      source: "amazon_bestsellers_radar",
+      code: null,
+      type: "none",
+      value: 0,
+      minimumPurchase: null,
+      maximumDiscount: null,
+      validUntil: "2026-07-30T23:59:59-03:00",
+      verifiedAt: "2026-07-28T10:00:00-03:00",
+      status: "verified",
+    },
+    offerIds: [],
+    screenedSource: "amazon_bestsellers_page",
+  },
+  {
     id: "magalu-pushfullsu-screened",
     source: "magalu",
     sourceLabel: "Magalu",
@@ -192,6 +225,7 @@ export function buildCampaignCards(referenceDate = new Date()) {
     code: campaign.coupon?.code || null,
     benefitType: campaign.coupon?.type || "fixed",
     benefitValue: campaign.coupon?.value || 0,
+    externalUrl: campaign.externalUrl || null,
   }));
 }
 

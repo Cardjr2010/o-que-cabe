@@ -1,6 +1,6 @@
 # Relatorio de inclusao screened Amazon e Mercado Livre
 
-Gerado em: 2026-07-25T15:15:47.433Z
+Gerado em: 2026-07-28T22:36:20.086Z
 
 Total aceito: 674
 
@@ -15,12 +15,12 @@ Total aceito: 674
 - notebook: 117
 - monitor: 46
 - tv: 94
-- audio: 91
+- audio: 89
 - rede: 46
 - tablet: 46
 - casa: 32
 - ferramenta: 46
-- relogio: 43
+- relogio: 45
 
 ## Diagnostico por alvo
 
@@ -46,10 +46,10 @@ Total aceito: 674
 - amazon / parafusadeira: HTTP 200; recebidos 60; aceitos 23
 - mercado_livre / Celulares: HTTP 200; recebidos 44; aceitos 44
 - mercado_livre / Notebooks: HTTP 200; recebidos 48; aceitos 48
-- mercado_livre / Fones: HTTP 200; recebidos 45; aceitos 45
+- mercado_livre / Fones: HTTP 200; recebidos 43; aceitos 43
 - mercado_livre / TVs: HTTP 200; recebidos 48; aceitos 48
 - mercado_livre / Ferramentas: HTTP 200; recebidos 46; aceitos 46
-- mercado_livre / Smartwatches: HTTP 200; recebidos 43; aceitos 43
+- mercado_livre / Smartwatches: HTTP 200; recebidos 45; aceitos 45
 
 ## Observacao
 

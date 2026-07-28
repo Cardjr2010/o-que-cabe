@@ -1463,7 +1463,7 @@ function renderActiveCampaigns(items = []) {
 
   section.hidden = false;
   grid.innerHTML = entries.map((item) => `
-    <button type="button" class="campaign-card" data-query="${escapeHtml(item.query || "")}" data-mode="${escapeHtml(item.intent?.mode || "total")}" data-monthly="${escapeHtml(String(item.intent?.monthly || 0))}" data-total-budget="${escapeHtml(String(item.intent?.totalBudget || 0))}" data-months="${escapeHtml(String(item.intent?.months || 12))}">
+    <button type="button" class="campaign-card" data-query="${escapeHtml(item.query || "")}" data-external-url="${escapeHtml(item.externalUrl || "")}" data-mode="${escapeHtml(item.intent?.mode || "total")}" data-monthly="${escapeHtml(String(item.intent?.monthly || 0))}" data-total-budget="${escapeHtml(String(item.intent?.totalBudget || 0))}" data-months="${escapeHtml(String(item.intent?.months || 12))}">
       <div class="campaign-card-top">
         <span class="campaign-badge">${escapeHtml(item.badge || "Campanha")}</span>
         <span class="campaign-source">${escapeHtml(item.sourceLabel || "Fonte parceira")}</span>
@@ -1473,12 +1473,18 @@ function renderActiveCampaigns(items = []) {
       <div class="campaign-meta">
         ${item.code ? `<span>Codigo ${escapeHtml(item.code)}</span>` : `<span>Oferta monitorada</span>`}
         ${item.validUntil ? `<span>Valido ate ${escapeHtml(formatCampaignDate(item.validUntil))}</span>` : `<span>Abra para revisar no OQC</span>`}
+        ${item.externalUrl ? `<span>Abre fonte afiliada</span>` : ""}
       </div>
     </button>
   `).join("");
 
   grid.querySelectorAll(".campaign-card").forEach((card) => {
     card.addEventListener("click", () => {
+      const externalUrl = card.dataset.externalUrl || "";
+      if (externalUrl) {
+        window.open(externalUrl, "_blank", "noopener,noreferrer");
+        return;
+      }
       const query = card.dataset.query || "";
       if (query) productInput.value = query;
       searchMode = card.dataset.mode === "monthly" ? "monthly" : "total";

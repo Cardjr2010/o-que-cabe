@@ -47,7 +47,8 @@ function isAccessoryTitle(text = "") {
 }
 
 function getSpecificModelTokens(query = "") {
-  return normalizeText(query)
+  const normalizedQuery = normalizeText(query);
+  const tokens = normalizedQuery
     .split(/\s+/)
     .filter((token) => (
       /[a-z]+\d|\d+[a-z]/.test(token)
@@ -56,6 +57,10 @@ function getSpecificModelTokens(query = "") {
       || /^\d{3,4}hz$/.test(token)
       || /^be\d{3,5}$/.test(token)
     ));
+  if (/\biphone\b/.test(normalizedQuery)) {
+    tokens.push(...normalizedQuery.split(/\s+/).filter((token) => /^\d{1,2}$/.test(token)));
+  }
+  return [...new Set(tokens)];
 }
 
 function isRelevantOfferForQuery(offer = {}, query = "") {
