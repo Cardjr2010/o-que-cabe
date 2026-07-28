@@ -45,7 +45,7 @@
       <div class="topbar-actions">
         <nav class="main-nav" aria-label="Navegação principal">
           <a class="topbar-link active" href="/">Início</a>
-          <a class="topbar-link" href="#departments">Departamentos</a>
+          <a class="topbar-link" href="#departments">Deptos.</a>
           <a class="topbar-link" href="/blog/">Guias</a>
         </nav>
         <div class="trust-pill">
@@ -60,21 +60,21 @@
         <div class="hero-copy">
           <h1>Você diz quanto pode pagar.<br />O OQC encontra a melhor compra.</h1>
           <p>
-            Compare o que realmente cabe no seu orçamento.
-            <strong>Catálogo real revalidado antes de virar recomendação.</strong>
+            Busque um produto, informe seu limite e veja poucas opções boas.
+            <strong>A análise completa aparece no resultado.</strong>
           </p>
         </div>
 
         <form id="searchForm" class="search-card" data-mode="monthly">
           <div class="mode-tabs" aria-label="Tipo de orçamento">
-            <button class="active" type="button" data-mode="monthly">Orçamento Mensal</button>
-            <button type="button" data-mode="total">Orçamento Total</button>
+            <button class="active" type="button" data-mode="monthly">Mensal</button>
+            <button type="button" data-mode="total">Total</button>
           </div>
           <div class="field field-product">
             <label for="productInput">O que procura?</label>
             <div class="input-icon">
               <svg viewBox="0 0 24 24"><path d="m21 21-5-5"/><circle cx="10" cy="10" r="7"/></svg>
-              <input id="productInput" name="product" placeholder="Ex.: iPhone 17 256 GB, notebook i5 16 GB..." autocomplete="off" required />
+              <input id="productInput" name="product" placeholder="Ex.: iPhone 17, notebook i5..." autocomplete="off" required />
             </div>
           </div>
           <div class="field">
@@ -101,20 +101,20 @@
               <input id="totalBudgetInput" name="totalBudget" type="number" min="1" step="1" placeholder="Ex: 1.500" disabled />
             </div>
           </div>
-          <button class="submit-button" type="submit">Encontrar a melhor compra</button>
+          <button class="submit-button" type="submit">Encontrar compra</button>
         </form>
         <p class="seo-muted search-categories-hint" id="searchCategoriesHint">
-          Ex.: celular até R$ 1.500, notebook para estudar, TV 55 ou monitor gamer 144 Hz.
+          Exemplos: iPhone 17 256 GB, notebook i5 16 GB, monitor gamer 144 Hz.
         </p>
       </section>
 
       <section class="intentions-section intentions-section-compact home-secondary-section" id="intentionsSection">
         <div class="section-head section-head-tight">
           <div>
-          <p class="panel-label">Comece por aqui</p>
-          <h2>Escolha uma intenção</h2>
+            <p class="panel-label">Atalhos</p>
+            <h2>Buscas prontas</h2>
           </div>
-          <p class="section-note">Poucos atalhos, sem poluição.</p>
+          <p class="section-note">Cards secos. A decisão vem na busca.</p>
         </div>
         <div class="intent-grid" id="intentGrid" aria-live="polite">
           <div class="skeleton skeleton-intent" aria-hidden="true">
@@ -142,28 +142,6 @@
           <strong id="trustUpdated">Verificando catálogo</strong>
           <span id="trustUpdatedLabel">status da base</span>
         </article>
-      </section>
-
-      <section class="offer-radar-shell home-secondary-section" id="offerRadarSection" hidden>
-        <div class="section-head section-head-tight">
-          <div>
-            <p class="panel-label">Radar de ofertas</p>
-            <h2>Ofertas verificadas que já merecem entrar no radar</h2>
-          </div>
-          <p class="section-note">Link direto, origem legível e leitura rápida antes do clique.</p>
-        </div>
-        <div class="offer-radar-grid" id="offerRadarGrid" aria-live="polite"></div>
-      </section>
-
-      <section class="campaigns-shell home-secondary-section" id="campaignsSection" hidden>
-        <div class="section-head section-head-tight">
-          <div>
-            <p class="panel-label">Fontes monitoradas</p>
-            <h2>Radares e campanhas que valem acompanhar</h2>
-          </div>
-          <p class="section-note">Produto individual só entra como oferta quando houver link direto validado.</p>
-        </div>
-        <div class="campaign-grid" id="campaignGrid" aria-live="polite"></div>
       </section>
 
       <section class="results-area" hidden>
@@ -197,9 +175,9 @@
         <div class="section-head section-head-tight">
           <div>
             <p class="panel-label">Como funciona</p>
-            <h2>O OQC organiza a decisão antes da compra</h2>
+            <h2>Menos vitrine. Mais decisão.</h2>
           </div>
-          <p class="section-note">Primeiro entender o pedido. Depois cortar ruído e comparar melhor.</p>
+          <p class="section-note">A home só abre caminho. O resultado faz a comparação.</p>
         </div>
         <div class="how-grid">
           <article>

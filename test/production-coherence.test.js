@@ -43,7 +43,8 @@ test("home comunica as metricas oficiais sem presumir orcamento", () => {
 
   assert.equal(rootHtml.replace(/\r\n/g, "\n"), html.replace(/\r\n/g, "\n"), "o index da raiz deve acompanhar a home publica canonica");
   assert.equal(bundledHtml.replace(/\r\n/g, "\n"), html.replace(/\r\n/g, "\n"), "o HTML empacotado pela funcao deve acompanhar a home publica canonica");
-  assert.match(html, /Catálogo real revalidado antes de virar recomendação\./);
+  assert.match(html, /Busque um produto, informe seu limite e veja poucas opções boas\./);
+  assert.match(html, /A análise completa aparece no resultado\./);
   assert.match(html, /<strong id="trustTotalCatalog">--<\/strong>\s*<span>produtos publicados/);
   assert.match(html, /<strong id="trustDepartments">--<\/strong>\s*<span>produtos analisados/);
   assert.match(html, /<strong id="trustSources">--<\/strong>\s*<span>produtos ocultos por qualidade ou fonte/);

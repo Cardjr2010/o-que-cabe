@@ -1743,10 +1743,7 @@ async function loadHomeCatalogData() {
 
   renderLoadingSkeletons(intentGrid, "intent", 6);
   renderLoadingSkeletons(decisionHighlightsGrid, "decision", 3);
-  renderLoadingSkeletons(offerRadarGrid, "decision", 4);
-  renderLoadingSkeletons(campaignGrid, "decision", 3);
   renderLoadingSkeletons(guideCardsGrid, "card", 3);
-  renderLoadingSkeletons(videoGuidesGrid, "card", 3);
   renderLoadingSkeletons(categoryGrid, "card", 6);
   renderLoadingSkeletons(seoHotSearchesGrid, "chip", 6);
   if (searchCategoriesHint) {
@@ -1778,11 +1775,8 @@ async function loadHomeCatalogData() {
           ? pechinchas
           : (Array.isArray(data.homeButtons) && data.homeButtons.length ? data.homeButtons : categories),
     );
-    renderOfferCategories(Array.isArray(data.offerCategories) ? data.offerCategories : []);
-    renderActiveCampaigns(Array.isArray(data.activeCampaigns) ? data.activeCampaigns : []);
     renderGuideCards(Array.isArray(data.guideCards) ? data.guideCards : []);
     renderProofSection(data);
-    renderFeaturedVideos(Array.isArray(data.featuredVideos) ? data.featuredVideos : []);
     renderSeoHotSearches(Array.isArray(data.seoHotSearches) ? data.seoHotSearches : []);
     renderTrustBand(data);
 
@@ -1816,10 +1810,7 @@ async function loadHomeCatalogData() {
   } catch {
     if (intentGrid) intentGrid.innerHTML = "";
     if (decisionHighlightsGrid) decisionHighlightsGrid.innerHTML = "";
-    if (offerRadarGrid) offerRadarGrid.innerHTML = "";
-    if (campaignGrid) campaignGrid.innerHTML = "";
     if (guideCardsGrid) guideCardsGrid.innerHTML = "";
-    if (videoGuidesGrid) videoGuidesGrid.innerHTML = "";
     if (categoryGrid) categoryGrid.innerHTML = "";
     if (seoHotSearchesGrid) seoHotSearchesGrid.innerHTML = "";
   }
