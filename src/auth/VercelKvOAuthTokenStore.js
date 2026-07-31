@@ -31,7 +31,16 @@ export class VercelKvOAuthTokenStore extends OAuthTokenStore {
     this.restUrl = restUrl || envValue("KV_REST_API_URL", "UPSTASH_REDIS_REST_URL");
     this.restToken = restToken || envValue("KV_REST_API_TOKEN", "UPSTASH_REDIS_REST_TOKEN");
     this.redisUrl = redisUrl || envValue("KV_URL", "REDIS_URL", "REDIS_TLS_URL", "KV_REDIS_URL");
-    this.encryptionSecret = encryptionSecret || envValue("OAUTH_TOKEN_ENCRYPTION_KEY", "TOKEN_STORE_ENCRYPTION_KEY", "KV_ENCRYPTION_KEY");
+    this.encryptionSecret = encryptionSecret || envValue(
+      "OAUTH_TOKEN_ENCRYPTION_KEY",
+      "TOKEN_STORE_ENCRYPTION_KEY",
+      "KV_ENCRYPTION_KEY",
+      "OQC_ADMIN_TOKEN",
+      "ADMIN_API_SECRET",
+      "MELI_STATE_SECRET",
+      "MELI_CLIENT_SECRET",
+      "MERCADOLIVRE_CLIENT_SECRET",
+    );
     this.prefix = prefix || envValue("OAUTH_TOKEN_STORE_PREFIX") || "oqc";
     this.redisClientPromise = null;
   }

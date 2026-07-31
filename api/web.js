@@ -230,12 +230,16 @@ function getOAuthTokenStoreDiagnostics() {
   const hasRestUrl = Boolean(process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL);
   const hasRestToken = Boolean(process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN);
   const hasRedisUrl = Boolean(process.env.KV_URL || process.env.REDIS_URL || process.env.REDIS_TLS_URL || process.env.KV_REDIS_URL);
-  const hasEncryptionKey = Boolean(process.env.OAUTH_TOKEN_ENCRYPTION_KEY || process.env.TOKEN_STORE_ENCRYPTION_KEY || process.env.KV_ENCRYPTION_KEY);
+  const hasExplicitEncryptionKey = Boolean(process.env.OAUTH_TOKEN_ENCRYPTION_KEY || process.env.TOKEN_STORE_ENCRYPTION_KEY || process.env.KV_ENCRYPTION_KEY);
+  const hasFallbackEncryptionKey = Boolean(process.env.OQC_ADMIN_TOKEN || process.env.ADMIN_API_SECRET || process.env.MELI_STATE_SECRET || process.env.MELI_CLIENT_SECRET || process.env.MERCADOLIVRE_CLIENT_SECRET);
+  const hasEncryptionKey = Boolean(hasExplicitEncryptionKey || hasFallbackEncryptionKey);
   return {
     hasRestUrl,
     hasRestToken,
     hasRedisUrl,
     hasEncryptionKey,
+    hasExplicitEncryptionKey,
+    usesEncryptionFallback: Boolean(!hasExplicitEncryptionKey && hasFallbackEncryptionKey),
     mode: hasRestUrl && hasRestToken ? "rest" : hasRedisUrl ? "redis" : "missing",
     configured: Boolean(hasEncryptionKey && ((hasRestUrl && hasRestToken) || hasRedisUrl)),
   };
