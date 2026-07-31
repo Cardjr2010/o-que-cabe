@@ -1,8 +1,8 @@
 const catalogRefreshMetadata = {
-  "refreshedAt": "2026-07-31T17:45:46.520Z",
+  "refreshedAt": "2026-07-31T22:02:12.988Z",
   "fresh": true,
-  "analyzedCount": 3317,
-  "publishedCount": 2382,
+  "analyzedCount": 3143,
+  "publishedCount": 2208,
   "hiddenCount": 935,
   "activeSourceCounts": [
     {
@@ -23,14 +23,14 @@ const catalogRefreshMetadata = {
       "source": "amazon",
       "label": "Amazon",
       "analyzedCount": 437,
-      "publishedCount": 437,
+      "publishedCount": 337,
       "hiddenCount": 0
     },
     {
       "source": "mercado_livre",
       "label": "Mercado Livre",
       "analyzedCount": 281,
-      "publishedCount": 281,
+      "publishedCount": 207,
       "hiddenCount": 0
     }
   ],
@@ -77,7 +77,7 @@ const catalogRefreshMetadata = {
       "source": "amazon",
       "label": "Amazon",
       "analyzedCount": 437,
-      "publishedCount": 437,
+      "publishedCount": 337,
       "hiddenCount": 0,
       "rejectedReasons": []
     },
@@ -85,7 +85,7 @@ const catalogRefreshMetadata = {
       "source": "mercado_livre",
       "label": "Mercado Livre",
       "analyzedCount": 281,
-      "publishedCount": 281,
+      "publishedCount": 207,
       "hiddenCount": 0,
       "rejectedReasons": []
     }

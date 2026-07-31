@@ -547,11 +547,9 @@ function buildRefreshSourceSummary(refreshMetadata = null) {
     .map((entry) => ({
       source: labelHomeSource(entry?.label || entry?.source || ""),
       count: Number(entry?.publishedCount || 0),
-      analyzedCount: Number(entry?.analyzedCount || 0),
-      hiddenCount: Number(entry?.hiddenCount || 0),
     }))
-    .filter((entry) => entry.count > 0 || entry.analyzedCount > 0)
-    .sort((a, b) => b.count - a.count || b.analyzedCount - a.analyzedCount || a.source.localeCompare(b.source, "pt-BR"));
+    .filter((entry) => entry.count > 0)
+    .sort((a, b) => b.count - a.count || a.source.localeCompare(b.source, "pt-BR"));
 }
 
 function resolveCatalogUpdatedAt(items = []) {
