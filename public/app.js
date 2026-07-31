@@ -767,7 +767,18 @@ function buildComparisonBlock(data = {}) {
   const products = Array.isArray(data.products) ? data.products : [];
   const official = products.find((item) => Boolean(item?.officialStore ?? item?.official_store ?? item?.seller?.official_store_name));
   const general = products[0] || null;
-  if (!official && !general) return "";
+  const identityOf = (item = {}) => String(
+    item.id ||
+    item.externalId ||
+    item.sourceProductId ||
+    item.permalink ||
+    item.productUrl ||
+    item.url ||
+    item.title ||
+    "",
+  );
+  const distinctProducts = new Set(products.map(identityOf).filter(Boolean));
+  if (!official || !general || distinctProducts.size < 2 || identityOf(official) === identityOf(general)) return "";
   const officialPrice = Number(official?.finalPrice || official?.price || 0);
   const generalPrice = Number(general?.finalPrice || general?.price || 0);
   const diff = officialPrice > 0 && generalPrice > 0 ? officialPrice - generalPrice : 0;
@@ -838,8 +849,9 @@ function buildProductCardHtml(product) {
   const budget = resolveBudgetBadge(product);
   const trust = resolveStoreTrust(product);
   const reputation = resolveSellerReputation(product);
+  const shipping = resolveShippingSummary(product);
   const reasons = buildReasonList(product);
-  const slimClass = activeBrowseMode === "category" ? " result-card-slim" : "";
+  const slimClass = " result-card-slim";
   const fullTitle = resolveProductTitle(product);
   const visibleTitle = activeBrowseMode === "category" ? resolveCompactProductTitle(product, 58) : fullTitle;
 
@@ -854,12 +866,11 @@ function buildProductCardHtml(product) {
           </div>
           <span class="result-budget-badge result-budget-badge-${budget.tone}">${escapeHtml(budget.label)}</span>
         </div>
-        <div class="result-meta-grid">
-          <div><span class="result-label">${escapeHtml(trust.label)}</span><strong>${escapeHtml(trust.detail || sourceLabel)}</strong></div>
-          <div><span class="result-label">Condição</span><strong>${escapeHtml(condition ? normalizeConditionLabel(condition) : "Não informada")}</strong></div>
-          <div><span class="result-label">Reputação</span><strong>${escapeHtml(reputation || "Não informada")}</strong></div>
+        <div class="result-slim-facts">
+          <span>${escapeHtml(shipping.label)}</span>
+          ${condition ? `<span>${escapeHtml(normalizeConditionLabel(condition))}</span>` : ""}
+          ${trust.label === "Loja oficial confirmada" ? `<span>Loja oficial</span>` : ""}
         </div>
-        ${renderFactPills(product)}
         ${buildResultPriceBlock(product)}
         <div class="result-card-footer">
           <div class="result-card-actions">
@@ -872,6 +883,7 @@ function buildProductCardHtml(product) {
                 <p class="result-reason">${escapeHtml(note)}</p>
                 ${renderMarketSignal(product)}
                 ${imageWarning}
+                ${renderFactPills(product)}
                 <div class="result-analysis-meta">
                   <div><span class="result-label">${escapeHtml(trust.label)}</span><strong>${escapeHtml(trust.detail || sourceLabel)}</strong></div>
                   <div><span class="result-label">Condição</span><strong>${escapeHtml(condition ? normalizeConditionLabel(condition) : "Não informada")}</strong></div>

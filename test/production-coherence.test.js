@@ -43,11 +43,11 @@ test("home comunica as metricas oficiais sem presumir orcamento", () => {
 
   assert.equal(rootHtml.replace(/\r\n/g, "\n"), html.replace(/\r\n/g, "\n"), "o index da raiz deve acompanhar a home publica canonica");
   assert.equal(bundledHtml.replace(/\r\n/g, "\n"), html.replace(/\r\n/g, "\n"), "o HTML empacotado pela funcao deve acompanhar a home publica canonica");
-  assert.match(html, /Busque um produto, informe seu limite e veja poucas opções boas\./);
-  assert.match(html, /A análise completa aparece no resultado\./);
+  assert.match(html, /Busque um produto, informe seu limite e compare poucas op(?:ç|Ã§)(?:õ|Ãµ)es boas\./);
+  assert.match(html, /Pre(?:ç|Ã§)o, origem e parcelamento ficam claros no resultado\./);
   assert.match(html, /<strong id="trustTotalCatalog">--<\/strong>\s*<span>produtos publicados/);
   assert.match(html, /<strong id="trustDepartments">--<\/strong>\s*<span>produtos analisados/);
-  assert.match(html, /<strong id="trustSources">--<\/strong>\s*<span>produtos ocultos por qualidade ou fonte/);
+  assert.match(html, /<strong id="trustSources">--<\/strong>\s*<span>ocultos por qualidade ou fonte/);
   assert.doesNotMatch(html, /Hoje catalogo atualizado|15\.999 produtos reais analisados|15\.999<\/strong>|16\.740<\/strong>|741<\/strong>/);
   assert.doesNotMatch(html, /id="productInput"[^>]*\svalue=/);
   assert.doesNotMatch(html, /id="monthlyInput"[^>]*\svalue=/);
@@ -64,7 +64,7 @@ test("links futuros nao fingem navegacao e promessas respeitam os dados disponiv
   assert.match(html, /<a[^>]+href="\/blog\/"[^>]*>Guias<\/a>/i);
   assert.doesNotMatch(html, /<a[^>]*>\s*Minha Conta/i);
   assert.doesNotMatch(html, /corta juros abusivos|fretes absurdos|ma reputacao/i);
-  assert.match(html, /quando a fonte disponibiliza essas informa(?:c|ç)(?:o|õ)es/i);
+  assert.match(html, /quando a fonte disponibiliza essas informa(?:c|ç|Ã§)(?:o|õ|Ãµ)es/i);
   assert.match(script, /source\.toLowerCase\(\) === "estimated"/);
   assert.match(script, /Parcelamento estimado\. Confirme na loja\./);
 });
