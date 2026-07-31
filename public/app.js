@@ -878,7 +878,7 @@ function buildProductCardHtml(product) {
               ? `<a class="result-offer-button" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">${escapeHtml(buttonLabel)}</a>`
               : `<span class="offer-unavailable" aria-disabled="true">${escapeHtml(buttonLabel)}</span>`}
             <details class="result-why result-analysis-panel">
-              <summary>Por que recomendamos?</summary>
+              <summary>Por quê?</summary>
               <div class="result-why-body">
                 <p class="result-reason">${escapeHtml(note)}</p>
                 ${renderMarketSignal(product)}
@@ -2027,6 +2027,22 @@ document.querySelectorAll(".quick-row button").forEach((button) => {
       modeButtons.forEach((item) => item.classList.toggle("active", item.dataset.mode === searchMode));
       if (totalBudgetInput) totalBudgetInput.disabled = true;
     }
+    form.requestSubmit();
+  });
+});
+
+document.querySelectorAll("[data-compose-query]").forEach((button) => {
+  button.addEventListener("click", () => {
+    activeBrowseMode = "";
+    activeBrowseCategory = "";
+    productInput.value = button.dataset.composeQuery || "";
+    setMode("total");
+    if (totalBudgetInput) {
+      totalBudgetInput.value = button.dataset.composeBudget || "500";
+      totalBudgetInput.disabled = false;
+    }
+    if (monthlyInput) monthlyInput.value = "";
+    if (monthsInput) monthsInput.value = "12";
     form.requestSubmit();
   });
 });
