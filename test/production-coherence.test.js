@@ -128,6 +128,12 @@ test("status de fontes nunca expoe segredos e mantem diagnostico honesto", async
   }
 });
 
+test("oauth do Mercado Livre usa dominio brasileiro acessivel", () => {
+  const apiSource = readProjectFile("api/web.js");
+  assert.match(apiSource, /https:\/\/auth\.mercadolivre\.com\.br\/authorization/);
+  assert.doesNotMatch(apiSource, /https:\/\/auth\.mercadolibre\.com\.br\/authorization/);
+});
+
 test("busca publica nao devolve produtos demo quando nao ha oferta confirmada", async () => {
   const oldFetch = global.fetch;
   global.fetch = async () => new Response(JSON.stringify({ results: [] }), {

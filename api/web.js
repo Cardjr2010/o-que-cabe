@@ -1882,7 +1882,7 @@ function mercadolivreAuthUrl(state = buildMercadoLivreState()) {
     redirect_uri: mercadolivreRedirectUri(),
     state,
   });
-  return `https://auth.mercadolibre.com.br/authorization?${params.toString()}`;
+  return `https://auth.mercadolivre.com.br/authorization?${params.toString()}`;
 }
 
 function extractMercadoLivreItemId(url) {
