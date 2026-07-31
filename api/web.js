@@ -197,7 +197,9 @@ function createActionpayImporter() {
 
 function getMercadoLivreProvider() {
   if (!mercadoLivreProviderInstance) {
-    mercadoLivreProviderInstance = new MercadoLivreProvider();
+    mercadoLivreProviderInstance = new MercadoLivreProvider({
+      searchProvider: getMercadoLivreSearchProvider(),
+    });
   }
   return mercadoLivreProviderInstance;
 }

@@ -280,6 +280,15 @@ function normalizeCatalogProduct(item = {}) {
 }
 
 class MercadoLivreProvider extends MarketplaceProvider {
+  constructor({ searchProvider = null } = {}) {
+    super();
+    this.searchProvider = searchProvider;
+  }
+
+  getSearchProvider() {
+    return this.searchProvider || mercadoLivreSearchProvider;
+  }
+
   searchCatalogProducts(query = "", options = {}) {
     const q = String(query || "").trim();
     const accessoryIntent = /\b(capa|case|pelicula|pel[íi]cula|carregador|cabo|fone|headphone|airpods|earbud|strap|pulseira|acessorio|acess[óo]rio)\b/i.test(q);
@@ -347,7 +356,7 @@ class MercadoLivreProvider extends MarketplaceProvider {
       return catalogResult;
     }
 
-    const result = await mercadoLivreSearchProvider.searchProducts(q, options);
+    const result = await this.getSearchProvider().searchProducts(q, options);
     const normalizedProducts = Array.isArray(result.products)
       ? result.products.map((product) => this.normalizeProduct({
         ...product,
@@ -412,7 +421,7 @@ class MercadoLivreProvider extends MarketplaceProvider {
   }
 
   getDiagnostics() {
-    return MercadoLivreConnector.getDiagnostics();
+    return this.getSearchProvider()?.getDiagnostics?.() || MercadoLivreConnector.getDiagnostics();
   }
 }
 
