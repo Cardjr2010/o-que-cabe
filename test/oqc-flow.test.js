@@ -97,7 +97,7 @@ test("Browse de categoria abre lista publicada e ordena sem puxar acessorios obv
     assert.equal(notebookBody.sort, "price_asc");
     assert.ok(notebookBody.displayedCount <= 300);
     assert.ok(notebookBody.totalMatchedProducts > 40);
-    assert.ok(notebookSources.every((source) => !source.includes("amazon") && !source.includes("mercado_livre")));
+    assert.ok(notebookSources.some((source) => source.includes("amazon") || source.includes("mercado_livre")));
     assert.ok(notebookTitles.every((title) => title.includes("notebook") || title.includes("laptop") || title.includes("chromebook") || title.includes("macbook")));
     assert.ok(notebookTitles.every((title) => !/(case|capa|fonte|adaptador|mem[oó]ria ram|carregador)/i.test(title)));
 
@@ -197,15 +197,17 @@ test("Busca sem cobertura real nao inventa resultado", async () => {
   }
 });
 
-test("Busca de ferramenta nao usa oferta rastreada vencida", async () => {
+test("Busca de ferramenta usa produto parceiro monitorado sem tratar como oferta fresca", async () => {
   const res = createResponse();
   await handler({ url: "/api/search?q=furadeira&mode=total&totalBudget=500" }, res);
   const body = parseBody(res);
 
   assert.equal(res.statusCode, 200);
-  assert.equal(body.dataMode, "none");
+  assert.equal(body.dataMode, "real");
   assert.ok(Array.isArray(body.products));
-  assert.equal(body.products.length, 0);
+  assert.ok(body.products.length > 0);
+  assert.ok(body.products.every((product) => String(product.dataMode || "").toLowerCase() !== "demo"));
+  assert.ok(body.products.some((product) => /furadeira|parafusadeira|ferramenta|bosch|makita|dewalt/i.test(product.title || "")));
 });
 
 test("Busca especifica de casa nao usa oferta verificada vencida e busca ampla pede refinamento", async () => {
@@ -259,8 +261,8 @@ test("/api/catalog/stats resume marcas, categorias e buscas", async () => {
 
     assert.equal(res.statusCode, 200);
     assert.equal(body.ok, true);
-    assert.equal(body.totalProducts, 2599);
-    assert.equal(body.productsPublished, 1664);
+    assert.equal(body.totalProducts, 3317);
+    assert.equal(body.productsPublished, 2382);
     assert.equal(body.productsHidden, 935);
     assert.ok(Array.isArray(body.top20Brands));
     assert.ok(body.top20Brands.length > 0);
