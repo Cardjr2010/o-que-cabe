@@ -1375,68 +1375,251 @@ function attachMarketInsights(product = {}) {
   };
 }
 
-const PHONE_MAIN_TERMS = [
-  "celular",
-  "smartphone",
-  "iphone",
-  "galaxy",
-  "motorola",
-  "xiaomi",
-  "redmi",
-  "poco",
-];
-
-const PHONE_ACCESSORY_TERMS = [
-  "capa",
-  "capinha",
-  "case",
-  "pelicula",
-  "película",
-  "vidro",
-  "carregador",
-  "cabo",
-  "fone",
-  "headset",
-  "power bank",
-  "powerbank",
-  "suporte",
-  "adaptador",
-  "protetor",
-];
-
-const PHONE_COMPLEMENT_GROUPS = [
+const PURCHASE_CONTEXTS = [
   {
-    key: "protecao",
-    label: "Proteção",
-    intent: "capa ou película",
-    terms: ["capa", "capinha", "case", "pelicula", "película", "vidro", "protetor"],
-    excludeTerms: ["fone", "headset", "bluetooth", "carregador", "cabo", "power bank", "powerbank"],
-    maxPrice: 180,
-    reason: "Ajuda a proteger o aparelho antes do primeiro tombo ou risco.",
+    key: "smartphone",
+    triggers: ["celular", "smartphone", "iphone", "galaxy", "motorola", "xiaomi", "redmi", "poco"],
+    blockerTerms: ["capa", "capinha", "case", "pelicula", "película", "vidro", "carregador", "cabo", "fone", "headset", "power bank", "powerbank", "suporte", "adaptador", "protetor"],
+    families: [
+      { key: "iphone", terms: ["iphone", "apple"], negativeTerms: ["android", "samsung", "xiaomi", "motorola"] },
+      { key: "samsung", terms: ["samsung", "galaxy", "android"], negativeTerms: ["iphone"] },
+      { key: "xiaomi", terms: ["xiaomi", "redmi", "poco", "android"], negativeTerms: ["iphone"] },
+      { key: "motorola", terms: ["motorola", "moto", "android"], negativeTerms: ["iphone"] },
+    ],
+    groups: [
+      {
+        key: "protecao",
+        label: "Proteção",
+        intent: "capa ou película",
+        terms: ["capa", "capinha", "case", "pelicula", "película", "vidro", "protetor"],
+        excludeTerms: ["fone", "headset", "bluetooth", "carregador", "cabo", "power bank", "powerbank"],
+        requiresFamilyMatch: true,
+        maxPrice: 180,
+        reason: "Ajuda a proteger o aparelho antes do primeiro tombo ou risco.",
+      },
+      {
+        key: "energia",
+        label: "Energia fora de casa",
+        intent: "carregador portátil",
+        terms: ["carregador portatil", "carregador portátil", "power bank", "powerbank", "bateria portatil", "bateria portátil"],
+        maxPrice: 320,
+        reason: "Boa opção para manter carga durante trabalho, viagem ou estudo.",
+      },
+      {
+        key: "audio",
+        label: "Áudio",
+        intent: "fone bluetooth",
+        terms: ["fone", "headset", "earbud", "bluetooth", "tws", "airpods"],
+        maxPrice: 380,
+        reason: "Complementa chamadas, vídeos e música sem misturar com o celular principal.",
+      },
+      {
+        key: "carregamento",
+        label: "Carregamento",
+        intent: "cabo ou carregador",
+        terms: ["cabo usb c", "cabo tipo c", "carregador usb", "carregador tipo c", "adaptador usb c"],
+        maxPrice: 160,
+        reason: "Evita descobrir depois que falta cabo ou carregador compatível.",
+      },
+    ],
   },
   {
-    key: "energia",
-    label: "Energia fora de casa",
-    intent: "carregador portátil",
-    terms: ["carregador portatil", "carregador portátil", "power bank", "powerbank", "bateria portatil", "bateria portátil"],
-    maxPrice: 320,
-    reason: "Boa opção para manter carga durante trabalho, viagem ou estudo.",
+    key: "notebook",
+    triggers: ["notebook", "laptop", "macbook", "chromebook"],
+    blockerTerms: ["mouse", "teclado", "mochila", "sleeve", "capa", "base", "suporte", "carregador", "hub"],
+    groups: [
+      {
+        key: "mouse",
+        label: "Produtividade",
+        intent: "mouse sem fio",
+        terms: ["mouse", "mouse sem fio", "mouse bluetooth"],
+        excludeTerms: ["mouse pad", "mousepad"],
+        maxPrice: 260,
+        reason: "Melhora o uso diário sem trocar o notebook escolhido.",
+      },
+      {
+        key: "mochila",
+        label: "Transporte",
+        intent: "mochila para notebook",
+        terms: ["mochila notebook", "mochila para notebook", "case notebook", "capa notebook", "sleeve notebook"],
+        maxPrice: 350,
+        reason: "Ajuda a levar o notebook com mais segurança.",
+      },
+      {
+        key: "base",
+        label: "Ergonomia",
+        intent: "base para notebook",
+        terms: ["base para notebook", "suporte para notebook", "cooler notebook", "mesa para notebook"],
+        maxPrice: 300,
+        reason: "Pode melhorar postura e temperatura no uso prolongado.",
+      },
+      {
+        key: "conectividade",
+        label: "Conectividade",
+        intent: "hub usb c",
+        terms: ["hub usb", "hub usb c", "adaptador usb c", "dock station"],
+        maxPrice: 320,
+        reason: "Útil quando faltam portas para monitor, pendrive ou periféricos.",
+      },
+    ],
   },
   {
-    key: "audio",
-    label: "Áudio",
-    intent: "fone bluetooth",
-    terms: ["fone", "headset", "earbud", "bluetooth", "tws", "airpods"],
-    maxPrice: 380,
-    reason: "Complementa chamadas, vídeos e música sem misturar com o celular principal.",
+    key: "tv_monitor",
+    triggers: ["tv", "smart tv", "televisao", "televisão", "monitor", "monitor gamer"],
+    blockerTerms: ["suporte", "cabo hdmi", "hdmi", "soundbar", "controle remoto", "adaptador"],
+    groups: [
+      {
+        key: "suporte",
+        label: "Instalação",
+        intent: "suporte para tv ou monitor",
+        terms: ["suporte tv", "suporte para tv", "suporte monitor", "suporte articulado", "suporte parede"],
+        maxPrice: 260,
+        reason: "Completa a instalação sem misturar suporte com tela principal.",
+      },
+      {
+        key: "cabo",
+        label: "Conexão",
+        intent: "cabo HDMI",
+        terms: ["cabo hdmi", "hdmi 2.1", "displayport", "cabo displayport"],
+        maxPrice: 150,
+        reason: "Evita perder qualidade de imagem por cabo inadequado.",
+      },
+      {
+        key: "audio",
+        label: "Som",
+        intent: "soundbar",
+        terms: ["soundbar", "caixa de som", "home theater"],
+        maxPrice: 900,
+        reason: "Pode melhorar filmes, jogos e música sem trocar a tela.",
+      },
+    ],
   },
   {
-    key: "carregamento",
-    label: "Carregamento",
-    intent: "cabo ou carregador",
-    terms: ["cabo usb c", "cabo tipo c", "carregador usb", "carregador tipo c", "adaptador usb c"],
-    maxPrice: 160,
-    reason: "Evita descobrir depois que falta cabo ou carregador compatível.",
+    key: "network",
+    triggers: ["roteador", "mesh", "wifi", "wi-fi", "tp-link", "be6500"],
+    blockerTerms: ["cabo de rede", "repetidor", "nobreak", "filtro de linha", "adaptador"],
+    groups: [
+      {
+        key: "cabo",
+        label: "Rede cabeada",
+        intent: "cabo de rede",
+        terms: ["cabo de rede", "cabo ethernet", "cat6", "cat 6", "cat5e"],
+        maxPrice: 180,
+        reason: "Ajuda a aproveitar melhor a velocidade em TV, PC ou videogame.",
+      },
+      {
+        key: "energia",
+        label: "Proteção elétrica",
+        intent: "filtro de linha ou nobreak",
+        terms: ["filtro de linha", "nobreak", "estabilizador"],
+        maxPrice: 550,
+        reason: "Protege o equipamento e reduz queda de conexão por energia.",
+      },
+      {
+        key: "alcance",
+        label: "Alcance",
+        intent: "repetidor ou mesh",
+        terms: ["repetidor wifi", "repetidor wi-fi", "mesh", "extensor wifi"],
+        maxPrice: 500,
+        reason: "Pode resolver pontos da casa onde o sinal ainda chega fraco.",
+      },
+    ],
+  },
+  {
+    key: "tools",
+    triggers: ["furadeira", "parafusadeira", "ferramenta", "martelete", "serra", "lixadeira", "esmerilhadeira"],
+    blockerTerms: ["broca", "bit", "bits", "disco", "bateria", "luva", "oculos", "óculos"],
+    groups: [
+      {
+        key: "consumiveis",
+        label: "Consumíveis",
+        intent: "brocas ou bits",
+        terms: ["broca", "brocas", "bit", "bits", "disco de corte", "disco"],
+        maxPrice: 260,
+        reason: "Ferramenta sem broca, bit ou disco certo pode limitar o uso.",
+      },
+      {
+        key: "seguranca",
+        label: "Segurança",
+        intent: "óculos ou luva",
+        terms: ["oculos de protecao", "óculos de proteção", "luva de seguranca", "luva de segurança", "luva vaqueta", "luva nitrilica", "protetor auricular", "mascara de protecao", "máscara de proteção"],
+        excludeTerms: ["smartphone", "gaming sleeve", "dedo", "celular"],
+        maxPrice: 160,
+        reason: "Ajuda a usar a ferramenta com mais segurança.",
+      },
+      {
+        key: "energia",
+        label: "Energia",
+        intent: "bateria ou carregador",
+        terms: ["bateria", "carregador", "extensao", "extensão"],
+        maxPrice: 500,
+        reason: "Evita parar o trabalho por falta de bateria ou alcance.",
+      },
+    ],
+  },
+  {
+    key: "bathroom_home",
+    triggers: ["saboneteira", "banheiro", "toalheiro", "chuveiro", "torneira", "espelho banheiro"],
+    blockerTerms: ["espelho", "toalheiro", "organizador", "prateleira", "porta shampoo", "tapete"],
+    groups: [
+      {
+        key: "organização",
+        label: "Organização",
+        intent: "organizador de banheiro",
+        terms: ["organizador", "porta shampoo", "prateleira banheiro", "prateleira", "nicho"],
+        maxPrice: 220,
+        reason: "Ajuda o item principal a compor melhor o banheiro.",
+      },
+      {
+        key: "apoio",
+        label: "Apoio",
+        intent: "toalheiro ou gancho",
+        terms: ["toalheiro", "gancho banheiro", "porta toalha"],
+        excludeTerms: ["fone", "headset", "bluetooth", "smartphone", "gaming"],
+        maxPrice: 200,
+        reason: "Completa a área de uso sem aumentar muito o orçamento.",
+      },
+      {
+        key: "visual",
+        label: "Visual",
+        intent: "espelho para banheiro",
+        terms: ["espelho", "espelheira"],
+        maxPrice: 600,
+        reason: "Pode transformar uma compra pequena em melhoria real do ambiente.",
+      },
+    ],
+  },
+  {
+    key: "flowers_gifts",
+    triggers: ["flores", "flor", "buque", "buquê", "presente", "aniversario", "aniversário"],
+    blockerTerms: ["chocolate", "cartao", "cartão", "cesta", "vaso"],
+    groups: [
+      {
+        key: "mensagem",
+        label: "Mensagem",
+        intent: "cartão presente",
+        terms: ["cartao presente", "cartão presente", "cartao mensagem", "cartão mensagem"],
+        excludeTerms: ["memoria", "memória", "microsd", "sd card"],
+        maxPrice: 80,
+        reason: "Deixa o presente mais pessoal sem pesar no orçamento.",
+      },
+      {
+        key: "complemento",
+        label: "Complemento",
+        intent: "chocolate ou cesta",
+        terms: ["chocolate", "cesta", "pelucia", "pelúcia"],
+        maxPrice: 250,
+        reason: "Combina bem com flores quando a intenção é presente.",
+      },
+      {
+        key: "durabilidade",
+        label: "Durabilidade",
+        intent: "vaso",
+        terms: ["vaso", "cachepot"],
+        maxPrice: 180,
+        reason: "Ajuda a manter o arranjo bonito por mais tempo.",
+      },
+    ],
   },
 ];
 
@@ -1497,48 +1680,41 @@ function hasAnyComplementTerm(text = "", terms = []) {
   });
 }
 
-function isPhonePurchaseQuery(query = "", products = []) {
+function resolvePurchaseContext(query = "", products = []) {
   const queryText = normalizeComplementText(query);
-  if (!queryText) return false;
-  const userAskedAccessory = hasAnyComplementTerm(queryText, PHONE_ACCESSORY_TERMS);
-  if (userAskedAccessory) return false;
-  return hasAnyComplementTerm(queryText, PHONE_MAIN_TERMS);
+  if (!queryText) return null;
+  const matched = PURCHASE_CONTEXTS.find((context) => hasAnyComplementTerm(queryText, context.triggers));
+  if (!matched) return null;
+  if (hasAnyComplementTerm(queryText, matched.blockerTerms || [])) return null;
+  if (matched.key === "bathroom_home" && ["casa", "lar", "banheiro"].includes(queryText)) return null;
+  return matched;
 }
 
-function queryFamilyForComplement(query = "", products = []) {
+function queryFamilyForComplement(query = "", products = [], context = null) {
+  const families = Array.isArray(context?.families) ? context.families : [];
+  if (!families.length) return null;
   const text = normalizeComplementText(`${query} ${products.slice(0, 2).map((product) => `${product.title || ""} ${product.brand || ""} ${product.model || ""}`).join(" ")}`);
-  if (text.includes("iphone") || text.includes("apple")) return "iphone";
-  if (text.includes("galaxy") || text.includes("samsung")) return "samsung";
-  if (text.includes("xiaomi") || text.includes("redmi") || text.includes("poco")) return "xiaomi";
-  if (text.includes("motorola") || text.includes("moto g") || text.includes("moto ")) return "motorola";
-  return "";
+  return families.find((family) => hasAnyComplementTerm(text, family.terms)) || null;
 }
 
-function complementCompatibilityScore(product = {}, family = "") {
+function complementCompatibilityScore(product = {}, family = null) {
   if (!family) return 0;
   const text = productTextForComplements(product);
-  if (family === "iphone") {
-    if (text.includes("iphone") || text.includes("apple")) return 35;
-    if (text.includes("android") || text.includes("samsung") || text.includes("xiaomi") || text.includes("motorola")) return -40;
-  }
-  if (family === "samsung") {
-    if (text.includes("samsung") || text.includes("galaxy") || text.includes("android")) return 25;
-    if (text.includes("iphone") && !text.includes("android")) return -35;
-  }
-  if (family === "xiaomi") {
-    if (text.includes("xiaomi") || text.includes("redmi") || text.includes("poco") || text.includes("android")) return 25;
-    if (text.includes("iphone") && !text.includes("android")) return -35;
-  }
-  if (family === "motorola") {
-    if (text.includes("motorola") || text.includes("moto ") || text.includes("android")) return 25;
-    if (text.includes("iphone") && !text.includes("android")) return -35;
-  }
+  if (hasAnyComplementTerm(text, family.terms || [])) return 35;
+  if (hasAnyComplementTerm(text, family.negativeTerms || [])) return -40;
   return 0;
 }
 
 function buildSmartPurchaseComplements({ query, products = [], budget = {} }) {
-  if (!isPhonePurchaseQuery(query, products)) return [];
-  const family = queryFamilyForComplement(query, products);
+  const context = resolvePurchaseContext(query, products);
+  if (!context) return [];
+  const mainProducts = (products || []).filter((product) => {
+    const title = String(product?.title || product?.displayTitle || "").trim();
+    const type = String(product?.productType || product?.intelligence?.productType || "").toLowerCase();
+    return title && !product?.isAccessory && !["accessory", "piece", "compatible"].includes(type);
+  });
+  if (!mainProducts.length) return [];
+  const family = queryFamilyForComplement(query, products, context);
   const mainIdentities = new Set((products || []).map((product) => String(
     product.id
     || product.externalId
@@ -1561,7 +1737,7 @@ function buildSmartPurchaseComplements({ query, products = [], budget = {} }) {
   });
   const used = new Set();
 
-  return PHONE_COMPLEMENT_GROUPS
+  return context.groups
     .map((group) => {
       const ranked = candidates
         .map((product) => {
@@ -1571,8 +1747,8 @@ function buildSmartPurchaseComplements({ query, products = [], budget = {} }) {
           if (!hasAnyComplementTerm(titleText, group.terms) || price > group.maxPrice) return null;
           if (hasAnyComplementTerm(titleText, group.excludeTerms || [])) return null;
           const compatibility = complementCompatibilityScore(product, family);
-          if (group.key === "protecao" && family && compatibility <= 0) return null;
-          if (compatibility < 0 && group.key === "protecao") return null;
+          if (group.requiresFamilyMatch && family && compatibility <= 0) return null;
+          if (compatibility < 0 && group.requiresFamilyMatch) return null;
           const statusRank = product.status === "CABE" || product.budgetStatus === "CABE" ? 10 : 0;
           const imageRank = String(product.image || product.thumbnail || "").trim() ? 8 : 0;
           const sourceRank = String(product.source || product.sourceLabel || product.sourceName || "").toLowerCase().includes("amazon") ? 5 : 0;

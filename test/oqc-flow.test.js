@@ -89,6 +89,40 @@ test("Busca de celular traz complementos separados sem misturar acessorio no pro
   }
 });
 
+test("Compra composta funciona por familia de produto e nao inventa kit em busca ampla", async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async () => {
+    throw new Error("offline");
+  };
+
+  try {
+    const notebookRes = createResponse();
+    await handler({ url: "/api/search?q=notebook&mode=total&totalBudget=3000" }, notebookRes);
+    const notebookBody = parseBody(notebookRes);
+    const notebookComplements = notebookBody.complementaryRecommendations || [];
+    const notebookTitles = notebookComplements.map((item) => String(item.product?.title || item.product?.displayTitle || "")).join(" ");
+
+    assert.equal(notebookRes.statusCode, 200);
+    assert.equal(notebookBody.dataMode, "real");
+    assert.ok(notebookComplements.length >= 1);
+    assert.match(notebookTitles, /(mouse|mochila|hub|base|suporte)/i);
+    assert.ok(!/luva de dedo/i.test(notebookTitles));
+
+    const tvRes = createResponse();
+    await handler({ url: "/api/search?q=tv&mode=total&totalBudget=3000" }, tvRes);
+    const tvBody = parseBody(tvRes);
+    const tvTitles = (tvBody.complementaryRecommendations || []).map((item) => String(item.product?.title || item.product?.displayTitle || "")).join(" ");
+    assert.match(tvTitles, /(suporte|soundbar|caixa de som|hdmi)/i);
+
+    const broadRes = createResponse();
+    await handler({ url: "/api/search?q=casa&mode=total&totalBudget=50" }, broadRes);
+    const broadBody = parseBody(broadRes);
+    assert.deepEqual(broadBody.complementaryRecommendations || [], []);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
 test("Modo total responde 200 e preserva totalBudget", async () => {
   const originalFetch = global.fetch;
   global.fetch = async () => {
