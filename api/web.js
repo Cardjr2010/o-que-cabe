@@ -1885,6 +1885,17 @@ function mercadolivreAuthUrl(state = buildMercadoLivreState()) {
   return `https://auth.mercadolivre.com.br/authorization?${params.toString()}`;
 }
 
+function mercadolivreAuthRecordNeedsRepair(token, diagnostics = {}) {
+  if (!token?.access_token && !token?.refresh_token) return false;
+  if (mercadolivreTokenExpired(token)) return true;
+  const tokenState = String(diagnostics.tokenState || "").toUpperCase();
+  if (["TOKEN_MISSING_OR_REQUIRED", "AUTHENTICATION_FAILED", "INVALID_TOKEN", "NOT_AUTHENTICATED"].includes(tokenState)) {
+    return true;
+  }
+  const lastStatus = Number(diagnostics.lastStatus);
+  return lastStatus === 401 || lastStatus === 403;
+}
+
 function extractMercadoLivreItemId(url) {
   const value = String(url || "");
   const match = value.match(/(?:MLB[-]?)(\d{6,})/i);
@@ -2178,7 +2189,10 @@ export default async function handler(req, res) {
 
   if (pathname === "/api/ml/oauth/start") {
     const existingToken = await readMercadoLivreAuthRecord();
-    if (existingToken?.access_token || existingToken?.refresh_token) {
+    const providerDiagnostics = getMercadoLivreSearchProvider().getDiagnostics();
+    const repairRequested = ["1", "true", "yes"].includes(String(url.searchParams.get("repair") || "").toLowerCase());
+    const repairAllowed = repairRequested && mercadolivreAuthRecordNeedsRepair(existingToken, providerDiagnostics);
+    if ((existingToken?.access_token || existingToken?.refresh_token) && !repairAllowed) {
       const auth = requireAdminAuth(req, url);
       if (!auth.ok) {
         sendJson(res, auth.status, auth.body);

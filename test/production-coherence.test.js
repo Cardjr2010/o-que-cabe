@@ -134,6 +134,13 @@ test("oauth do Mercado Livre usa dominio brasileiro acessivel", () => {
   assert.doesNotMatch(apiSource, /https:\/\/auth\.mercadolibre\.com\.br\/authorization/);
 });
 
+test("oauth do Mercado Livre permite reparar token quebrado sem expor admin", () => {
+  const apiSource = readProjectFile("api/web.js");
+  assert.match(apiSource, /mercadolivreAuthRecordNeedsRepair/);
+  assert.match(apiSource, /repairRequested/);
+  assert.match(apiSource, /TOKEN_MISSING_OR_REQUIRED/);
+});
+
 test("busca publica nao devolve produtos demo quando nao ha oferta confirmada", async () => {
   const oldFetch = global.fetch;
   global.fetch = async () => new Response(JSON.stringify({ results: [] }), {
