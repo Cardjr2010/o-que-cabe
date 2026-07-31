@@ -716,13 +716,14 @@ function buildIntelligence(product = {}) {
   const normalizedTitle = normalizeKey(displayTitle || originalTitle);
   const brand = cleanTitle(product.brand || extractBrand(displayTitle || originalTitle) || "");
   const model = cleanTitle(product.model || extractModel(displayTitle || originalTitle, brand) || "");
-  const analysisText = [displayTitle, originalTitle, product.title, product.description, product.category, product.normalizedCategory, brand, model].filter(Boolean).join(" ");
-  const accessoryFamily = detectAccessoryFamily(analysisText);
+  const titleCategoryText = [displayTitle, originalTitle, product.title, product.category, product.normalizedCategory, brand, model].filter(Boolean).join(" ");
+  const analysisText = [titleCategoryText, product.description].filter(Boolean).join(" ");
+  const accessoryFamily = detectAccessoryFamily(titleCategoryText);
   const department = accessoryFamily?.department || detectDepartment(analysisText, product.normalizedCategory || product.category || "");
   const category = accessoryFamily?.category || detectCategory(analysisText, product.normalizedCategory || product.category || "", department);
   const subcategory = accessoryFamily?.subcategory || detectSubcategory(analysisText, department, category);
-  const accessory = Boolean(accessoryFamily?.accessory) || detectAccessory(analysisText, category, subcategory);
-  const productType = detectProductType(department, category, accessory, [displayTitle, originalTitle, product.title, product.description].filter(Boolean).join(" "));
+  const accessory = Boolean(accessoryFamily?.accessory) || detectAccessory(titleCategoryText, category, subcategory);
+  const productType = detectProductType(department, category, accessory, titleCategoryText);
   const compatibility = uniqueValues([
     ...(Array.isArray(product.compatibility) ? product.compatibility : []),
     ...normalizeCompatibility([displayTitle, originalTitle, product.title, product.description].filter(Boolean).join(" ")),

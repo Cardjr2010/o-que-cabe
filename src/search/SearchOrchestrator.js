@@ -722,7 +722,7 @@ function matchProductType(product = {}, queryCategory = "", accessoryIntent = fa
     || ["accessory", "piece", "compatible"].includes(productType)
     || ["acessorio", "accessorio", "accessory", "piece", "compatible"].includes(productCategory)
     || ["cabos e carregadores", "acessórios", "peças"].includes(productDepartment)
-    || /\b(capa|case|pelicula|cabo|carregador|strap|pulseira|suporte|protector|protetor|controle remoto|remote control|remote)\b/i.test(text);
+    || /\b(capa|case|pelicula|cabo|carregador|strap|pulseira|suporte|protector|protetor|controle remoto|remote control|remote)\b/i.test(titleText);
 
   if (!accessoryIntent && isAccessory) {
     return false;

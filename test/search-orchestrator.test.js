@@ -159,6 +159,40 @@ test("iPhone prioriza aparelho principal sobre acess?rio", async () => {
   assert.ok(!/Capa/i.test(String(result.products[0].displayTitle || result.products[0].title)));
 });
 
+test("busca por iPhone ignora capa mesmo quando feed marcou categoria celular", async () => {
+  const orchestrator = new SearchOrchestrator({
+    catalogManager: createCatalogManager([
+      {
+        title: "Capa para iPhone 17 Pro Max",
+        brand: "Apple",
+        category: "celular",
+        normalizedCategory: "celular",
+        marketplace: "amazon",
+        dataMode: "real",
+        sourceType: "partner_offer",
+        price: 59.9,
+      },
+      {
+        title: "Apple iPhone 17 Pro Max 256GB",
+        brand: "Apple",
+        category: "celular",
+        normalizedCategory: "celular",
+        marketplace: "mercado_livre",
+        dataMode: "real",
+        sourceType: "partner_offer",
+        price: 10999,
+      },
+    ]),
+  });
+
+  const result = await orchestrator.search({ query: "iphone 17 pro max", mode: "total", totalBudget: 12000 });
+
+  assert.equal(result.dataMode, "real");
+  assert.equal(result.products.length, 1);
+  assert.match(String(result.products[0].displayTitle || result.products[0].title), /iPhone 17 Pro Max/i);
+  assert.equal(result.products[0].isAccessory, false);
+});
+
 test("Samsung e Galaxy priorizam smartphone principal", async () => {
   const orchestrator = new SearchOrchestrator({
     catalogManager: createCatalogManager([

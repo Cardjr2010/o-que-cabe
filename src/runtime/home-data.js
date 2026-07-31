@@ -483,6 +483,16 @@ function isVisibleHomeProduct(item = {}) {
 }
 
 function resolvePublicHomeCategory(item = {}) {
+  const productType = normalizedCatalogCategoryKey(item?.productType || "");
+  const itemCategory = normalizedCatalogCategoryKey(item?.category || item?.normalizedCategory || "");
+  if (
+    item?.isAccessory === true
+    || ["accessory", "acessorio", "piece", "peca", "compatible", "compativel"].includes(productType)
+    || ["capa", "pelicula", "cabo", "carregador", "acessorio", "peca", "compativel"].includes(itemCategory)
+  ) {
+    return null;
+  }
+
   const text = normalizeHomeMatchText(item);
 
   for (const categoryKey of HOME_CATEGORY_MATCH_ORDER) {

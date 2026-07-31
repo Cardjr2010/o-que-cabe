@@ -58,6 +58,40 @@ test("iPhone vai para Celulares", () => {
   assert.equal(intelligence.subcategory, "iPhone");
 });
 
+test("acessorio de smartphone nao vira Celulares", () => {
+  const intelligence = classifyProductIntelligence({
+    title: "Capa anti-impacto para iPhone 17 Pro Max",
+    category: "celular",
+    normalizedCategory: "celular",
+    price: 49.9,
+    image: "https://example.com/capa-iphone.png",
+    productUrl: "https://example.com/capa-iphone",
+  });
+
+  assert.equal(intelligence.department, "Acessórios");
+  assert.equal(intelligence.category, "Acessórios");
+  assert.equal(intelligence.subcategory, "Capas");
+  assert.equal(intelligence.productType, "accessory");
+  assert.equal(intelligence.isAccessory, true);
+});
+
+test("smartphone com acessorio citado na descricao continua Celulares", () => {
+  const intelligence = classifyProductIntelligence({
+    title: "Smartphone Samsung Galaxy A25 256GB",
+    category: "celular",
+    normalizedCategory: "celular",
+    description: "Acompanha cabo USB-C na caixa.",
+    price: 1599.9,
+    image: "https://example.com/galaxy-a25.png",
+    productUrl: "https://example.com/galaxy-a25",
+  });
+
+  assert.equal(intelligence.department, "Celulares");
+  assert.equal(intelligence.category, "Celulares");
+  assert.equal(intelligence.productType, "principal");
+  assert.equal(intelligence.isAccessory, false);
+});
+
 test("notebook vai para Notebooks", () => {
   const intelligence = classifyProductIntelligence({
     title: "Notebook Lenovo IdeaPad 1",
