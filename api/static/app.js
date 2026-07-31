@@ -1060,7 +1060,7 @@ function renderResultsExperience(data = {}, products = []) {
     return renderCategoryResultsExperience(data, products);
   }
   const advisor = data.advisor || {};
-  const overview = safeText(advisor.overview || data.summary, "Mostramos apenas ofertas confirmadas e alinhadas com a sua busca.");
+  const overview = safeText(advisor.overview || data.summary, "Comparamos ofertas com preço, origem e link confirmado para esta busca.");
   const comparison = buildComparisonBlock(data);
   const decisions = buildDecisionCards(data);
   const grouped = renderGroupedProducts(data.groups || null, products);
@@ -1068,8 +1068,8 @@ function renderResultsExperience(data = {}, products = []) {
     <section class="results-intro">
       <div class="section-head section-head-tight">
         <div>
-          <p class="panel-label">Leitura do OQC</p>
-          <h3>Três decisões claras para esta busca</h3>
+          <p class="panel-label">Comparação do OQC</p>
+          <h3>Melhores opções para esta busca</h3>
         </div>
         <p class="section-note">${escapeHtml(overview)}</p>
       </div>
@@ -1546,7 +1546,6 @@ function renderProofSection(data = {}) {
   if (!proofSection) return;
 
   const publishedProducts = Number(data.totalPublishedProducts ?? data.totalCatalogProducts ?? data.totalProducts ?? 0);
-  const analyzedProducts = Number(data.totalCatalogProducts ?? data.totalProducts ?? publishedProducts ?? 0);
   const topSources = Array.isArray(data.topSources) ? data.topSources.filter(Boolean).slice(0, 4) : [];
   const topBrands = Array.isArray(data.topBrands) ? data.topBrands.filter(Boolean).slice(0, 6) : [];
 
@@ -1562,16 +1561,14 @@ function renderProofSection(data = {}) {
   }
 
   if (proofSummaryText) {
-    proofSummaryText.textContent = topSources.length
-      ? `O OQC cruza fontes reais e prioriza o que chega com melhor contexto para decisão.`
-      : "O OQC organiza produtos reais publicados com filtros de qualidade antes de mostrar qualquer recomendacao.";
+    proofSummaryText.textContent = "O OQC organiza produtos publicados para comparar preço, origem e orçamento com menos ruído.";
   }
 
   if (proofSummaryStats) {
     proofSummaryStats.innerHTML = [
-      `${formatCompactNumber(analyzedProducts, "0")} analisados`,
-      `${formatCompactNumber(topSources.length, "0")} fontes no catalogo`,
-      data.catalogFresh ? "Catalogo com leitura recente" : "Base aguardando atualizacao",
+      "Busca por orçamento",
+      "Origem legível",
+      data.catalogFresh ? "Catálogo ativo" : "Catálogo em manutenção",
     ].map((item) => `<span>${escapeHtml(item)}</span>`).join("");
   }
 
@@ -1725,16 +1722,14 @@ function renderLoadingSkeletons(container, variant = "card", count = 3) {
 
 function renderTrustBand(data = {}) {
   const publishedProducts = Number(data.totalPublishedProducts ?? data.totalCatalogProducts ?? data.totalProducts ?? 0);
-  const analyzedProducts = Number(data.totalCatalogProducts ?? data.totalProducts ?? publishedProducts ?? 0);
-  const topSources = Array.isArray(data.topSources) ? data.topSources.filter(Boolean) : [];
   if (trustTotalCatalog) {
     trustTotalCatalog.textContent = publishedProducts ? formatCompactNumber(publishedProducts, "0") : "0";
   }
   if (trustDepartments) {
-    trustDepartments.textContent = analyzedProducts ? formatCompactNumber(analyzedProducts, "0") : "0";
+    trustDepartments.textContent = "Orçamento";
   }
   if (trustSources) {
-    trustSources.textContent = topSources.length ? formatCompactNumber(topSources.length, "0") : "0";
+    trustSources.textContent = "Oferta";
   }
   if (trustUpdated) {
     const updatedAt = data.catalogUpdatedAt ? new Date(data.catalogUpdatedAt) : null;

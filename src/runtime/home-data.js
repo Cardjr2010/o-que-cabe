@@ -630,9 +630,7 @@ export function buildHomeCatalogData() {
     const offerCategories = buildVerifiedOfferCategoryCards();
     const catalogUpdatedAt = refreshMetadata?.refreshedAt || resolveCatalogUpdatedAt(catalogForHome);
     const catalogFresh = refreshMetadata?.fresh === true || isCatalogFreshEnough(catalogUpdatedAt, 7);
-    const totalCatalogProducts = Number(refreshMetadata?.analyzedCount ?? catalogDiagnostics.rawCount ?? items.length);
     const totalPublishedProducts = Number(refreshMetadata?.publishedCount ?? catalogDiagnostics.publishedCount ?? items.length);
-    const hiddenProducts = Number(refreshMetadata?.hiddenCount ?? catalogDiagnostics.hiddenProducts ?? 0);
     const activeCampaigns = buildCampaignCards();
     const visibleCampaigns = catalogFresh ? activeCampaigns : [];
     const menu = [
@@ -679,12 +677,14 @@ export function buildHomeCatalogData() {
     return {
       ok: true,
       totalProducts: items.length,
-      totalCatalogProducts,
       totalPublishedProducts,
-      hiddenProducts,
-      analyzedProducts: analysis.analyzedProducts || catalogForHome.length,
       catalogUpdatedAt,
       catalogFresh,
+      publicCatalogSummary: {
+        publishedProducts: totalPublishedProducts,
+        catalogUpdatedAt,
+        catalogFresh,
+      },
       focusLabel: analysis.focusLabel || "Consultor de compras",
       menu,
       categories,
@@ -710,29 +710,19 @@ export function buildHomeCatalogData() {
       topBrands: visibleTopBrands,
       departmentSummary: curatedDepartments,
       categorySummary: categories,
-      beforeOutros: analysis.beforeOutros ?? 0,
-      afterOutros: analysis.afterOutros ?? 0,
-      catalogSummary: {
-        seedUsed: catalogDiagnostics.seedPath || "",
-        rawCount: totalCatalogProducts,
-        publishedCount: totalPublishedProducts,
-        hiddenProducts,
-        filteredCount: catalogDiagnostics.filteredCount ?? 0,
-        filterReasons: Array.isArray(catalogDiagnostics.filterReasons) ? catalogDiagnostics.filterReasons : [],
-        sourceCounts: Array.isArray(catalogDiagnostics.sourceCounts) ? catalogDiagnostics.sourceCounts : [],
-        refreshMetadata,
-      },
     };
   } catch (error) {
     return {
       ok: false,
       totalProducts: 0,
-      totalCatalogProducts: 0,
       totalPublishedProducts: 0,
-      hiddenProducts: 0,
-      analyzedProducts: 0,
       catalogUpdatedAt: null,
       catalogFresh: false,
+      publicCatalogSummary: {
+        publishedProducts: 0,
+        catalogUpdatedAt: null,
+        catalogFresh: false,
+      },
       focusLabel: "Consultor de compras",
       menu: [
         { label: "Início", href: "/", active: true },
@@ -763,17 +753,6 @@ export function buildHomeCatalogData() {
       topBrands: [],
       departmentSummary: [],
       categorySummary: [],
-      beforeOutros: 0,
-      afterOutros: 0,
-      catalogSummary: {
-        seedUsed: "",
-        rawCount: 0,
-        publishedCount: 0,
-        hiddenProducts: 0,
-        filteredCount: 0,
-        filterReasons: [],
-        sourceCounts: [],
-      },
       error: error?.message || "HOME_CATALOG_ERROR",
     };
   }

@@ -46,8 +46,8 @@ test("home comunica as metricas oficiais sem presumir orcamento", () => {
   assert.match(html, /Busque um produto, informe seu limite e compare poucas op(?:ç|Ã§)(?:õ|Ãµ)es boas\./);
   assert.match(html, /Pre(?:ç|Ã§)o, origem e parcelamento ficam claros no resultado\./);
   assert.match(html, /<strong id="trustTotalCatalog">--<\/strong>\s*<span>produtos publicados/);
-  assert.match(html, /<strong id="trustDepartments">--<\/strong>\s*<span>produtos analisados/);
-  assert.match(html, /<strong id="trustSources">--<\/strong>\s*<span>fontes no cat.logo/);
+  assert.match(html, /<strong id="trustDepartments">--<\/strong>\s*<span>consulta por or(?:ç|Ã§|ÃƒÂ§)amento/);
+  assert.match(html, /<strong id="trustSources">--<\/strong>\s*<span>links diretos quando confirmados/);
   assert.doesNotMatch(html, /Hoje catalogo atualizado|15\.999 produtos reais analisados|15\.999<\/strong>|16\.740<\/strong>|741<\/strong>/);
   assert.doesNotMatch(html, /ocultos por qualidade|produtos ocultos/i);
   assert.doesNotMatch(html, /id="productInput"[^>]*\svalue=/);
@@ -70,12 +70,14 @@ test("links futuros nao fingem navegacao e promessas respeitam os dados disponiv
   assert.match(script, /Parcelamento estimado\. Confirme na loja\./);
 });
 
-test("home-data expoe os numeros oficiais e menu seguro", () => {
+test("home-data expoe apenas metricas publicas e menu seguro", () => {
   const data = buildHomeCatalogData();
 
-  assert.equal(data.totalCatalogProducts, 3317);
   assert.equal(data.totalPublishedProducts, 2382);
-  assert.equal(data.hiddenProducts, 935);
+  assert.equal(data.publicCatalogSummary.publishedProducts, 2382);
+  assert.equal(data.hiddenProducts, undefined);
+  assert.equal(data.totalCatalogProducts, undefined);
+  assert.equal(data.catalogSummary, undefined);
   assert.ok(data.catalogUpdatedAt === null || Number.isFinite(Date.parse(data.catalogUpdatedAt)));
   assert.ok(Array.isArray(data.topSources));
   assert.equal(data.topSources[0].source, "Info Store - Informática");
