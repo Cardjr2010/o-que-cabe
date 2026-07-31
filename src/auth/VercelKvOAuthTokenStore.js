@@ -22,6 +22,7 @@ export class VercelKvOAuthTokenStore extends OAuthTokenStore {
     fetchImpl = null,
     restUrl = "",
     restToken = "",
+    redisUrl = "",
     encryptionSecret = "",
     prefix = "",
   } = {}) {
@@ -29,12 +30,14 @@ export class VercelKvOAuthTokenStore extends OAuthTokenStore {
     this.fetchImpl = fetchImpl || globalThis.fetch;
     this.restUrl = restUrl || envValue("KV_REST_API_URL", "UPSTASH_REDIS_REST_URL");
     this.restToken = restToken || envValue("KV_REST_API_TOKEN", "UPSTASH_REDIS_REST_TOKEN");
+    this.redisUrl = redisUrl || envValue("KV_URL", "REDIS_URL", "REDIS_TLS_URL", "KV_REDIS_URL");
     this.encryptionSecret = encryptionSecret || envValue("OAUTH_TOKEN_ENCRYPTION_KEY", "TOKEN_STORE_ENCRYPTION_KEY", "KV_ENCRYPTION_KEY");
     this.prefix = prefix || envValue("OAUTH_TOKEN_STORE_PREFIX") || "oqc";
+    this.redisClientPromise = null;
   }
 
   isConfigured() {
-    return Boolean(this.restUrl && this.restToken && this.encryptionSecret);
+    return Boolean(this.encryptionSecret && ((this.restUrl && this.restToken) || this.redisUrl));
   }
 
   get accountKeyPrefix() {
@@ -95,6 +98,13 @@ export class VercelKvOAuthTokenStore extends OAuthTokenStore {
     if (!this.isConfigured()) {
       throw new Error("TOKEN_STORE_NOT_CONFIGURED");
     }
+    if (this.restUrl && this.restToken) {
+      return this.restCommand(args);
+    }
+    return this.redisCommand(args);
+  }
+
+  async restCommand(args = []) {
     const response = await this.fetchImpl(this.restUrl, {
       method: "POST",
       headers: {
@@ -111,6 +121,24 @@ export class VercelKvOAuthTokenStore extends OAuthTokenStore {
       throw new Error(body.error);
     }
     return body?.result ?? null;
+  }
+
+  async getRedisClient() {
+    if (!this.redisClientPromise) {
+      this.redisClientPromise = (async () => {
+        const { createClient } = await import("redis");
+        const client = createClient({ url: this.redisUrl });
+        client.on("error", () => {});
+        await client.connect();
+        return client;
+      })();
+    }
+    return this.redisClientPromise;
+  }
+
+  async redisCommand(args = []) {
+    const client = await this.getRedisClient();
+    return client.sendCommand(args.map((value) => String(value)));
   }
 
   async get(provider, accountId = "default") {
