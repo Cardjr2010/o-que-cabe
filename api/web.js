@@ -1375,6 +1375,242 @@ function attachMarketInsights(product = {}) {
   };
 }
 
+const PHONE_MAIN_TERMS = [
+  "celular",
+  "smartphone",
+  "iphone",
+  "galaxy",
+  "motorola",
+  "xiaomi",
+  "redmi",
+  "poco",
+];
+
+const PHONE_ACCESSORY_TERMS = [
+  "capa",
+  "capinha",
+  "case",
+  "pelicula",
+  "película",
+  "vidro",
+  "carregador",
+  "cabo",
+  "fone",
+  "headset",
+  "power bank",
+  "powerbank",
+  "suporte",
+  "adaptador",
+  "protetor",
+];
+
+const PHONE_COMPLEMENT_GROUPS = [
+  {
+    key: "protecao",
+    label: "Proteção",
+    intent: "capa ou película",
+    terms: ["capa", "capinha", "case", "pelicula", "película", "vidro", "protetor"],
+    excludeTerms: ["fone", "headset", "bluetooth", "carregador", "cabo", "power bank", "powerbank"],
+    maxPrice: 180,
+    reason: "Ajuda a proteger o aparelho antes do primeiro tombo ou risco.",
+  },
+  {
+    key: "energia",
+    label: "Energia fora de casa",
+    intent: "carregador portátil",
+    terms: ["carregador portatil", "carregador portátil", "power bank", "powerbank", "bateria portatil", "bateria portátil"],
+    maxPrice: 320,
+    reason: "Boa opção para manter carga durante trabalho, viagem ou estudo.",
+  },
+  {
+    key: "audio",
+    label: "Áudio",
+    intent: "fone bluetooth",
+    terms: ["fone", "headset", "earbud", "bluetooth", "tws", "airpods"],
+    maxPrice: 380,
+    reason: "Complementa chamadas, vídeos e música sem misturar com o celular principal.",
+  },
+  {
+    key: "carregamento",
+    label: "Carregamento",
+    intent: "cabo ou carregador",
+    terms: ["cabo usb c", "cabo tipo c", "carregador usb", "carregador tipo c", "adaptador usb c"],
+    maxPrice: 160,
+    reason: "Evita descobrir depois que falta cabo ou carregador compatível.",
+  },
+];
+
+function normalizeComplementText(value = "") {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+function productTextForComplements(product = {}) {
+  return normalizeComplementText([
+    product.title,
+    product.displayTitle,
+    product.originalTitle,
+    product.category,
+    product.normalizedCategory,
+    product.subcategory,
+    product.department,
+    product.brand,
+    product.model,
+    product.productType,
+    product.compatibility,
+  ].filter(Boolean).join(" "));
+}
+
+function productTitleForComplements(product = {}) {
+  return normalizeComplementText([
+    product.title,
+    product.displayTitle,
+    product.originalTitle,
+    product.model,
+  ].filter(Boolean).join(" "));
+}
+
+function hasUsableOfferLink(product = {}) {
+  const value = String(product.affiliateUrl || product.productUrl || product.permalink || product.url || "").trim();
+  if (!/^https?:\/\//i.test(value)) return false;
+  try {
+    const parsed = new URL(value);
+    if (/mercadolivre\.com\.br$/i.test(parsed.hostname) || /\.mercadolivre\.com\.br$/i.test(parsed.hostname)) {
+      return /\/MLB[\w-]+/i.test(parsed.pathname) || /meli\.la/i.test(parsed.hostname);
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function hasAnyComplementTerm(text = "", terms = []) {
+  const normalizedText = ` ${normalizeComplementText(text)} `;
+  return terms.some((term) => {
+    const normalizedTerm = normalizeComplementText(term);
+    if (!normalizedTerm) return false;
+    const escaped = normalizedTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+");
+    return new RegExp(`(^|\\s)${escaped}(\\s|$)`, "i").test(normalizedText);
+  });
+}
+
+function isPhonePurchaseQuery(query = "", products = []) {
+  const queryText = normalizeComplementText(query);
+  if (!queryText) return false;
+  const userAskedAccessory = hasAnyComplementTerm(queryText, PHONE_ACCESSORY_TERMS);
+  if (userAskedAccessory) return false;
+  return hasAnyComplementTerm(queryText, PHONE_MAIN_TERMS);
+}
+
+function queryFamilyForComplement(query = "", products = []) {
+  const text = normalizeComplementText(`${query} ${products.slice(0, 2).map((product) => `${product.title || ""} ${product.brand || ""} ${product.model || ""}`).join(" ")}`);
+  if (text.includes("iphone") || text.includes("apple")) return "iphone";
+  if (text.includes("galaxy") || text.includes("samsung")) return "samsung";
+  if (text.includes("xiaomi") || text.includes("redmi") || text.includes("poco")) return "xiaomi";
+  if (text.includes("motorola") || text.includes("moto g") || text.includes("moto ")) return "motorola";
+  return "";
+}
+
+function complementCompatibilityScore(product = {}, family = "") {
+  if (!family) return 0;
+  const text = productTextForComplements(product);
+  if (family === "iphone") {
+    if (text.includes("iphone") || text.includes("apple")) return 35;
+    if (text.includes("android") || text.includes("samsung") || text.includes("xiaomi") || text.includes("motorola")) return -40;
+  }
+  if (family === "samsung") {
+    if (text.includes("samsung") || text.includes("galaxy") || text.includes("android")) return 25;
+    if (text.includes("iphone") && !text.includes("android")) return -35;
+  }
+  if (family === "xiaomi") {
+    if (text.includes("xiaomi") || text.includes("redmi") || text.includes("poco") || text.includes("android")) return 25;
+    if (text.includes("iphone") && !text.includes("android")) return -35;
+  }
+  if (family === "motorola") {
+    if (text.includes("motorola") || text.includes("moto ") || text.includes("android")) return 25;
+    if (text.includes("iphone") && !text.includes("android")) return -35;
+  }
+  return 0;
+}
+
+function buildSmartPurchaseComplements({ query, products = [], budget = {} }) {
+  if (!isPhonePurchaseQuery(query, products)) return [];
+  const family = queryFamilyForComplement(query, products);
+  const mainIdentities = new Set((products || []).map((product) => String(
+    product.id
+    || product.externalId
+    || product.sourceProductId
+    || product.permalink
+    || product.productUrl
+    || product.url
+    || product.title
+    || "",
+  )).filter(Boolean));
+  const catalogProducts = getCatalogManager().list();
+  const verifiedOffers = listFreshVerifiedAffiliateOffers();
+  const candidates = [...catalogProducts, ...verifiedOffers].filter((product) => {
+    const identity = String(product.id || product.externalId || product.sourceProductId || product.permalink || product.productUrl || product.url || product.title || "");
+    const price = Number(product.finalPrice || product.price || 0);
+    return identity
+      && !mainIdentities.has(identity)
+      && price > 0
+      && hasUsableOfferLink(product);
+  });
+  const used = new Set();
+
+  return PHONE_COMPLEMENT_GROUPS
+    .map((group) => {
+      const ranked = candidates
+        .map((product) => {
+          const text = productTextForComplements(product);
+          const titleText = productTitleForComplements(product);
+          const price = Number(product.finalPrice || product.price || 0);
+          if (!hasAnyComplementTerm(titleText, group.terms) || price > group.maxPrice) return null;
+          if (hasAnyComplementTerm(titleText, group.excludeTerms || [])) return null;
+          const compatibility = complementCompatibilityScore(product, family);
+          if (group.key === "protecao" && family && compatibility <= 0) return null;
+          if (compatibility < 0 && group.key === "protecao") return null;
+          const statusRank = product.status === "CABE" || product.budgetStatus === "CABE" ? 10 : 0;
+          const imageRank = String(product.image || product.thumbnail || "").trim() ? 8 : 0;
+          const sourceRank = String(product.source || product.sourceLabel || product.sourceName || "").toLowerCase().includes("amazon") ? 5 : 0;
+          const priceRank = Math.max(0, Math.round((group.maxPrice - price) / Math.max(1, group.maxPrice) * 20));
+          return {
+            product,
+            score: 50 + compatibility + statusRank + imageRank + sourceRank + priceRank,
+          };
+        })
+        .filter(Boolean)
+        .sort((left, right) => right.score - left.score || Number(left.product.price || 0) - Number(right.product.price || 0));
+
+      const chosen = ranked.find((item) => {
+        const identity = String(item.product.id || item.product.externalId || item.product.sourceProductId || item.product.permalink || item.product.productUrl || item.product.url || item.product.title || "");
+        return identity && !used.has(identity);
+      });
+      if (!chosen) return null;
+      const product = attachMarketInsights(attachFinancialInsights(
+        enrichWithOqc(chosen.product, budget, group.intent),
+        budget,
+        group.intent,
+        0,
+        [chosen.product],
+      ));
+      const identity = String(product.id || product.externalId || product.sourceProductId || product.permalink || product.productUrl || product.url || product.title || "");
+      used.add(identity);
+      return {
+        key: group.key,
+        label: group.label,
+        intent: group.intent,
+        reason: group.reason,
+        product,
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 4);
+}
+
 function buildOqcResponse({ products, query, mode, monthly, months, totalBudget, dataMode }) {
   const budget = buildOqcBudgetContext({ mode, monthly, months, totalBudget });
   const enriched = products.map((product) => enrichWithOqc(product, budget, query));
@@ -1400,6 +1636,7 @@ function buildOqcResponse({ products, query, mode, monthly, months, totalBudget,
     recommendations,
     groups,
     summary: ranked.summary,
+    complementaryRecommendations: buildSmartPurchaseComplements({ query, products: productsWithInsights, budget }),
     products: productsWithInsights,
   };
 }
@@ -1482,6 +1719,7 @@ function buildFallbackRealResponse({ products, query, mode, monthly, months, tot
     recommendations: recommended,
     groups,
     summary: "Os resultados priorizam produtos reais do catalogo quando a pontuacao completa precisa de fallback.",
+    complementaryRecommendations: buildSmartPurchaseComplements({ query, products: productsWithInsights, budget }),
     products: productsWithInsights,
   };
 }

@@ -732,6 +732,52 @@ function buildDecisionCards(data = {}) {
   `;
 }
 
+function renderComplementaryRecommendations(items = []) {
+  if (!Array.isArray(items) || !items.length) return "";
+  const cards = items.slice(0, 4).map((item) => {
+    const product = item.product || item;
+    const link = resolveProductLink(product);
+    const hasLink = hasValidProductLink(product) && !isDemoProduct(product);
+    const priceValue = Number(product.finalPrice || product.price || 0);
+    const installment = buildInstallmentSummary(product);
+    return `
+      <article class="oqc-complement-card">
+        <div class="oqc-complement-media">
+          ${productImage(product)}
+        </div>
+        <div class="oqc-complement-body">
+          <span class="oqc-complement-label">${escapeHtml(item.label || "Complemento")}</span>
+          <h4>${escapeHtml(resolveCompactProductTitle(product, 58))}</h4>
+          <div class="oqc-complement-meta">
+            <span>${escapeHtml(resolveSourceLabel(product))}</span>
+            <strong>${formatPrice(priceValue)}</strong>
+          </div>
+          <p>${escapeHtml(item.reason || "Item complementar para deixar a compra mais completa.")}</p>
+          <div class="oqc-complement-actions">
+            <span>${escapeHtml(installment.short || "Condição na loja")}</span>
+            ${hasLink
+              ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">Ver item</a>`
+              : `<span class="offer-unavailable" aria-disabled="true">Link indisponível</span>`}
+          </div>
+        </div>
+      </article>
+    `;
+  }).join("");
+
+  return `
+    <section class="oqc-complements">
+      <div class="section-head section-head-tight">
+        <div>
+          <p class="panel-label">Compra composta</p>
+          <h3>Complementos úteis para este produto</h3>
+        </div>
+        <p class="section-note">Acessórios ficam separados da melhor compra, para não disputar lugar com o produto principal.</p>
+      </div>
+      <div class="oqc-complement-grid">${cards}</div>
+    </section>
+  `;
+}
+
 function buildCategoryDecisionHeader(data = {}, products = []) {
   const total = Number(data.totalMatchedProducts || products.length || 0);
   const displayed = Number(data.displayedCount || products.length || 0);
@@ -1063,6 +1109,7 @@ function renderResultsExperience(data = {}, products = []) {
   const overview = safeText(advisor.overview || data.summary, "Comparamos ofertas com preço, origem e link confirmado para esta busca.");
   const comparison = buildComparisonBlock(data);
   const decisions = buildDecisionCards(data);
+  const complements = renderComplementaryRecommendations(data.complementaryRecommendations || []);
   const grouped = renderGroupedProducts(data.groups || null, products);
   return `
     <section class="results-intro">
@@ -1075,6 +1122,7 @@ function renderResultsExperience(data = {}, products = []) {
       </div>
       ${decisions}
     </section>
+    ${complements}
     ${comparison}
     ${grouped}
   `;

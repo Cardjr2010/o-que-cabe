@@ -58,6 +58,37 @@ test("Busca do catalogo real retorna recommendations e scoreBreakdown", async ()
   }
 });
 
+test("Busca de celular traz complementos separados sem misturar acessorio no produto principal", async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async () => {
+    throw new Error("offline");
+  };
+
+  try {
+    const res = createResponse();
+    await handler({ url: "/api/search?q=iphone%2017%20pro%20max&mode=total&totalBudget=10000" }, res);
+    const body = parseBody(res);
+    const firstTitle = String(body.products?.[0]?.title || body.products?.[0]?.displayTitle || "");
+    const complements = body.complementaryRecommendations || [];
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(body.dataMode, "real");
+    assert.match(firstTitle, /iphone/i);
+    assert.ok(!/(capa|pel[íi]cula|fone|carregador|cabo|power bank)/i.test(firstTitle));
+    assert.ok(Array.isArray(complements));
+    assert.ok(complements.length >= 1);
+    assert.ok(complements.every((item) => item.product && item.label && item.reason));
+    assert.ok(complements.every((item) => /(fone|carregador|power bank|pel[íi]cula|capa|cabo)/i.test(String(item.product.title || item.product.displayTitle || ""))));
+
+    const accessoryRes = createResponse();
+    await handler({ url: "/api/search?q=capa%20para%20iphone%2017&mode=total&totalBudget=100" }, accessoryRes);
+    const accessoryBody = parseBody(accessoryRes);
+    assert.deepEqual(accessoryBody.complementaryRecommendations || [], []);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
 test("Modo total responde 200 e preserva totalBudget", async () => {
   const originalFetch = global.fetch;
   global.fetch = async () => {
