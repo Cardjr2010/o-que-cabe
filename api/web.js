@@ -2177,10 +2177,13 @@ export default async function handler(req, res) {
   }
 
   if (pathname === "/api/ml/oauth/start") {
-    const auth = requireAdminAuth(req, url);
-    if (!auth.ok) {
-      sendJson(res, auth.status, auth.body);
-      return;
+    const existingToken = await readMercadoLivreAuthRecord();
+    if (existingToken?.access_token || existingToken?.refresh_token) {
+      const auth = requireAdminAuth(req, url);
+      if (!auth.ok) {
+        sendJson(res, auth.status, auth.body);
+        return;
+      }
     }
     if (!mercadolivreConfigured()) {
       sendJson(res, 400, { ok: false, message: "Mercado Livre OAuth nao configurado." });
