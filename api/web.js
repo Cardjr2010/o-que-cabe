@@ -226,6 +226,21 @@ function getOAuthTokenStore() {
   return oauthTokenStoreInstance;
 }
 
+function getOAuthTokenStoreDiagnostics() {
+  const hasRestUrl = Boolean(process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL);
+  const hasRestToken = Boolean(process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN);
+  const hasRedisUrl = Boolean(process.env.KV_URL || process.env.REDIS_URL || process.env.REDIS_TLS_URL || process.env.KV_REDIS_URL);
+  const hasEncryptionKey = Boolean(process.env.OAUTH_TOKEN_ENCRYPTION_KEY || process.env.TOKEN_STORE_ENCRYPTION_KEY || process.env.KV_ENCRYPTION_KEY);
+  return {
+    hasRestUrl,
+    hasRestToken,
+    hasRedisUrl,
+    hasEncryptionKey,
+    mode: hasRestUrl && hasRestToken ? "rest" : hasRedisUrl ? "redis" : "missing",
+    configured: Boolean(hasEncryptionKey && ((hasRestUrl && hasRestToken) || hasRedisUrl)),
+  };
+}
+
 function isSaldaoCatalogProduct(item = {}) {
   const source = String(item?.marketplace || item?.source || item?.store || "").toLowerCase();
   const seller = String(item?.seller?.name || item?.seller || item?.store || "").toLowerCase();
@@ -2127,6 +2142,7 @@ export default async function handler(req, res) {
   if (pathname === "/api/ml/status") {
     const provider = getMercadoLivreSearchProvider();
     const diagnostics = provider.getDiagnostics();
+    const tokenStoreDiagnostics = getOAuthTokenStoreDiagnostics();
     const token = await readMercadoLivreAuthRecord();
     const authenticated = Boolean(token?.access_token || token?.refresh_token || diagnostics.hasAccessToken || diagnostics.hasRefreshToken);
     const tokenExpired = Boolean(token?.access_token && mercadolivreTokenExpired(token));
@@ -2144,6 +2160,7 @@ export default async function handler(req, res) {
       tokenState: !authenticated ? "not_authenticated" : tokenExpired ? "expired" : (diagnostics.tokenState || "available"),
       authMode: diagnostics.authMode || "anonymous",
       hasTokenStore: Boolean(getOAuthTokenStore()?.isConfigured?.()),
+      tokenStore: tokenStoreDiagnostics,
       hasClientId: Boolean(mercadolivreClientId()),
       hasClientSecret: Boolean(mercadolivreClientSecret()),
       hasRefreshToken: Boolean(token?.refresh_token || diagnostics.hasRefreshToken),
@@ -2171,6 +2188,7 @@ export default async function handler(req, res) {
         ok: false,
         message: "Armazenamento persistente de OAuth nao configurado.",
         provider: "mercado_livre",
+        tokenStore: getOAuthTokenStoreDiagnostics(),
       });
       return;
     }
