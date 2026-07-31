@@ -185,7 +185,9 @@ test("oferta automatica some quando o link revalidado nao leva ao produto", () =
 });
 
 test("ofertas monitoradas do Mercado Livre entram sem misturar familias", async () => {
-  const provider = new VerifiedAffiliateOfferProvider();
+  const provider = new VerifiedAffiliateOfferProvider({
+    referenceDate: new Date("2026-07-29T12:00:00.000Z"),
+  });
 
   const iphone = await provider.searchProducts("iphone 17 pro max 256gb", { limit: 10 });
   assert.ok(iphone.products.some((product) => product.id === "verified-ml-iphone-17-pro-max-256gb"));
@@ -209,7 +211,9 @@ test("intake da pagina de mais vendidos da Amazon entra com ASIN e tag de afilia
   assert.ok(AMAZON_BESTSELLERS_OFFERS.every((offer) => offer.affiliateUrl.includes("tag=candombledesm-20")));
   assert.ok(AMAZON_BESTSELLERS_OFFERS.every((offer) => offer.price > 0));
 
-  const provider = new VerifiedAffiliateOfferProvider();
+  const provider = new VerifiedAffiliateOfferProvider({
+    referenceDate: new Date("2026-07-29T12:00:00.000Z"),
+  });
   const result = await provider.searchProducts("garrafa termica matterhorn", { limit: 5 });
 
   assert.ok(result.products.some((product) => product.asin === "B07K8XJF9D"));

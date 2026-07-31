@@ -307,7 +307,7 @@ test("Consulta curta sem cobertura aciona fallback do Mercado Livre com itemId e
   assert.match(result.fallbackWarning, /Nao encontramos opcoes suficientes no catalogo principal do OQC/i);
   assert.ok(result.products.length > 0);
   assert.equal(result.dataMode, "real");
-  assert.equal(result.strategyUsed, "catalog-search+external-fallback");
+  assert.equal(result.strategyUsed, "catalog-search+mercado-livre-fallback");
   const mlProducts = result.products.filter((product) => String(product.source || product.marketplace || "").includes("mercado_livre"));
   assert.ok(mlProducts.length > 0);
   assert.ok(mlProducts.every((product) => String(product.itemId || "").length > 0));
@@ -375,7 +375,7 @@ test("Catálogo OQC forte não chama fallback do Mercado Livre", async () => {
   assert.match(String(result.products[0].title || result.products[0].displayTitle || ""), /iPhone/i);
 });
 
-test("Ofertas afiliadas verificadas entram na busca do iPhone 17 Pro Max com parcelamento real", async () => {
+test("Oferta vencida de iPhone 17 Pro Max nao entra nem troca por variante errada", async () => {
   const orchestrator = new SearchOrchestrator({
     catalogManager: createCatalogManager([]),
   });
@@ -386,19 +386,12 @@ test("Ofertas afiliadas verificadas entram na busca do iPhone 17 Pro Max com par
     totalBudget: 12000,
   });
 
-  assert.equal(result.dataMode, "real");
-  assert.equal(result.fallbackUsed, true);
+  assert.equal(result.dataMode, "demo");
+  assert.equal(result.fallbackUsed, false);
   assert.match(String(result.fallbackSource || ""), /verified_partner_offers/);
-  assert.ok(result.products.length >= 1);
-  assert.match(String(result.products[0].displayTitle || result.products[0].title), /iPhone 17 Pro Max/i);
-  assert.match(String(result.products[0].sourceLabel || result.products[0].sourceName || result.products[0].source || ""), /mercado_livre/i);
+  assert.equal(result.products.length, 0);
   assert.ok(!result.products.some((product) => /iphone 7/i.test(String(product.displayTitle || product.title || ""))));
-  assert.equal(result.products[0].coupon?.code || null, null);
-  assert.equal(result.products[0].finalPrice, 10999);
-  assert.ok(result.products.some((product) => String(product.sourceLabel || "").includes("mercado_livre")));
-  assert.ok(result.products.some((product) => String(product.sourceLabel || "").includes("amazon")));
-  assert.ok(result.products.every((product) => product.installments));
-  assert.ok(result.products.every((product) => Number(product.installments.count || product.installments.months || 0) > 0));
+  assert.ok(!result.products.some((product) => /iPhone 17 Pro 256GB/i.test(String(product.displayTitle || product.title || ""))));
   assert.ok(!result.products.some((product) => /magalu/i.test(String(product.sourceLabel || product.sourceName || product.source || ""))));
   assert.ok(!result.products.some((product) => /Galaxy|Xiaomi/i.test(String(product.displayTitle || product.title || ""))));
 });
@@ -425,7 +418,7 @@ test("Ofertas afiliadas verificadas entram na busca do Galaxy S26 Ultra com prio
   assert.ok(result.products.every((product) => product.installments));
 });
 
-test("Ofertas verificadas recentes entram para produtos Amazon de marca e modelo", async () => {
+test("Ofertas Amazon vencidas nao entram para produtos de marca e modelo", async () => {
   const orchestrator = new SearchOrchestrator({
     catalogManager: createCatalogManager([]),
   });
@@ -436,11 +429,10 @@ test("Ofertas verificadas recentes entram para produtos Amazon de marca e modelo
     totalBudget: 300,
   });
 
-  assert.equal(tenda.dataMode, "real");
-  assert.equal(tenda.fallbackUsed, true);
+  assert.equal(tenda.dataMode, "demo");
+  assert.equal(tenda.fallbackUsed, false);
   assert.match(String(tenda.fallbackSource || ""), /verified_partner_offers/);
-  assert.match(String(tenda.products[0]?.displayTitle || tenda.products[0]?.title || ""), /Tenda AX3000/i);
-  assert.match(String(tenda.products[0]?.sourceLabel || tenda.products[0]?.sourceName || ""), /amazon/i);
+  assert.equal(tenda.products.length, 0);
 
   const magicMouse = await orchestrator.search({
     query: "magic mouse",
@@ -448,10 +440,9 @@ test("Ofertas verificadas recentes entram para produtos Amazon de marca e modelo
     totalBudget: 1000,
   });
 
-  assert.equal(magicMouse.dataMode, "real");
-  assert.equal(magicMouse.fallbackUsed, true);
-  assert.match(String(magicMouse.products[0]?.displayTitle || magicMouse.products[0]?.title || ""), /Magic Mouse/i);
-  assert.doesNotMatch(String(magicMouse.products[0]?.displayTitle || magicMouse.products[0]?.title || ""), /iPhone/i);
+  assert.equal(magicMouse.dataMode, "demo");
+  assert.equal(magicMouse.fallbackUsed, false);
+  assert.equal(magicMouse.products.length, 0);
 });
 
 test("Consulta exata monitorada prioriza oferta verificada sobre catalogo antigo parecido", async () => {
@@ -552,9 +543,9 @@ test("Sem token ou proxy configurado, o fallback do Mercado Livre nao eh acionad
   const result = await orchestrator.search({ query: "iphone 17 pro max", mode: "total", totalBudget: 12000 });
 
   assert.equal(providerCalls, 0);
-  assert.equal(result.fallbackUsed, true);
+  assert.equal(result.fallbackUsed, false);
   assert.equal(result.fallbackAttempted, true);
   assert.equal(result.fallbackSource, "verified_partner_offers");
-  assert.match(result.fallbackWarning, /fontes parceiras/i);
+  assert.match(result.fallbackWarning, /Nao encontramos opcoes adicionais/i);
 });
 

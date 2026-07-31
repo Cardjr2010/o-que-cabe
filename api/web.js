@@ -29,6 +29,7 @@ import { projectRoot, resolveProjectPath } from "../src/runtime/project-root.js"
 import { resolveCatalogSeedPath, getCatalogSeedCandidates } from "../src/runtime/catalog-path.js";
 import { readCatalogRefreshMetadata } from "../src/runtime/catalog-refresh-metadata.js";
 import { listFreshVerifiedAffiliateOffers } from "../src/data/verified-affiliate-offers.js";
+import OfferRadarEngine from "../src/offers/OfferRadarEngine.js";
 
 const root = projectRoot;
 const bundledPublicDir = resolveProjectPath("api", "static");
@@ -80,6 +81,7 @@ let searchOrchestratorInstance = null;
 let mercadoLivreSearchProviderInstance = null;
 let amazonSearchProviderInstance = null;
 let oauthTokenStoreInstance = null;
+let offerRadarEngineInstance = null;
 function createFeedProvider(providerName = "mi_shop", options = {}) {
   const name = String(providerName || "").trim().toLowerCase();
   const baseOptions = {
@@ -219,6 +221,13 @@ function getAmazonSearchProvider() {
     amazonSearchProviderInstance = new AmazonRapidApiSearchProvider();
   }
   return amazonSearchProviderInstance;
+}
+
+function getOfferRadarEngine() {
+  if (!offerRadarEngineInstance) {
+    offerRadarEngineInstance = new OfferRadarEngine();
+  }
+  return offerRadarEngineInstance;
 }
 
 function getOAuthTokenStore() {
@@ -2515,6 +2524,11 @@ export default async function handler(req, res) {
 
   if (pathname === "/api/market/stats") {
     sendJson(res, 200, buildMarketStatsSnapshot());
+    return;
+  }
+
+  if (pathname === "/api/offer-radar/status") {
+    sendJson(res, 200, getOfferRadarEngine().buildStatus());
     return;
   }
 

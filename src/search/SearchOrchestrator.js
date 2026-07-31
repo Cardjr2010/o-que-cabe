@@ -530,6 +530,30 @@ function countTokenHitsInText(text = "", tokens = []) {
   }).length;
 }
 
+function hasRequiredVariantTerms(query = "", text = "") {
+  const normalizedQuery = normalizeRadarText(query);
+  const normalizedText = normalizeRadarText(text);
+  const requiredGroups = [
+    ["pro max", "max"],
+    ["ultra"],
+    ["plus"],
+    ["mini"],
+    ["256gb", "256 gb"],
+    ["512gb", "512 gb"],
+    ["128gb", "128 gb"],
+    ["16gb", "16 gb"],
+  ];
+
+  for (const group of requiredGroups) {
+    const queryHasTerm = group.some((term) => normalizedQuery.includes(normalizeRadarText(term)));
+    if (!queryHasTerm) continue;
+    const productHasTerm = group.some((term) => normalizedText.includes(normalizeRadarText(term)));
+    if (!productHasTerm) return false;
+  }
+
+  return true;
+}
+
 function getTrackedCommercialTarget(intent = {}) {
   return findOfferRadarTarget(intent.searchText || intent.query || "");
 }
@@ -543,7 +567,9 @@ function isStrictCommercialIntent(intent = {}) {
   if (hasVerifiedAffiliateOfferCoverage(intent)) return true;
   const query = normalizeText(intent.searchText || intent.query || "");
   const tokens = query.split(/\s+/).filter(Boolean);
+  if (intent.brand && tokens.length >= 2) return true;
   if (intent.model && tokens.length >= 2) return true;
+  if (tokens.length >= 3) return true;
   if (isPhoneFamilyQuery(query) && tokens.length >= 3) return true;
   if (matchesAnyMarker(query, ["roteador", "router", "monitor", "notebook", "tv"]) && tokens.length >= 3) return true;
   return false;
@@ -569,6 +595,7 @@ function hasStrongCommercialCoverage(product = {}, intent = {}) {
   const hits = countTokenHitsInText(productText, queryTokens);
   if (queryTokens.length >= 4) return hits >= 2;
   if (queryTokens.length === 3) return hits >= 2;
+  if (intent.brand && queryTokens.length >= 2) return hits >= 2;
   return hits >= 1;
 }
 
@@ -894,6 +921,7 @@ function hasVerifiedOfferIntentMatch(product = {}, intent = {}) {
   ].filter(Boolean).join(" "));
   if (!text) return false;
   if (intent.brand && !text.includes(normalizeText(intent.brand))) return false;
+  if (!hasRequiredVariantTerms(query, text)) return false;
   if (normalizeText(intent.category) === "ferramenta") {
     return matchesAnyMarker(text, TOOL_QUERY_MARKERS);
   }
@@ -1072,6 +1100,9 @@ export default class SearchOrchestrator {
         ...intelligence,
         intelligence,
       };
+      if (isStrictCommercialIntent(intent) && !hasStrongCommercialCoverage(richProduct, intent)) {
+        continue;
+      }
       const installmentData = buildBudgetContext(richProduct, baseBudget);
       if (installmentData.installmentWarning) warnings.add(installmentData.installmentWarning);
       const effectiveInstallment = installmentData.installments?.available

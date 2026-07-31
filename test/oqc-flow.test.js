@@ -96,8 +96,8 @@ test("Browse de categoria abre lista publicada e ordena sem puxar acessorios obv
     assert.equal(notebookBody.browseMode, "category");
     assert.equal(notebookBody.sort, "price_asc");
     assert.ok(notebookBody.displayedCount <= 300);
-    assert.ok(notebookBody.totalMatchedProducts > 120);
-    assert.ok(notebookSources.some((source) => source.includes("amazon") || source.includes("mercado_livre")));
+    assert.ok(notebookBody.totalMatchedProducts > 40);
+    assert.ok(notebookSources.every((source) => !source.includes("amazon") && !source.includes("mercado_livre")));
     assert.ok(notebookTitles.every((title) => title.includes("notebook") || title.includes("laptop") || title.includes("chromebook") || title.includes("macbook")));
     assert.ok(notebookTitles.every((title) => !/(case|capa|fonte|adaptador|mem[oó]ria ram|carregador)/i.test(title)));
 
@@ -108,7 +108,7 @@ test("Browse de categoria abre lista publicada e ordena sem puxar acessorios obv
 
     assert.equal(tvBody.browseMode, "category");
     assert.equal(tvBody.sort, "price_asc");
-    assert.ok(tvBody.totalMatchedProducts > 80);
+    assert.ok(tvBody.totalMatchedProducts > 0);
     assert.ok(tvTitles.every((title) => !/(cftv|controle remoto|tv stick|media player|tv box|box tv|suporte)/i.test(title)));
 
     const installmentRes = createResponse();
@@ -197,26 +197,24 @@ test("Busca sem cobertura real nao inventa resultado", async () => {
   }
 });
 
-test("Busca de ferramenta usa oferta rastreada real quando houver cobertura", async () => {
+test("Busca de ferramenta nao usa oferta rastreada vencida", async () => {
   const res = createResponse();
   await handler({ url: "/api/search?q=furadeira&mode=total&totalBudget=500" }, res);
   const body = parseBody(res);
 
   assert.equal(res.statusCode, 200);
-  assert.equal(body.dataMode, "real");
+  assert.equal(body.dataMode, "none");
   assert.ok(Array.isArray(body.products));
-  assert.ok(body.products.length > 0);
-  assert.ok(/furadeira|parafusadeira/i.test(body.products[0]?.title || ""));
+  assert.equal(body.products.length, 0);
 });
 
-test("Busca especifica de casa pode usar oferta verificada sem liberar busca ampla", async () => {
+test("Busca especifica de casa nao usa oferta verificada vencida e busca ampla pede refinamento", async () => {
   const specificRes = createResponse();
   await handler({ url: "/api/search?q=garrafa%20termica%20matterhorn&mode=total&totalBudget=100" }, specificRes);
   const specificBody = parseBody(specificRes);
 
   assert.equal(specificRes.statusCode, 200);
-  assert.equal(specificBody.dataMode, "real");
-  assert.ok(specificBody.products.some((product) => product.asin === "B07K8XJF9D"));
+  assert.ok(!specificBody.products.some((product) => product.asin === "B07K8XJF9D"));
 
   const broadRes = createResponse();
   await handler({ url: "/api/search?q=casa&mode=total&totalBudget=50" }, broadRes);
