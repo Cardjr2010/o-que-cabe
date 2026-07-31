@@ -1547,7 +1547,6 @@ function renderProofSection(data = {}) {
 
   const publishedProducts = Number(data.totalPublishedProducts ?? data.totalCatalogProducts ?? data.totalProducts ?? 0);
   const analyzedProducts = Number(data.totalCatalogProducts ?? data.totalProducts ?? publishedProducts ?? 0);
-  const hiddenProducts = Number(data.hiddenProducts ?? Math.max(analyzedProducts - publishedProducts, 0));
   const topSources = Array.isArray(data.topSources) ? data.topSources.filter(Boolean).slice(0, 4) : [];
   const topBrands = Array.isArray(data.topBrands) ? data.topBrands.filter(Boolean).slice(0, 6) : [];
 
@@ -1571,7 +1570,7 @@ function renderProofSection(data = {}) {
   if (proofSummaryStats) {
     proofSummaryStats.innerHTML = [
       `${formatCompactNumber(analyzedProducts, "0")} analisados`,
-      `${formatCompactNumber(hiddenProducts, "0")} ocultos`,
+      `${formatCompactNumber(topSources.length, "0")} fontes no catalogo`,
       data.catalogFresh ? "Catalogo com leitura recente" : "Base aguardando atualizacao",
     ].map((item) => `<span>${escapeHtml(item)}</span>`).join("");
   }
@@ -1727,7 +1726,7 @@ function renderLoadingSkeletons(container, variant = "card", count = 3) {
 function renderTrustBand(data = {}) {
   const publishedProducts = Number(data.totalPublishedProducts ?? data.totalCatalogProducts ?? data.totalProducts ?? 0);
   const analyzedProducts = Number(data.totalCatalogProducts ?? data.totalProducts ?? publishedProducts ?? 0);
-  const hiddenProducts = Number(data.hiddenProducts ?? Math.max(analyzedProducts - publishedProducts, 0));
+  const topSources = Array.isArray(data.topSources) ? data.topSources.filter(Boolean) : [];
   if (trustTotalCatalog) {
     trustTotalCatalog.textContent = publishedProducts ? formatCompactNumber(publishedProducts, "0") : "0";
   }
@@ -1735,7 +1734,7 @@ function renderTrustBand(data = {}) {
     trustDepartments.textContent = analyzedProducts ? formatCompactNumber(analyzedProducts, "0") : "0";
   }
   if (trustSources) {
-    trustSources.textContent = hiddenProducts ? formatCompactNumber(hiddenProducts, "0") : "0";
+    trustSources.textContent = topSources.length ? formatCompactNumber(topSources.length, "0") : "0";
   }
   if (trustUpdated) {
     const updatedAt = data.catalogUpdatedAt ? new Date(data.catalogUpdatedAt) : null;

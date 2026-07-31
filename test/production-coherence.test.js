@@ -47,8 +47,9 @@ test("home comunica as metricas oficiais sem presumir orcamento", () => {
   assert.match(html, /Pre(?:ç|Ã§)o, origem e parcelamento ficam claros no resultado\./);
   assert.match(html, /<strong id="trustTotalCatalog">--<\/strong>\s*<span>produtos publicados/);
   assert.match(html, /<strong id="trustDepartments">--<\/strong>\s*<span>produtos analisados/);
-  assert.match(html, /<strong id="trustSources">--<\/strong>\s*<span>ocultos por qualidade ou fonte/);
+  assert.match(html, /<strong id="trustSources">--<\/strong>\s*<span>fontes no cat.logo/);
   assert.doesNotMatch(html, /Hoje catalogo atualizado|15\.999 produtos reais analisados|15\.999<\/strong>|16\.740<\/strong>|741<\/strong>/);
+  assert.doesNotMatch(html, /ocultos por qualidade|produtos ocultos/i);
   assert.doesNotMatch(html, /id="productInput"[^>]*\svalue=/);
   assert.doesNotMatch(html, /id="monthlyInput"[^>]*\svalue=/);
   assert.doesNotMatch(html, /id="totalBudgetInput"[^>]*\svalue=/);
