@@ -943,6 +943,9 @@ function rankPreparedProduct(product = {}, intent = {}) {
   const iphoneSamsungBonus = /iphone|apple iphone|samsung|galaxy|redmi|poco|motorola|moto/.test(searchText) && phoneFamilyProduct ? 3 : 0;
   const nonPhonePenalty = phoneFamilyQuery && !cellularProduct && phoneFamilyProduct ? -12 : 0;
   const accessoryQueryPenalty = phoneFamilyQuery && /capa|case|pelicula|carregador|cabo|fone|headphone|airpods|earbud|strap|pulseira|suporte|controle remoto|remote control|remote/.test(brandText) ? -4 : 0;
+  const consoleQuery = /\b(console|nintendo switch|switch 2|playstation|ps5|xbox)\b/.test(searchText);
+  const consoleProductBonus = consoleQuery && /\b(console|nintendo switch|switch 2|playstation 5|ps5|xbox)\b/.test(brandText) ? 24 : 0;
+  const consoleAccessoryPenalty = consoleQuery && /\b(headset|fone|controle|joystick|capa|case|carregador|suporte|dock|almofada|almofadas)\b/.test(brandText) ? -80 : 0;
   const trackedTarget = getTrackedCommercialTarget(intent);
   const trackedAliases = trackedTarget ? [trackedTarget.query, ...(Array.isArray(trackedTarget.aliases) ? trackedTarget.aliases : [])] : [];
   const trackedQueryBonus = trackedAliases.some((alias) => titleText.includes(normalizeRadarText(alias))) ? 28 : 0;
@@ -974,6 +977,8 @@ function rankPreparedProduct(product = {}, intent = {}) {
     + accessoryPenalty
     + nonPhonePenalty
     + accessoryQueryPenalty
+    + consoleProductBonus
+    + consoleAccessoryPenalty
     + strictIntentPenalty
   );
 }
