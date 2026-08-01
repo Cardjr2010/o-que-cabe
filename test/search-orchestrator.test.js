@@ -584,6 +584,42 @@ test("Busca especifica de banheiro nao recomenda produto de casa sem relacao", a
   assert.ok(!result.products.some((product) => /telefone sem fio/i.test(String(product.displayTitle || product.title || ""))));
 });
 
+test("Parametro publico q alimenta ranking e prioriza console antes de acessorio compativel", async () => {
+  const orchestrator = new SearchOrchestrator({
+    catalogManager: createCatalogManager([
+      {
+        title: "Headset Gamer Logitech G335 compativel com Nintendo Switch",
+        category: "audio",
+        normalizedCategory: "audio",
+        department: "Audio",
+        productType: "accessory",
+        isAccessory: true,
+        marketplace: "amazon",
+        dataMode: "real",
+        sourceType: "verified_partner_offers",
+        price: 349.9,
+      },
+      {
+        title: "Console Nintendo Switch 2 Nacional",
+        category: "games",
+        normalizedCategory: "games",
+        department: "Games",
+        productType: "principal",
+        isAccessory: false,
+        marketplace: "mercado_livre",
+        dataMode: "real",
+        sourceType: "telegram_affiliate_export",
+        price: 3829,
+      },
+    ]),
+  });
+
+  const result = await orchestrator.search({ q: "nintendo switch 2 nacional", mode: "total", totalBudget: 4000 });
+
+  assert.equal(result.dataMode, "real");
+  assert.match(String(result.products[0]?.title || ""), /Console Nintendo Switch 2 Nacional/i);
+});
+
 test("Sem token ou proxy configurado, o fallback do Mercado Livre nao eh acionado", async () => {
   let providerCalls = 0;
   const orchestrator = new SearchOrchestrator({

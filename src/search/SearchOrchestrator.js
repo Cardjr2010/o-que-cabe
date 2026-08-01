@@ -1119,8 +1119,8 @@ export default class SearchOrchestrator {
     this.marketplaceSearchProvider = marketplaceSearchProvider || null;
   }
 
-  parseIntent({ query = "", mode = "monthly", monthly = 0, months = 12, totalBudget = 0 } = {}) {
-    const text = String(query || "").trim();
+  parseIntent({ query = "", q = "", searchText: optionSearchText = "", mode = "monthly", monthly = 0, months = 12, totalBudget = 0 } = {}) {
+    const text = String(query || q || optionSearchText || "").trim();
     const budgetHints = parseBudgetNumber(text);
     const seoIntent = getSEOIntelligenceEngine().resolveQueryIntent(text) || {};
     const brand = detectBrand(text) || seoIntent.intent?.brand || "";

@@ -568,7 +568,6 @@ function groupPublicProductsInDisplayOrder(products = []) {
 
 function publicProductMatchesSpecificHomeQuery(product = {}, query = "") {
   const normalizedQuery = normalizeBrowseText(query);
-  if (!/\b(banheiro|lavabo)\b/.test(normalizedQuery)) return true;
   const normalizedProduct = normalizeBrowseText([
     product.displayTitle,
     product.originalTitle,
@@ -584,6 +583,11 @@ function publicProductMatchesSpecificHomeQuery(product = {}, query = "") {
     product.brand,
     product.model,
   ].filter(Boolean).join(" "));
+  const principalConsoleQuery = /\b(console|nintendo switch|switch 2|playstation|ps5|xbox)\b/.test(normalizedQuery);
+  const accessoryConsoleProduct = /\b(headset|fone|controle|joystick|capa|case|carregador|suporte|dock|almofada|almofadas|pelicula)\b/.test(normalizedProduct);
+  if (principalConsoleQuery && accessoryConsoleProduct) return false;
+
+  if (!/\b(banheiro|lavabo)\b/.test(normalizedQuery)) return true;
   if (/\b(gabinete office|micro atx|atx|fonte 200w|fonte 500w|computador|pc gamer)\b/.test(normalizedProduct)) {
     return false;
   }
