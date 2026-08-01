@@ -972,6 +972,37 @@ function renderProducts(products) {
   results.innerHTML = visibleProducts + moreProducts;
 }
 
+function buildGuidedEmptySearchHtml(data = {}, query = "") {
+  const queryText = String(query || data.query || "esta busca").trim();
+  const normalizedQuery = queryText.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const isBathroomIntent = /\b(banheiro|lavabo|saboneteira|toalheiro|porta shampoo|box)\b/.test(normalizedQuery);
+  const isBroadIntent = data.refinementRequired || /\b(casa|lar|decoracao|organizacao|organizado|ambiente)\b/.test(normalizedQuery);
+  const headline = isBroadIntent
+    ? "Precisamos de uma busca mais específica"
+    : "Não encontramos oferta confirmada agora";
+  const explanation = isBathroomIntent
+    ? "Ainda não temos produtos de banheiro publicados com preço e link confirmados. O OQC não vai preencher a tela com peça, cabo ou acessório sem relação."
+    : isBroadIntent
+      ? "Essa busca é ampla demais para recomendar um produto principal com segurança. Informe o item ou o ambiente com mais detalhe."
+      : "Não encontramos uma oferta com produto, preço e link direto confirmados para esta busca.";
+  const suggestions = isBathroomIntent
+    ? ["saboneteira banheiro", "prateleira banheiro", "toalheiro banheiro"]
+    : ["celular até 1500", "notebook até 2500", "cozinha suspensa até 250"];
+
+  return `
+    <article class="empty-state empty-state-guided">
+      <div>
+        <span class="empty-kicker">Sem recomendação forçada</span>
+        <strong>${escapeHtml(headline)}</strong>
+        <p>${escapeHtml(explanation)}</p>
+      </div>
+      <div class="empty-suggestions" aria-label="Sugestões de busca">
+        ${suggestions.map((item) => `<button type="button" data-empty-query="${escapeHtml(item)}">${escapeHtml(item)}</button>`).join("")}
+      </div>
+    </article>
+  `;
+}
+
 function renderBreakdown(breakdown = []) {
   if (!Array.isArray(breakdown) || !breakdown.length) return "";
   return `
@@ -1955,6 +1986,8 @@ form.addEventListener("submit", async (event) => {
       if (totalBudgetInput) totalBudgetInput.disabled = true;
     }
   summaryTitle.textContent = activeBrowseMode ? `Abrindo categoria ${product}...` : `Buscando ${product}...`;
+  if (resultsToolbar) resultsToolbar.hidden = true;
+  if (resultsCount) resultsCount.textContent = "";
   resultsArea.scrollIntoView({ behavior: "smooth", block: "start" });
 
   try {
@@ -2000,7 +2033,7 @@ form.addEventListener("submit", async (event) => {
     }
     summaryTitle.textContent = confirmedProducts.length
       ? (activeBrowseMode ? `${normalizeHomeCategoryLabel(activeBrowseCategory || product)}` : `Opções para ${product}`)
-      : `Nenhuma oferta confirmada para ${product}`;
+      : "Sem oferta confirmada agora";
 
     if (data.fallbackUsed && Number(data.fallbackCount || 0) > 0) {
       notice.hidden = false;
@@ -2008,6 +2041,8 @@ form.addEventListener("submit", async (event) => {
     } else if (data.fallbackAttempted) {
       notice.hidden = false;
       notice.textContent = "Não encontramos opções adicionais nesta fonte.";
+    } else if (!confirmedProducts.length) {
+      notice.hidden = true;
     } else if (confirmedProducts.length > 0 && confirmedProducts.length < 3) {
       notice.hidden = false;
       notice.textContent = "Encontramos poucas opções no catálogo atual.";
@@ -2022,6 +2057,7 @@ form.addEventListener("submit", async (event) => {
     } else {
       const experienceHtml = renderResultsExperience(data, confirmedProducts);
       if (experienceHtml) results.innerHTML = experienceHtml;
+      else if (appView === "home" && !confirmedProducts.length) results.innerHTML = buildGuidedEmptySearchHtml(data, product);
       else renderProducts(confirmedProducts);
     }
   } catch {
@@ -2052,6 +2088,14 @@ sortButtons.forEach((button) => {
     if (!productInput?.value?.trim()) return;
     form.requestSubmit();
   });
+});
+
+document.addEventListener("click", (event) => {
+  const suggestionButton = event.target?.closest?.("[data-empty-query]");
+  if (!suggestionButton || !productInput || !form) return;
+  productInput.value = suggestionButton.dataset.emptyQuery || suggestionButton.textContent || "";
+  activeBrowseMode = "";
+  form.requestSubmit();
 });
 
 document.querySelectorAll(".quick-row button").forEach((button) => {

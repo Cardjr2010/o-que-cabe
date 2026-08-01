@@ -45,9 +45,9 @@ test("home comunica as metricas oficiais sem presumir orcamento", () => {
   assert.equal(bundledHtml.replace(/\r\n/g, "\n"), html.replace(/\r\n/g, "\n"), "o HTML empacotado pela funcao deve acompanhar a home publica canonica");
   assert.match(html, /Busque, informe seu limite e receba poucas op(?:�|ç|Ã§)(?:�|õ|Ãµ)es boas\./);
   assert.match(html, /O detalhe fica no resultado\./);
-  assert.match(html, /<strong id="trustTotalCatalog">--<\/strong>\s*<span>produtos publicados/);
-  assert.match(html, /<strong id="trustDepartments">--<\/strong>\s*<span>consulta por or(?:ç|Ã§|ÃƒÂ§)amento/);
-  assert.match(html, /<strong id="trustSources">--<\/strong>\s*<span>links diretos quando confirmados/);
+  assert.match(html, /<strong id="trustTotalCatalog">Cat.{1,4}logo<\/strong>\s*<span>produtos publicados/);
+  assert.match(html, /<strong id="trustDepartments">Or.{1,4}amento<\/strong>\s*<span>consulta por or.{1,4}amento/);
+  assert.match(html, /<strong id="trustSources">Ofertas<\/strong>\s*<span>links diretos quando confirmados/);
   assert.doesNotMatch(html, /Hoje catalogo atualizado|15\.999 produtos reais analisados|15\.999<\/strong>|16\.740<\/strong>|741<\/strong>/);
   assert.doesNotMatch(html, /ocultos por qualidade|produtos ocultos/i);
   assert.doesNotMatch(html, /id="productInput"[^>]*\svalue=/);
