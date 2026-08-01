@@ -1,8 +1,8 @@
 const catalogRefreshMetadata = {
-  "refreshedAt": "2026-08-01T02:43:51.796Z",
+  "refreshedAt": "2026-08-01T12:56:07.706Z",
   "fresh": true,
-  "analyzedCount": 3209,
-  "publishedCount": 2274,
+  "analyzedCount": 3215,
+  "publishedCount": 2280,
   "hiddenCount": 935,
   "activeSourceCounts": [
     {
@@ -22,8 +22,8 @@ const catalogRefreshMetadata = {
     {
       "source": "amazon",
       "label": "Amazon",
-      "analyzedCount": 355,
-      "publishedCount": 355,
+      "analyzedCount": 361,
+      "publishedCount": 361,
       "hiddenCount": 0
     },
     {
@@ -61,8 +61,8 @@ const catalogRefreshMetadata = {
     {
       "source": "amazon",
       "label": "Amazon",
-      "analyzedCount": 355,
-      "publishedCount": 355,
+      "analyzedCount": 361,
+      "publishedCount": 361,
       "hiddenCount": 0,
       "rejectedReasons": []
     },

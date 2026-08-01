@@ -102,6 +102,13 @@ function todayTelegramDateKey(now = new Date()) {
   return formatter.format(now).replace(/\//g, ".");
 }
 
+function latestTelegramDateKey(html = "") {
+  const keys = extractMessages(html)
+    .map((rawMessage) => dateKeyFromTitle(extractMessageDate(rawMessage)))
+    .filter(Boolean);
+  return keys.at(-1) || todayTelegramDateKey();
+}
+
 function extractMessages(html = "") {
   return String(html || "")
     .split(/(?=<div class="message default clearfix(?: joined)?")/g)
@@ -122,13 +129,14 @@ function extractLocalPhoto(rawMessage = "") {
 }
 
 function extractAffiliateLink(text = "") {
-  const links = [...String(text || "").matchAll(/https?:\/\/(?:meli\.la|link\.amazon)\/[A-Za-z0-9_-]+/g)].map((match) => match[0]);
+  const links = [...String(text || "").matchAll(/https?:\/\/(?:meli\.la|link\.amazon|amzlink\.to|www\.magazinevoce\.com\.br|magazineluiza\.onelink\.me)\/[^\s<>"']+/g)].map((match) => match[0]);
   return links.find((link) => !/B09yS44hb/i.test(link)) || "";
 }
 
 function sourceFromLink(link = "") {
   if (/meli\.la/i.test(link)) return ["mercado_livre", "Mercado Livre"];
-  if (/link\.amazon/i.test(link)) return ["amazon", "Amazon"];
+  if (/link\.amazon|amzlink\.to/i.test(link)) return ["amazon", "Amazon"];
+  if (/magazinevoce|magazineluiza\.onelink/i.test(link)) return ["magalu", "Magalu"];
   return ["affiliate", "Afiliado"];
 }
 
@@ -203,17 +211,17 @@ function extractInstallments(text = "", price = 0) {
 function guessCategory(title = "") {
   const text = normalizeText(title);
   if (/\b(tenis|camiseta|camisetas|camisa|camisas|cueca|cuecas|moletom|blusa|aramis|puma|adidas|fila|new balance|sandrini)\b/.test(text)) return ["moda", "Moda"];
-  if (/\b(principia|protetor solar|skincare|beleza)\b/.test(text)) return ["beleza", "Beleza"];
   if (/\b(shampoo cera|vonix|sintra|carro eletrico|carregador carro eletrico|pneu|pneus|automotivo)\b/.test(text)) return ["automotivo", "Automotivo"];
+  if (/\b(principia|protetor solar|skincare|beleza|eudora|siage|shampoo|condicionador|creme|hidratacao micelar)\b/.test(text)) return ["beleza", "Beleza"];
   if (/\b(panini|figurinhas|envelopes)\b/.test(text)) return ["colecionaveis", "Colecionáveis"];
   if (/\b(faca|picanheira|churrasco|pote|potes|marmita)\b/.test(text)) return ["casa", "Casa"];
   if (/\b(carregador|power bank|cabo|adaptador|filtro de linha)\b/.test(text)) return ["acessorios", "Acessórios"];
   if (/\b(relogio|smartwatch|polar pacer)\b/.test(text)) return ["relogios", "Relógios"];
   if (/\b(playstation|dualsense|controle gamer|controle de celular|controle sem fio|nintendo|xbox|game)\b/.test(text)) return ["games", "Games"];
   if (/\b(smartphone|celular|iphone|galaxy|moto g|xiaomi|motorola)\b/.test(text)) return ["celular", "Celulares"];
-  if (/\b(tv|qled|oled|televisao|smart tv|aiwa|hisense)\b/.test(text)) return ["tv", "TVs"];
-  if (/\b(monitor|agon|hz|full hd|curvo)\b/.test(text)) return ["monitor", "Monitores"];
   if (/\b(mouse|teclado|webcam|fonte|gabinete|water cooler|cooler|ssd|memoria|impressora 3d|impressora)\b/.test(text)) return ["informatica", "Informática"];
+  if (/\b(monitor|agon|hz|full hd|curvo)\b/.test(text)) return ["monitor", "Monitores"];
+  if (/\b(smart tv|televisao|qled|oled|aiwa|hisense)\b/.test(text) || /\btv\b/.test(text) && !/\b(teclado|controle|suporte|cabo|adaptador)\b/.test(text)) return ["tv", "TVs"];
   if (/\b(notebook|laptop|chromebook|macbook)\b/.test(text)) return ["notebook", "Notebooks"];
   if (/\b(roteador|wifi|wi-fi|mesh|tp-link|huawei|mercusys|deco|starlink)\b/.test(text)) return ["roteador", "Rede"];
   if (/\b(cadeira|fechadura|camera seguranca|camera de seguranca|projetor|air fryer|fritadeira|aspirador|ar condicionado|ar-condicionado|cooktop|panela|panelas|toalha|toalhas|mixer|cafeteira|escorredor|cozinha|tira manchas|vanish)\b/.test(text)) return ["casa", "Casa"];
@@ -236,7 +244,7 @@ function hasConcreteProductTitle(title = "") {
   if (/^\d+% off\b/.test(normalized)) return false;
   if (/\b(cupom|cupons|desconto|oferta relampago|resgate|aproveite|saiu cupom)\b/.test(normalized)) return false;
   if (/\b(esse e classico|impossivel nao gostar|so hoje|olha isso|imperdivel)\b/.test(normalized)) return false;
-  return /\b(kit|jogo|smart|tv|relogio|tenis|panela|panelas|pote|envelope|figurinhas|carregador|faca|camiseta|shampoo|cera|air fryer|fritadeira|monitor|notebook|iphone|galaxy|xiaomi|motorola|fone|camera|cafeteira|mixer|escorredor|vanish|toalha|roteador|controle|console)\b/.test(normalized);
+  return /\b(kit|jogo|smart|tv|relogio|tenis|panela|panelas|pote|potes|envelope|figurinhas|carregador|faca|camiseta|shampoo|cera|air fryer|fritadeira|monitor|notebook|iphone|galaxy|xiaomi|motorola|fone|camera|cafeteira|mixer|escorredor|vanish|toalha|roteador|controle|controles|console|lavadora|pressao|aspirador|colchao|prateleira|saboneteira|banheiro|cozinha|cadeira|poltrona|tablet|ssd|memoria|mouse|teclado|webcam|impressora|projetor|dualsense|xbox|playstation|nintendo|ar condicionado|cooktop|purificador|ventilador|microondas|geladeira|fogao|forno)\b/.test(normalized);
 }
 
 function buildCandidates(html = "", dateKey = "") {
@@ -492,50 +500,120 @@ function updateMetadata(products = []) {
   return metadata;
 }
 
-const args = parseArgs(process.argv.slice(2));
-if (!args.input) {
-  console.error("Uso: node scripts/import-telegram-affiliate-offers.mjs --input <messages.html> [--date DD.MM.YYYY]");
-  process.exit(1);
+function analyzeCandidate(rawMessage = "", dateKey = "") {
+  const messageDateTitle = extractMessageDate(rawMessage);
+  const text = extractTextBlock(rawMessage);
+  const link = extractAffiliateLink(text);
+  const title = extractTitle(text);
+  const prices = extractPrices(text);
+  const candidate = {
+    rawMessage,
+    messageDateTitle,
+    dateKey: dateKeyFromTitle(messageDateTitle),
+    checkedAt: formatIsoFromTelegramTitle(messageDateTitle),
+    title,
+    text,
+    link,
+    ...prices,
+    couponCode: extractCoupon(text),
+    installments: extractInstallments(text, prices.price),
+    localPhoto: extractLocalPhoto(rawMessage),
+  };
+  const reasons = [];
+  if (candidate.dateKey !== dateKey) reasons.push("data fora do lote selecionado");
+  if (!candidate.link) reasons.push("sem link de afiliado aceito");
+  if (!candidate.price) reasons.push("sem preço capturado");
+  if (!candidate.title) reasons.push("sem título de produto");
+  if (candidate.title && !hasConcreteProductTitle(candidate.title)) reasons.push("título genérico ou campanha sem produto concreto");
+  if (/^cupons ativos|^saiu cupom/i.test(candidate.title)) reasons.push("mensagem de cupom sem produto");
+  if (/godg\.me|shopee\.com|bit\.ly/i.test(candidate.link)) reasons.push("link fora das fontes aceitas");
+  return { ...candidate, accepted: reasons.length === 0, reasons };
 }
 
-const inputPath = path.isAbsolute(args.input) ? args.input : path.resolve(rootDir, args.input);
-const inputDir = path.dirname(inputPath);
-const html = fs.readFileSync(inputPath, "utf8");
-const importDateKey = args.date || todayTelegramDateKey();
-const candidates = buildCandidates(html, importDateKey).slice(0, Number.isFinite(args.max) ? args.max : 80);
-const uniqueByLink = new Map();
-for (const candidate of candidates) {
-  const key = candidate.link;
-  const previous = uniqueByLink.get(key);
-  if (!previous || candidate.price < previous.price) uniqueByLink.set(key, candidate);
+function uniqueAcceptedCandidates(candidates = [], max = 80) {
+  const uniqueByLink = new Map();
+  for (const candidate of candidates.filter((entry) => entry.accepted).slice(0, Number.isFinite(max) ? max : 80)) {
+    const key = candidate.link;
+    const previous = uniqueByLink.get(key);
+    if (!previous || candidate.price < previous.price) uniqueByLink.set(key, candidate);
+  }
+  return [...uniqueByLink.values()];
 }
-const uniqueProducts = [...uniqueByLink.values()].map((candidate) => normalizeProduct(candidate, inputDir));
 
-const report = {
-  generatedAt: new Date().toISOString(),
-  input: inputPath,
-  date: importDateKey,
-  rawCandidates: candidates.length,
-  accepted: uniqueProducts.length,
-  bySource: uniqueProducts.reduce((acc, product) => {
-    acc[product.source] = (acc[product.source] || 0) + 1;
-    return acc;
-  }, {}),
-  byCategory: uniqueProducts.reduce((acc, product) => {
-    acc[product.normalizedCategory] = (acc[product.normalizedCategory] || 0) + 1;
-    return acc;
-  }, {}),
-  products: uniqueProducts.map((product) => ({
-    title: product.title,
-    source: product.sourceDisplayName,
-    price: product.price,
-    category: product.normalizedCategory,
-    link: product.permalink,
-    image: product.image,
-  })),
-};
+export function previewTelegramAffiliateHtml({ html = "", date = "", max = 80 } = {}) {
+  const importDateKey = date || latestTelegramDateKey(html);
+  const analyzed = extractMessages(html).map((rawMessage) => analyzeCandidate(rawMessage, importDateKey));
+  const acceptedCandidates = uniqueAcceptedCandidates(analyzed, max);
+  const products = acceptedCandidates.map((candidate) => {
+    const [source, sourceDisplayName] = sourceFromLink(candidate.link);
+    const sourceProductId = candidate.link.split("/").pop();
+    const [category, department] = guessCategory(candidate.title);
+    return {
+      id: `telegram-${source}-${sourceProductId}`,
+      title: candidate.title,
+      source,
+      sourceDisplayName,
+      price: candidate.price,
+      originalPrice: candidate.originalPrice,
+      category,
+      department,
+      link: candidate.link,
+      couponCode: candidate.couponCode,
+      localPhoto: candidate.localPhoto,
+      date: candidate.messageDateTitle,
+      productType: isAccessoryTitle(candidate.title) ? "accessory" : "principal",
+    };
+  });
+  const rejected = analyzed
+    .filter((entry) => !entry.accepted)
+    .map((entry) => ({
+      title: entry.title || "(sem título)",
+      link: entry.link || "",
+      price: entry.price || 0,
+      date: entry.messageDateTitle || "",
+      reasons: entry.reasons,
+    }));
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    date: importDateKey,
+    messages: analyzed.length,
+    accepted: products.length,
+    rejected: rejected.length,
+    bySource: products.reduce((acc, product) => {
+      acc[product.source] = (acc[product.source] || 0) + 1;
+      return acc;
+    }, {}),
+    byCategory: products.reduce((acc, product) => {
+      acc[product.category] = (acc[product.category] || 0) + 1;
+      return acc;
+    }, {}),
+    products,
+    rejectedItems: rejected.slice(0, 120),
+  };
+}
 
-if (!args.dryRun && uniqueProducts.length > 0) {
+export function importTelegramAffiliateHtml({ html = "", inputPath = "", inputDir = "", date = "", max = 80, dryRun = false } = {}) {
+  const importDateKey = date || latestTelegramDateKey(html);
+  const analyzed = extractMessages(html).map((rawMessage) => analyzeCandidate(rawMessage, importDateKey));
+  const candidates = uniqueAcceptedCandidates(analyzed, max);
+  const uniqueProducts = candidates.map((candidate) => normalizeProduct(candidate, inputDir || (inputPath ? path.dirname(inputPath) : rootDir)));
+  const report = {
+    ...previewTelegramAffiliateHtml({ html, date: importDateKey, max }),
+    input: inputPath || "(html enviado pela API)",
+    rawCandidates: candidates.length,
+    accepted: uniqueProducts.length,
+    products: uniqueProducts.map((product) => ({
+      title: product.title,
+      source: product.sourceDisplayName,
+      price: product.price,
+      category: product.normalizedCategory,
+      link: product.permalink,
+      image: product.image,
+    })),
+  };
+
+  if (!dryRun && uniqueProducts.length > 0) {
   for (const seedPath of seedPaths) {
     const currentProducts = readSeedProducts(seedPath);
     const incomingIds = new Set(uniqueProducts.map((product) => String(product.id || product.externalId || "").trim()).filter(Boolean));
@@ -563,13 +641,13 @@ if (!args.dryRun && uniqueProducts.length > 0) {
     analyzedCount: metadata.analyzedCount,
     sources: metadata.sources.map(({ source, publishedCount }) => ({ source, publishedCount })),
   };
-} else if (!args.dryRun) {
+  } else if (!dryRun) {
   report.noop = true;
   report.reason = "Nenhum produto com preco, link afiliado e titulo foi confirmado; seeds preservadas.";
-}
+  }
 
-const reportPath = path.join(rootDir, "RELATORIO_IMPORT_TELEGRAM_AFILIADOS.md");
-fs.writeFileSync(reportPath, [
+  const reportPath = path.join(rootDir, "RELATORIO_IMPORT_TELEGRAM_AFILIADOS.md");
+  fs.writeFileSync(reportPath, [
   "# Importação Telegram Afiliados",
   "",
   `Gerado em: ${report.generatedAt}`,
@@ -597,7 +675,28 @@ fs.writeFileSync(reportPath, [
   "- Cupons capturados não foram aplicados ao preço principal sem validação por produto.",
   "- Links de campanha sem produto individual foram ignorados.",
 ].join("\n"));
+  return report;
+}
 
-console.log(JSON.stringify(report, null, 2));
+function runCli() {
+  const args = parseArgs(process.argv.slice(2));
+  if (!args.input) {
+    console.error("Uso: node scripts/import-telegram-affiliate-offers.mjs --input <messages.html> [--date DD.MM.YYYY]");
+    process.exit(1);
+  }
+  const inputPath = path.isAbsolute(args.input) ? args.input : path.resolve(rootDir, args.input);
+  const html = fs.readFileSync(inputPath, "utf8");
+  const report = importTelegramAffiliateHtml({
+    html,
+    inputPath,
+    inputDir: path.dirname(inputPath),
+    date: args.date,
+    max: args.max,
+    dryRun: args.dryRun,
+  });
+  console.log(JSON.stringify(report, null, 2));
+}
 
-
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  runCli();
+}

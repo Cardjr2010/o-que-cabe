@@ -30,6 +30,7 @@ import { resolveCatalogSeedPath, getCatalogSeedCandidates } from "../src/runtime
 import { readCatalogRefreshMetadata } from "../src/runtime/catalog-refresh-metadata.js";
 import { listFreshVerifiedAffiliateOffers } from "../src/data/verified-affiliate-offers.js";
 import OfferRadarEngine from "../src/offers/OfferRadarEngine.js";
+import { importTelegramAffiliateHtml, previewTelegramAffiliateHtml } from "../scripts/import-telegram-affiliate-offers.mjs";
 
 const root = projectRoot;
 const bundledPublicDir = resolveProjectPath("api", "static");
@@ -549,6 +550,28 @@ function sendJson(res, status, data) {
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "no-store",
   });
+}
+
+async function readRequestBody(req, limitBytes = 12 * 1024 * 1024) {
+  const chunks = [];
+  let total = 0;
+  for await (const chunk of req) {
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    total += buffer.length;
+    if (total > limitBytes) {
+      const error = new Error("Payload acima do limite permitido.");
+      error.statusCode = 413;
+      throw error;
+    }
+    chunks.push(buffer);
+  }
+  return Buffer.concat(chunks).toString("utf8");
+}
+
+async function readJsonRequestBody(req) {
+  const raw = await readRequestBody(req);
+  if (!raw.trim()) return {};
+  return JSON.parse(raw);
 }
 
 function headersToObject(headers) {
@@ -2560,6 +2583,46 @@ export default async function handler(req, res) {
 
   if (pathname === "/api/health") {
     sendJson(res, 200, getBuildMarker());
+    return;
+  }
+
+  if (pathname === "/api/admin/telegram-import") {
+    const auth = requireAdminAuth(req, url);
+    if (!auth.ok) {
+      sendJson(res, auth.status, auth.body);
+      return;
+    }
+    if (method !== "POST") {
+      sendJson(res, 405, { ok: false, message: "Use POST para revisar ou importar HTML do Telegram." });
+      return;
+    }
+    try {
+      const body = await readJsonRequestBody(req);
+      const html = String(body.html || "");
+      const date = String(body.date || "");
+      const max = Math.max(1, Math.min(Number(body.max || 80), 250));
+      const action = String(body.action || url.searchParams.get("action") || "preview").toLowerCase();
+      if (!html.trim()) {
+        sendJson(res, 400, { ok: false, message: "Envie o conteúdo do messages.html no campo html." });
+        return;
+      }
+      const result = action === "import"
+        ? importTelegramAffiliateHtml({ html, date, max, dryRun: false })
+        : previewTelegramAffiliateHtml({ html, date, max });
+      sendJson(res, 200, {
+        ...result,
+        action,
+        durableImportRequiresCommit: action === "import",
+        note: action === "import"
+          ? "Importação aplicada no filesystem atual. Para produção durável, commit e redeploy continuam necessários."
+          : "Prévia sem alterar catálogo.",
+      });
+    } catch (error) {
+      sendJson(res, error.statusCode || 500, {
+        ok: false,
+        message: error.message || "Falha ao processar export do Telegram.",
+      });
+    }
     return;
   }
 

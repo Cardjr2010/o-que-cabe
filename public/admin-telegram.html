@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OQC Admin - Importar ofertas do Telegram</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --card: #ffffff;
+      --ink: #122033;
+      --muted: #64748b;
+      --line: #dbe3ef;
+      --blue: #082c63;
+      --green: #168252;
+      --red: #b42318;
+      --amber: #9a6700;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main {
+      width: min(1160px, calc(100% - 32px));
+      margin: 32px auto 64px;
+    }
+    header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 22px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(28px, 5vw, 48px);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+    p { color: var(--muted); line-height: 1.5; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: #fff;
+      color: var(--muted);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      gap: 16px;
+      align-items: start;
+    }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 16px 34px rgba(15, 23, 42, 0.06);
+    }
+    label {
+      display: block;
+      margin: 0 0 8px;
+      font-size: 13px;
+      font-weight: 800;
+      color: #334155;
+      text-transform: uppercase;
+    }
+    input, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+      padding: 13px 14px;
+      outline: none;
+    }
+    input:focus, textarea:focus {
+      border-color: #7aa7dd;
+      box-shadow: 0 0 0 4px rgba(8, 44, 99, 0.1);
+    }
+    textarea {
+      min-height: 330px;
+      resize: vertical;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 120px;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 13px 16px;
+      font-weight: 900;
+      cursor: pointer;
+      background: var(--blue);
+      color: #fff;
+    }
+    button.secondary {
+      background: #eef4fb;
+      color: var(--blue);
+      border: 1px solid #cfe0f4;
+    }
+    button:disabled {
+      cursor: wait;
+      opacity: 0.65;
+    }
+    .note {
+      margin-top: 14px;
+      border-left: 4px solid var(--amber);
+      background: #fff7ed;
+      color: #7c4a03;
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      background: #fbfdff;
+    }
+    .metric strong {
+      display: block;
+      font-size: 24px;
+      line-height: 1;
+    }
+    .metric span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .status {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .list {
+      display: grid;
+      gap: 10px;
+    }
+    .item {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      background: #fff;
+    }
+    .item-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .item h3 {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.25;
+    }
+    .price {
+      color: var(--green);
+      font-weight: 950;
+      white-space: nowrap;
+    }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .pill {
+      border-radius: 999px;
+      background: #edf5ff;
+      color: #19456f;
+      padding: 5px 8px;
+    }
+    .rejected .pill { background: #fff1f2; color: var(--red); }
+    a { color: var(--blue); font-weight: 800; }
+    pre {
+      overflow: auto;
+      max-height: 260px;
+      background: #0f172a;
+      color: #dbeafe;
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 12px;
+    }
+    @media (max-width: 860px) {
+      main { width: min(100% - 20px, 760px); margin-top: 18px; }
+      header, .grid { display: block; }
+      .badge { margin-top: 12px; }
+      .panel { margin-bottom: 12px; padding: 14px; }
+      .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .row { grid-template-columns: 1fr; }
+      button { width: 100%; }
+      textarea { min-height: 260px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Importar ofertas do Telegram</h1>
+        <p>Use esta tela para revisar o export <strong>messages.html</strong> antes de incluir produtos no catálogo OQC. Cupom solto, campanha genérica e post sem preço/link entram como rejeitados.</p>
+      </div>
+      <div class="badge">Admin protegido</div>
+    </header>
+
+    <section class="grid">
+      <form id="form" class="panel">
+        <div class="row">
+          <div>
+            <label for="token">Token admin</label>
+            <input id="token" type="password" autocomplete="off" placeholder="OQC_ADMIN_TOKEN">
+          </div>
+          <div>
+            <label for="max">Máximo</label>
+            <input id="max" type="number" min="1" max="250" value="80">
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label for="date">Data do export</label>
+            <input id="date" type="text" placeholder="Vazio = data mais recente do export">
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button class="secondary" id="clear" type="button">Limpar</button>
+          </div>
+        </div>
+        <label for="html">Conteúdo do messages.html</label>
+        <textarea id="html" spellcheck="false" placeholder="Abra o messages.html exportado do Telegram, copie tudo e cole aqui."></textarea>
+        <div class="actions">
+          <button id="preview" type="button">Revisar ofertas</button>
+          <button id="import" class="secondary" type="button">Importar no catálogo local</button>
+        </div>
+        <div class="note">
+          Em produção serverless, a importação só fica durável depois de commit e redeploy. Se a data ficar vazia, o OQC usa a data mais recente do export. Use primeiro a revisão para separar produto real de cupom velho, campanha ou link sem preço.
+        </div>
+      </form>
+
+      <section class="panel">
+        <p id="status" class="status">Nenhum HTML revisado ainda.</p>
+        <div id="summary" class="summary"></div>
+        <div id="accepted" class="list"></div>
+        <details style="margin-top:14px">
+          <summary><strong>Rejeitados e diagnóstico</strong></summary>
+          <div id="rejected" class="list rejected" style="margin-top:12px"></div>
+          <pre id="raw"></pre>
+        </details>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const form = {
+      token: document.getElementById("token"),
+      max: document.getElementById("max"),
+      date: document.getElementById("date"),
+      html: document.getElementById("html"),
+      preview: document.getElementById("preview"),
+      import: document.getElementById("import"),
+      clear: document.getElementById("clear"),
+    };
+    const els = {
+      status: document.getElementById("status"),
+      summary: document.getElementById("summary"),
+      accepted: document.getElementById("accepted"),
+      rejected: document.getElementById("rejected"),
+      raw: document.getElementById("raw"),
+    };
+
+    form.token.value = localStorage.getItem("oqcAdminToken") || "";
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+      }[char]));
+    }
+
+    function money(value) {
+      const number = Number(value || 0);
+      if (!Number.isFinite(number) || number <= 0) return "Preço indisponível";
+      return number.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    }
+
+    function metric(label, value) {
+      return `<div class="metric"><strong>${escapeHtml(value)}</strong><span>${escapeHtml(label)}</span></div>`;
+    }
+
+    function render(result) {
+      const products = Array.isArray(result.products) ? result.products : [];
+      const rejected = Array.isArray(result.rejectedItems) ? result.rejectedItems : [];
+      els.status.textContent = result.note || "Revisão concluída.";
+      els.summary.innerHTML = [
+        metric("mensagens", result.messages || 0),
+        metric("aceitos", result.accepted || products.length),
+        metric("rejeitados", result.rejected || rejected.length),
+        metric("ação", result.action || "preview"),
+      ].join("");
+      els.accepted.innerHTML = products.length ? products.map((product) => `
+        <article class="item">
+          <div class="item-top">
+            <h3>${escapeHtml(product.title)}</h3>
+            <div class="price">${money(product.price)}</div>
+          </div>
+          <div class="meta">
+            <span class="pill">${escapeHtml(product.sourceDisplayName || product.source || "Origem")}</span>
+            <span class="pill">${escapeHtml(product.category || "Categoria")}</span>
+            <span class="pill">${escapeHtml(product.productType || "principal")}</span>
+            ${product.permalink ? `<a href="${escapeHtml(product.permalink)}" target="_blank" rel="noopener">Abrir oferta</a>` : ""}
+          </div>
+        </article>
+      `).join("") : `<article class="item"><h3>Nenhum produto aceito</h3><p>O export não trouxe item com preço e link direto suficiente para virar produto.</p></article>`;
+      els.rejected.innerHTML = rejected.length ? rejected.slice(0, 80).map((item) => `
+        <article class="item">
+          <div class="item-top">
+            <h3>${escapeHtml(item.title || item.reason || "Rejeitado")}</h3>
+          </div>
+          <div class="meta">
+            <span class="pill">${escapeHtml(item.reason || "sem motivo")}</span>
+            ${item.source ? `<span class="pill">${escapeHtml(item.source)}</span>` : ""}
+          </div>
+        </article>
+      `).join("") : `<article class="item"><h3>Sem rejeições</h3></article>`;
+      els.raw.textContent = JSON.stringify({
+        bySource: result.bySource,
+        byCategory: result.byCategory,
+        durableImportRequiresCommit: result.durableImportRequiresCommit,
+      }, null, 2);
+    }
+
+    async function submit(action) {
+      const token = form.token.value.trim();
+      const html = form.html.value;
+      if (!token) {
+        els.status.textContent = "Informe o OQC_ADMIN_TOKEN.";
+        return;
+      }
+      if (!html.trim()) {
+        els.status.textContent = "Cole o conteúdo do messages.html.";
+        return;
+      }
+      localStorage.setItem("oqcAdminToken", token);
+      form.preview.disabled = true;
+      form.import.disabled = true;
+      els.status.textContent = action === "import" ? "Importando..." : "Revisando...";
+      try {
+        const response = await fetch("/api/admin/telegram-import", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            action,
+            html,
+            date: form.date.value.trim(),
+            max: Number(form.max.value || 80),
+          }),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.message || `HTTP ${response.status}`);
+        render(result);
+      } catch (error) {
+        els.status.textContent = error.message || "Falha ao processar.";
+      } finally {
+        form.preview.disabled = false;
+        form.import.disabled = false;
+      }
+    }
+
+    form.preview.addEventListener("click", () => submit("preview"));
+    form.import.addEventListener("click", () => submit("import"));
+    form.clear.addEventListener("click", () => {
+      form.html.value = "";
+      els.status.textContent = "Campo limpo.";
+      els.summary.innerHTML = "";
+      els.accepted.innerHTML = "";
+      els.rejected.innerHTML = "";
+      els.raw.textContent = "";
+    });
+  </script>
+</body>
+</html>
