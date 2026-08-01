@@ -202,6 +202,11 @@ function extractInstallments(text = "", price = 0) {
 
 function guessCategory(title = "") {
   const text = normalizeText(title);
+  if (/\b(tenis|camiseta|camisetas|camisa|camisas|cueca|cuecas|moletom|blusa|aramis|puma|adidas|fila|new balance|sandrini)\b/.test(text)) return ["moda", "Moda"];
+  if (/\b(principia|protetor solar|skincare|beleza)\b/.test(text)) return ["beleza", "Beleza"];
+  if (/\b(shampoo cera|vonix|sintra|carro eletrico|carregador carro eletrico|pneu|pneus|automotivo)\b/.test(text)) return ["automotivo", "Automotivo"];
+  if (/\b(panini|figurinhas|envelopes)\b/.test(text)) return ["colecionaveis", "Colecionáveis"];
+  if (/\b(faca|picanheira|churrasco|pote|potes|marmita)\b/.test(text)) return ["casa", "Casa"];
   if (/\b(carregador|power bank|cabo|adaptador|filtro de linha)\b/.test(text)) return ["acessorios", "Acessórios"];
   if (/\b(relogio|smartwatch|polar pacer)\b/.test(text)) return ["relogios", "Relógios"];
   if (/\b(playstation|dualsense|controle gamer|controle de celular|controle sem fio|nintendo|xbox|game)\b/.test(text)) return ["games", "Games"];
@@ -221,8 +226,19 @@ function isAccessoryTitle(title = "") {
   if (/\b(cadeira|poltrona|banco)\b/.test(normalized) && /\b(suporte lombar|apoio para pes|apoio de braco|encosto)\b/.test(normalized)) {
     return false;
   }
+  if (/\b(faca|picanheira|churrasco|panela|panelas|pote|potes|marmita)\b/.test(normalized)) return false;
   return /\b(capa|pelicula|película|cabo|carregador|adaptador|suporte|controle sem fio|controle de celular|dualsense|mouse|teclado|webcam|gabinete|fonte|water cooler)\b/i.test(title);
 }
+
+function hasConcreteProductTitle(title = "") {
+  const normalized = normalizeText(title);
+  if (normalized.length < 12) return false;
+  if (/^\d+% off\b/.test(normalized)) return false;
+  if (/\b(cupom|cupons|desconto|oferta relampago|resgate|aproveite|saiu cupom)\b/.test(normalized)) return false;
+  if (/\b(esse e classico|impossivel nao gostar|so hoje|olha isso|imperdivel)\b/.test(normalized)) return false;
+  return /\b(kit|jogo|smart|tv|relogio|tenis|panela|panelas|pote|envelope|figurinhas|carregador|faca|camiseta|shampoo|cera|air fryer|fritadeira|monitor|notebook|iphone|galaxy|xiaomi|motorola|fone|camera|cafeteira|mixer|escorredor|vanish|toalha|roteador|controle|console)\b/.test(normalized);
+}
+
 function buildCandidates(html = "", dateKey = "") {
   const mapped = extractMessages(html)
     .map((rawMessage) => {
@@ -261,8 +277,9 @@ function buildCandidates(html = "", dateKey = "") {
   return mapped
     .filter((entry) => entry.dateKey === dateKey)
     .filter((entry) => entry.link && entry.price > 0 && entry.title)
+    .filter((entry) => hasConcreteProductTitle(entry.title))
     .filter((entry) => !/^cupons ativos|^saiu cupom/i.test(entry.title))
-    .filter((entry) => /An[Ãºu]ncio|AnÃƒÂºncio|Pre[Ã§c]os sujeitos|PreÃƒÂ§os sujeitos|sem juros|Pix/i.test(entry.text));
+    .filter((entry) => !/godg\.me|shopee\.com|bit\.ly/i.test(entry.link));
 }
 
 function copyProductImage(candidate = {}, source = "", sourceProductId = "", inputDir = "") {

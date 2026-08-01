@@ -73,8 +73,8 @@ test("links futuros nao fingem navegacao e promessas respeitam os dados disponiv
 test("home-data expoe apenas metricas publicas e menu seguro", () => {
   const data = buildHomeCatalogData();
 
-  assert.equal(data.totalPublishedProducts, 2246);
-  assert.equal(data.publicCatalogSummary.publishedProducts, 2246);
+  assert.equal(data.totalPublishedProducts, 2274);
+  assert.equal(data.publicCatalogSummary.publishedProducts, 2274);
   assert.equal(data.hiddenProducts, undefined);
   assert.equal(data.totalCatalogProducts, undefined);
   assert.equal(data.catalogSummary, undefined);
@@ -84,7 +84,7 @@ test("home-data expoe apenas metricas publicas e menu seguro", () => {
   assert.equal(data.topSources[0].count, 1462);
   assert.ok(data.topSources.every((entry) => entry.analyzedCount === undefined && entry.hiddenCount === undefined));
   assert.ok(data.topSources.some((entry) => entry.source === "Amazon" && entry.count === 355));
-  assert.ok(data.topSources.some((entry) => entry.source === "Mercado Livre" && entry.count === 219));
+  assert.ok(data.topSources.some((entry) => entry.source === "Mercado Livre" && entry.count === 247));
   assert.ok(data.topSources.some((entry) => entry.source === "Magalu" && entry.count === 8));
   const futureItems = data.menu.filter((item) => ["Blog", "Minha Conta"].includes(item.label));
   assert.equal(futureItems.length, 2);

@@ -1,8 +1,8 @@
 const catalogRefreshMetadata = {
-  "refreshedAt": "2026-08-01T02:24:10.840Z",
+  "refreshedAt": "2026-08-01T02:43:51.796Z",
   "fresh": true,
-  "analyzedCount": 3181,
-  "publishedCount": 2246,
+  "analyzedCount": 3209,
+  "publishedCount": 2274,
   "hiddenCount": 935,
   "activeSourceCounts": [
     {
@@ -29,8 +29,8 @@ const catalogRefreshMetadata = {
     {
       "source": "mercado_livre",
       "label": "Mercado Livre",
-      "analyzedCount": 219,
-      "publishedCount": 219,
+      "analyzedCount": 247,
+      "publishedCount": 247,
       "hiddenCount": 0
     },
     {
@@ -69,8 +69,8 @@ const catalogRefreshMetadata = {
     {
       "source": "mercado_livre",
       "label": "Mercado Livre",
-      "analyzedCount": 219,
-      "publishedCount": 219,
+      "analyzedCount": 247,
+      "publishedCount": 247,
       "hiddenCount": 0,
       "rejectedReasons": []
     },
