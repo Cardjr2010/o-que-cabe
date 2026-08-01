@@ -1105,6 +1105,9 @@ function renderResultsExperience(data = {}, products = []) {
   if (activeBrowseMode === "category") {
     return renderCategoryResultsExperience(data, products);
   }
+  if (!Array.isArray(products) || products.length === 0) {
+    return "";
+  }
   const advisor = data.advisor || {};
   const overview = safeText(advisor.overview || data.summary, "Comparamos ofertas com preço, origem e link confirmado para esta busca.");
   const comparison = buildComparisonBlock(data);
