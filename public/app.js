@@ -1392,7 +1392,7 @@ function renderPurchaseIntentions(items = []) {
         <div class="intent-card-icon">${categoryIconSvg(item.category)}</div>
         <div class="intent-card-copy">
           <strong>${escapeHtml(item.label || `Quero ${normalizeHomeCategoryLabel(item.category).toLowerCase()}`)}</strong>
-          <span>${escapeHtml(`${Number(item.count || 0)} itens reais`)}</span>
+          <span>${escapeHtml(Number(item.count || 0) > 0 ? `${Number(item.count || 0)} opções` : "Buscar agora")}</span>
         </div>
         <span class="home-card-arrow" aria-hidden="true">→</span>
       </a>
@@ -1846,7 +1846,7 @@ async function loadHomeCatalogData() {
           <a href="${escapeHtml(categoryUrl(item.category || item.query || ""))}" data-category="${escapeHtml(item.category)}" data-query="${escapeHtml(item.query || item.category || "")}" data-mode="${escapeHtml(item.intent?.mode || "monthly")}" data-monthly="${escapeHtml(String(item.intent?.monthly || item.intent?.totalBudget || 0))}" data-total-budget="${escapeHtml(String(item.intent?.totalBudget || item.intent?.monthly || 0))}" data-months="${escapeHtml(String(item.intent?.months || 12))}">
             <div class="category-icon">${categoryIconSvg(item.category)}</div>
             <h3>${escapeHtml(item.label || normalizeHomeCategoryLabel(item.category))}</h3>
-            <p>${escapeHtml(`${Number(item.count || 0)} itens reais`)}</p>
+            <p>${escapeHtml(Number(item.count || 0) > 0 ? `${Number(item.count || 0)} opções` : "Cobertura ativa")}</p>
             <span class="home-card-arrow" aria-hidden="true">→</span>
           </a>
         `)

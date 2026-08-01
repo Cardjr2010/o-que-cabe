@@ -58,10 +58,14 @@
     <main>
       <section class="hero" id="heroSection">
         <div class="hero-copy">
+          <div class="hero-logo-chip">
+            <img src="/logo-oqc.png" alt="" aria-hidden="true" />
+            <span>Consultor de compra</span>
+          </div>
           <h1>Você diz quanto pode pagar.<br />O OQC encontra a melhor compra.</h1>
           <p>
-            Busque um produto, informe seu limite e compare poucas opções boas.
-            <strong>Preço, origem e parcelamento ficam claros no resultado.</strong>
+            Busque, informe seu limite e receba poucas opções boas.
+            <strong>O detalhe fica no resultado.</strong>
           </p>
         </div>
 
@@ -101,10 +105,10 @@
               <input id="totalBudgetInput" name="totalBudget" type="number" min="1" step="1" placeholder="Ex: 1.500" disabled />
             </div>
           </div>
-          <button class="submit-button" type="submit">Encontrar melhor compra</button>
+          <button class="submit-button" type="submit">Encontrar</button>
         </form>
         <p class="seo-muted search-categories-hint" id="searchCategoriesHint">
-          Exemplos: iPhone 17 256 GB, notebook i5 16 GB, monitor gamer 144 Hz.
+          Ex.: iPhone 17 256 GB, notebook i5, monitor 144 Hz.
         </p>
       </section>
 
@@ -131,9 +135,9 @@
         <div class="section-head section-head-tight">
           <div>
             <p class="panel-label">Atalhos</p>
-            <h2>O que você quer resolver?</h2>
+            <h2>Comece pelo que quer comprar</h2>
           </div>
-          <p class="section-note">Cards curtos. Os detalhes aparecem só depois da busca.</p>
+          <p class="section-note">Cards limpos. A análise aparece no resultado.</p>
         </div>
         <div class="intent-grid" id="intentGrid" aria-live="polite">
           <div class="skeleton skeleton-intent" aria-hidden="true">
@@ -150,7 +154,7 @@
             <p class="panel-label">Compra composta</p>
             <h2>Monte a solução, não só o item</h2>
           </div>
-          <p class="section-note">Para transformar uma compra pequena em uma escolha de ambiente.</p>
+          <p class="section-note">A ideia do ambiente aparece quando faz sentido.</p>
         </div>
         <div class="compose-grid" aria-label="Sugestões de compra composta">
           <button class="compose-card" type="button" data-compose-query="banheiro organizado até 250" data-compose-budget="250">
@@ -199,9 +203,9 @@
         <div class="section-head section-head-tight">
           <div>
             <p class="panel-label">Como funciona</p>
-            <h2>Como o OQC compara</h2>
+            <h2>Como decide</h2>
           </div>
-          <p class="section-note">A home orienta. O resultado mostra os motivos.</p>
+          <p class="section-note">A home orienta. O resultado prova.</p>
         </div>
         <div class="how-grid">
           <article>
@@ -226,7 +230,7 @@
         <div class="section-head section-head-tight">
           <div>
             <p class="panel-label">Departamentos</p>
-            <h2>Busca confiável por área</h2>
+            <h2>Áreas com cobertura real</h2>
           </div>
           <p class="section-note" id="homeCatalogState">Só o que já tem cobertura suficiente.</p>
         </div>
@@ -262,5 +266,6 @@
     <script src="/app.js"></script>
   </body>
 </html>
+
 
 
