@@ -10989,4 +10989,70 @@ body {
     grid-template-columns: 1fr !important;
     gap: 8px !important;
   }
+
+  .results-area {
+    width: calc(100vw - 20px) !important;
+    max-width: calc(100vw - 20px) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    overflow: hidden !important;
+  }
+
+  .results-toolbar {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    padding: 12px !important;
+    overflow: hidden !important;
+  }
+
+  .results-count {
+    width: 100% !important;
+  }
+
+  .results-sort {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    gap: 8px !important;
+    overflow: visible !important;
+  }
+
+  .results-sort button {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 38px !important;
+    padding: 0 8px !important;
+    white-space: nowrap !important;
+    font-size: 12px !important;
+    border-radius: 999px !important;
+  }
+
+  .results-stack,
+  .results-intro,
+  .decision-strip,
+  .comparison-strip {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .decision-strip {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    scroll-snap-type: none !important;
+  }
+
+  .decision-summary-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .decision-strip .decision-summary-card:nth-of-type(n + 2) {
+    display: none !important;
+  }
 }
