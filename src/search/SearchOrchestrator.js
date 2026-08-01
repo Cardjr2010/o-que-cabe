@@ -258,7 +258,7 @@ function matchesAnyMarker(text = "", markers = []) {
 
 function canonicalSearchCategory(rawCategory = "", text = "") {
   const category = normalizeText(rawCategory);
-  const query = normalizeText(text);
+  const query = normalizeText(text).replace(/\bflorentina\b/g, " ");
   const toolLike = matchesAnyMarker(`${category} ${query}`, TOOL_QUERY_MARKERS);
   const flowerLike = matchesAnyMarker(`${category} ${query}`, FLOWER_QUERY_MARKERS);
   if (toolLike) return "ferramenta";

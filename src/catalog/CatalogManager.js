@@ -60,6 +60,9 @@ function looksLikeAccessory(item = {}) {
   if (/\b(cadeira|poltrona|banco)\b/.test(text) && /\b(suporte lombar|apoio para pes|apoio de braco|encosto)\b/.test(text)) {
     return false;
   }
+  if (/\b(jogo|kit|conjunto)\b/.test(text) && /\b(toalha|toalhas|panela|panelas|talher|talheres|copo|copos|prato|pratos)\b/.test(text)) {
+    return false;
+  }
   return [
     "capa",
     "capinha",

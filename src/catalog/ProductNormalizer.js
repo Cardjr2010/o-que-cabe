@@ -396,6 +396,9 @@ function detectAccessoryType(normalized) {
 }
 
 function detectPieceType(normalized) {
+  if (/\b(jogo|kit|conjunto)\b/.test(normalized) && /\b(toalha|toalhas|panela|panelas|talher|talheres|copo|copos|prato|pratos)\b/.test(normalized)) {
+    return "";
+  }
   return PIECE_KEYWORDS.some((term) => normalized.includes(term)) ? "peca" : "";
 }
 

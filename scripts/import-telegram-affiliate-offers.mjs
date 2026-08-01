@@ -137,7 +137,7 @@ function extractTitle(text = "") {
     .split(/\n+/)
     .map((line) => line.trim())
     .filter(Boolean)
-    .filter((line) => !/^(âœ…|âž¡ï¸|ðŸ¤‘|ðŸ“Œ|ðŸŽ¥|ðŸ‘‰|ðŸŽŸ|âœï¸|âš ï¸|An[Ãºu]ncio|Pre[Ã§c]os sujeitos|Cupom|Assine|Cupons Ativos|ðŸ”¥\s*Cupons Ativos|ðŸ”¥\s*Saiu Cupom)/i.test(line))
+    .filter((line) => !/^(âœ…|âž¡ï¸|ðŸ¤‘|ðŸ“Œ|ðŸŽ¥|ðŸ‘‰|ðŸŽŸ|âœï¸|âš ï¸|An[Ãºu]ncio|Pre[Ã§c]os sujeitos|Cupom|Assine|Cupons Ativos|Oferta Rel[aâ]mpago|ðŸ”¥\s*Cupons Ativos|ðŸ”¥\s*Saiu Cupom)/i.test(line))
     .filter((line) => !/(^De R\$|^R\$|sem juros|Ative aqui|An[Ã¡a]lise:|Prime 30 DIAS)/i.test(line));
   return (lines[0] || "")
     .replace(/^[^\p{L}\p{N}]+/u, "")
@@ -211,7 +211,7 @@ function guessCategory(title = "") {
   if (/\b(mouse|teclado|webcam|fonte|gabinete|water cooler|cooler|ssd|memoria|impressora 3d|impressora)\b/.test(text)) return ["informatica", "Informática"];
   if (/\b(notebook|laptop|chromebook|macbook)\b/.test(text)) return ["notebook", "Notebooks"];
   if (/\b(roteador|wifi|wi-fi|mesh|tp-link|huawei|mercusys|deco|starlink)\b/.test(text)) return ["roteador", "Rede"];
-  if (/\b(cadeira|fechadura|camera seguranca|camera de seguranca|projetor|air fryer|fritadeira|aspirador|ar condicionado|ar-condicionado|cooktop)\b/.test(text)) return ["casa", "Casa"];
+  if (/\b(cadeira|fechadura|camera seguranca|camera de seguranca|projetor|air fryer|fritadeira|aspirador|ar condicionado|ar-condicionado|cooktop|panela|panelas|toalha|toalhas|mixer|cafeteira|escorredor|cozinha|tira manchas|vanish)\b/.test(text)) return ["casa", "Casa"];
   if (/\b(fone|soundcore|headset|caixa de som)\b/.test(text)) return ["audio", "Áudio"];
   return ["ofertas", "Ofertas"];
 }
@@ -521,19 +521,22 @@ const report = {
 if (!args.dryRun && uniqueProducts.length > 0) {
   for (const seedPath of seedPaths) {
     const currentProducts = readSeedProducts(seedPath);
-    const baseProducts = currentProducts.filter((product) => product.catalogOrigin !== "telegram_affiliate_export");
+    const incomingIds = new Set(uniqueProducts.map((product) => String(product.id || product.externalId || "").trim()).filter(Boolean));
+    const baseProducts = currentProducts.filter((product) => !incomingIds.has(String(product.id || product.externalId || "").trim()));
     const existingIds = new Set(baseProducts.map((product, index) => String(product.id || product.externalId || `existing-${index}`)));
     const nextProducts = [...baseProducts];
+    let added = 0;
     for (const product of uniqueProducts) {
       if (existingIds.has(product.id)) continue;
       existingIds.add(product.id);
       nextProducts.push(product);
+      added += 1;
     }
     fs.writeFileSync(seedPath, `${JSON.stringify(nextProducts, null, 2)}\n`);
     report[seedPath.replace(rootDir + path.sep, "").replace(/\\/g, "/")] = {
       before: currentProducts.length,
-      removedPreviousTelegramAffiliate: currentProducts.length - baseProducts.length,
-      added: uniqueProducts.length,
+      updatedExistingTelegramAffiliate: currentProducts.length - baseProducts.length,
+      added,
       after: nextProducts.length,
     };
   }
