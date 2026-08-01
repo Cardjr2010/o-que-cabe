@@ -1,8 +1,8 @@
 const catalogRefreshMetadata = {
-  "refreshedAt": "2026-07-31T22:02:12.988Z",
+  "refreshedAt": "2026-08-01T00:03:28.215Z",
   "fresh": true,
-  "analyzedCount": 3143,
-  "publishedCount": 2208,
+  "analyzedCount": 3151,
+  "publishedCount": 2216,
   "hiddenCount": 935,
   "activeSourceCounts": [
     {
@@ -22,15 +22,22 @@ const catalogRefreshMetadata = {
     {
       "source": "amazon",
       "label": "Amazon",
-      "analyzedCount": 437,
+      "analyzedCount": 337,
       "publishedCount": 337,
       "hiddenCount": 0
     },
     {
       "source": "mercado_livre",
       "label": "Mercado Livre",
-      "analyzedCount": 281,
+      "analyzedCount": 207,
       "publishedCount": 207,
+      "hiddenCount": 0
+    },
+    {
+      "source": "magalu",
+      "label": "Magalu",
+      "analyzedCount": 8,
+      "publishedCount": 8,
       "hiddenCount": 0
     }
   ],
@@ -41,16 +48,7 @@ const catalogRefreshMetadata = {
       "analyzedCount": 610,
       "publishedCount": 202,
       "hiddenCount": 408,
-      "rejectedReasons": [
-        {
-          "reason": "JSON_LD_PRODUCT_MISSING",
-          "count": 344
-        },
-        {
-          "reason": "UNAVAILABLE_UNAVAILABLE",
-          "count": 64
-        }
-      ]
+      "rejectedReasons": []
     },
     {
       "source": "infostore",
@@ -58,25 +56,12 @@ const catalogRefreshMetadata = {
       "analyzedCount": 1989,
       "publishedCount": 1462,
       "hiddenCount": 527,
-      "rejectedReasons": [
-        {
-          "reason": "UNAVAILABLE_UNAVAILABLE",
-          "count": 477
-        },
-        {
-          "reason": "JSON_LD_PRODUCT_MISSING",
-          "count": 44
-        },
-        {
-          "reason": "HTTP_404",
-          "count": 6
-        }
-      ]
+      "rejectedReasons": []
     },
     {
       "source": "amazon",
       "label": "Amazon",
-      "analyzedCount": 437,
+      "analyzedCount": 337,
       "publishedCount": 337,
       "hiddenCount": 0,
       "rejectedReasons": []
@@ -84,8 +69,16 @@ const catalogRefreshMetadata = {
     {
       "source": "mercado_livre",
       "label": "Mercado Livre",
-      "analyzedCount": 281,
+      "analyzedCount": 207,
       "publishedCount": 207,
+      "hiddenCount": 0,
+      "rejectedReasons": []
+    },
+    {
+      "source": "magalu",
+      "label": "Magalu",
+      "analyzedCount": 8,
+      "publishedCount": 8,
       "hiddenCount": 0,
       "rejectedReasons": []
     }

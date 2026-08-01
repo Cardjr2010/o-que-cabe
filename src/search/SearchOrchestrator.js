@@ -158,6 +158,75 @@ const HOME_PRODUCT_EXCLUDE_MARKERS = [
   "componente",
 ];
 
+const HOME_SPECIFIC_MATCHERS = [
+  {
+    query: ["banheiro", "lavabo"],
+    product: [
+      "banheiro",
+      "lavabo",
+      "saboneteira",
+      "porta shampoo",
+      "toalheiro",
+      "toalha",
+      "box",
+      "espelho",
+      "pia",
+      "nicho",
+      "armario banheiro",
+      "armario de banheiro",
+      "organizador banheiro",
+      "prateleira banheiro",
+      "gabinete banheiro",
+      "gabinete de banheiro",
+    ],
+  },
+  {
+    query: ["cozinha"],
+    product: [
+      "cozinha",
+      "panela",
+      "air fryer",
+      "fritadeira",
+      "cafeteira",
+      "liquidificador",
+      "batedeira",
+      "microondas",
+      "forno",
+      "cooktop",
+      "armario cozinha",
+      "organizador cozinha",
+    ],
+  },
+  {
+    query: ["organizacao", "organização", "organizado", "organizada", "organizador"],
+    product: [
+      "organizador",
+      "organizacao",
+      "organização",
+      "prateleira",
+      "nicho",
+      "suporte",
+      "cesto",
+      "caixa organizadora",
+      "gaveteiro",
+      "armario",
+      "estante",
+    ],
+  },
+  {
+    query: ["decoracao", "decoração", "decorar"],
+    product: ["decoracao", "decoração", "quadro", "vaso", "luminaria", "abajur", "tapete", "cortina", "espelho"],
+  },
+  {
+    query: ["limpeza"],
+    product: ["limpeza", "aspirador", "robo aspirador", "vaporizador", "mop", "vassoura", "rodo", "lavadora"],
+  },
+  {
+    query: ["iluminacao", "iluminação"],
+    product: ["iluminacao", "iluminação", "lampada", "lâmpada", "luminaria", "led", "abajur", "spot"],
+  },
+];
+
 const HOME_REFINEMENT_SUGGESTIONS = [
   "organizacao",
   "cozinha",
@@ -675,6 +744,29 @@ function detectAccessoryIntent(text = "") {
   return /\b(capa|case|pelicula|pel[íi]cula|carregador|cabo|fone|headphone|earbud|airpods|mouse|teclado|keyboard|strap|pulseira|acessorio|acess[óo]rio|suporte|power bank|powerbank|protector|protetor|controle remoto|remote control|remote)\b/i.test(String(text || ""));
 }
 
+function isConsumableForMainProductQuery(product = {}, intent = {}) {
+  const query = normalizeText(intent.searchText || intent.query || "");
+  if (!query) return false;
+  const titleAndDescription = normalizeText([
+    product.displayTitle,
+    product.originalTitle,
+    product.title,
+    product.description,
+  ].filter(Boolean).join(" "));
+  const text = normalizeText([
+    titleAndDescription,
+    product.category,
+    product.normalizedCategory,
+  ].filter(Boolean).join(" "));
+
+  if (/\b(impressora|printer|ecotank)\b/.test(query)) {
+    return /\b(tinta|cartucho|toner|refil|garrafa de tinta|cilindro|drum)\b/.test(text)
+      && !/\b(impressora|printer)\b/.test(titleAndDescription);
+  }
+
+  return false;
+}
+
 function isHomeLivingProduct(product = {}, intelligence = {}) {
   const text = normalizeText([
     product.displayTitle,
@@ -691,6 +783,29 @@ function isHomeLivingProduct(product = {}, intelligence = {}) {
   const hasInclude = HOME_PRODUCT_INCLUDE_MARKERS.some((term) => text.includes(normalizeText(term)));
   const hasExclude = HOME_PRODUCT_EXCLUDE_MARKERS.some((term) => text.includes(normalizeText(term)));
   return hasInclude && !hasExclude;
+}
+
+function homeIntentMatchesProduct(product = {}, intelligence = {}, intent = {}) {
+  const query = normalizeText([intent.searchText, intent.query].filter(Boolean).join(" "));
+  if (!query) return true;
+  const text = normalizeText([
+    product.displayTitle,
+    product.originalTitle,
+    product.title,
+    product.description,
+    product.category,
+    product.normalizedCategory,
+    product.department,
+    product.subcategory,
+    intelligence.department,
+    intelligence.category,
+    intelligence.subcategory,
+    Array.isArray(intelligence.searchKeywords) ? intelligence.searchKeywords.join(" ") : "",
+  ].filter(Boolean).join(" "));
+
+  const applicable = HOME_SPECIFIC_MATCHERS.filter((rule) => matchesAnyMarker(query, rule.query));
+  if (!applicable.length) return true;
+  return applicable.every((rule) => matchesAnyMarker(text, rule.product));
 }
 
 function classifyVisibility(product = {}) {
@@ -724,11 +839,11 @@ function matchProductType(product = {}, queryCategory = "", accessoryIntent = fa
     || ["cabos e carregadores", "acessórios", "peças"].includes(productDepartment)
     || /\b(capa|case|pelicula|cabo|carregador|strap|pulseira|suporte|protector|protetor|controle remoto|remote control|remote)\b/i.test(titleText);
 
-  if (!accessoryIntent && isAccessory) {
-    return false;
-  }
   if (queryKey === "casa") {
     return isHomeLivingProduct(product, intelligence);
+  }
+  if (!accessoryIntent && isAccessory) {
+    return false;
   }
   if (queryKey === "roteador") {
     return /\b(roteador|router|mesh|wifi|wi-fi|tp-link|deco|archer)\b/.test(`${text} ${productCategory} ${productDepartment} ${productSubcategory}`);
@@ -866,7 +981,12 @@ function filterCandidateList(list = [], intent = {}) {
     .map((product) => (product?.intelligence ? product : getProductIntelligenceEngine().enrichProduct(product)))
     .filter((product) => {
       if (!classifyVisibility(product)) return false;
+      if (!intent.accessoryIntent && isConsumableForMainProductQuery(product, intent)) return false;
       if (!matchProductType(product, intent.category || "", intent.accessoryIntent)) return false;
+      if (normalizeText(intent.category) === "casa") {
+        const intelligence = product.intelligence || getProductIntelligenceEngine().enrichProduct(product);
+        if (!homeIntentMatchesProduct(product, intelligence, intent)) return false;
+      }
       if (!hasStrongCommercialCoverage(product, intent)) return false;
       if (intent.brand) {
         const brandText = normalizeText([product.brand, product.title, product.displayTitle, product.originalTitle].filter(Boolean).join(" "));
@@ -1100,6 +1220,18 @@ export default class SearchOrchestrator {
         ...intelligence,
         intelligence,
       };
+      if (!classifyVisibility(richProduct)) {
+        continue;
+      }
+      if (!intent.accessoryIntent && isConsumableForMainProductQuery(richProduct, intent)) {
+        continue;
+      }
+      if (!matchProductType(richProduct, intent.category || "", intent.accessoryIntent)) {
+        continue;
+      }
+      if (normalizeText(intent.category) === "casa" && !homeIntentMatchesProduct(richProduct, intelligence, intent)) {
+        continue;
+      }
       if (isStrictCommercialIntent(intent) && !hasStrongCommercialCoverage(richProduct, intent)) {
         continue;
       }

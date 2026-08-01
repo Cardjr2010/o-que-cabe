@@ -430,7 +430,7 @@ test("Oferta vencida de iPhone 17 Pro Max nao entra nem troca por variante errad
   assert.ok(!result.products.some((product) => /Galaxy|Xiaomi/i.test(String(product.displayTitle || product.title || ""))));
 });
 
-test("Ofertas afiliadas verificadas entram na busca do Galaxy S26 Ultra com prioridade para os modelos Ultra", async () => {
+test("Oferta vencida de Galaxy S26 Ultra nao entra como recomendacao real", async () => {
   const orchestrator = new SearchOrchestrator({
     catalogManager: createCatalogManager([]),
   });
@@ -441,15 +441,11 @@ test("Ofertas afiliadas verificadas entram na busca do Galaxy S26 Ultra com prio
     totalBudget: 12000,
   });
 
-  assert.equal(result.dataMode, "real");
-  assert.equal(result.fallbackUsed, true);
+  assert.equal(result.dataMode, "demo");
+  assert.equal(result.fallbackUsed, false);
   assert.match(String(result.fallbackSource || ""), /verified_partner_offers/);
-  assert.ok(result.products.length >= 1);
-  assert.match(String(result.products[0].displayTitle || result.products[0].title), /Galaxy S26 Ultra/i);
-  assert.ok(result.products.some((product) => String(product.sourceLabel || "").includes("amazon")));
-  assert.ok(result.products.some((product) => /Galaxy S26 Ultra 256GB/i.test(String(product.displayTitle || product.title || ""))));
-  assert.ok(!/capa|pelicula|carregador|cabo/i.test(String(result.products[0].displayTitle || result.products[0].title)));
-  assert.ok(result.products.every((product) => product.installments));
+  assert.equal(result.products.length, 0);
+  assert.ok(!result.products.some((product) => /Galaxy S26 Ultra/i.test(String(product.displayTitle || product.title || ""))));
 });
 
 test("Ofertas Amazon vencidas nao entram para produtos de marca e modelo", async () => {
@@ -479,35 +475,41 @@ test("Ofertas Amazon vencidas nao entram para produtos de marca e modelo", async
   assert.equal(magicMouse.products.length, 0);
 });
 
-test("Consulta exata monitorada prioriza oferta verificada sobre catalogo antigo parecido", async () => {
+test("Consulta exata Magalu importada do Telegram entra como produto real", async () => {
   const orchestrator = new SearchOrchestrator({
     catalogManager: createCatalogManager([
       {
-        title: "Smartphone Samsung Galaxy J4 Core 16GB",
-        brand: "Samsung",
-        category: "celular",
-        normalizedCategory: "celular",
+        title: "Impressora Epson Ecotank L1250 Tanque de Tinta Colorida USB Wi-Fi",
+        brand: "Epson",
+        category: "informatica",
+        normalizedCategory: "informatica",
         productType: "principal",
         isAccessory: false,
-        marketplace: "saldao_informatica",
+        marketplace: "magalu",
+        source: "magalu",
+        sourceName: "Magalu",
+        sourceLabel: "Magalu",
         dataMode: "real",
-        sourceType: "csv_feed",
-        price: 499.9,
+        sourceType: "telegram_affiliate_export",
+        price: 844.55,
+        productUrl: "https://www.magazinevoce.com.br/magazineheroisderessaca/impressora-epson-ecotank-l1250-tanque-de-tinta-colorida-usb-wi-fi/p/kf1k2j5dhj/in/ijtm/",
+        permalink: "https://www.magazinevoce.com.br/magazineheroisderessaca/impressora-epson-ecotank-l1250-tanque-de-tinta-colorida-usb-wi-fi/p/kf1k2j5dhj/in/ijtm/",
+        image: "https://a-static.mlcdn.com.br/example.jpg",
       },
     ]),
   });
 
   const result = await orchestrator.search({
-    query: "galaxy s26 ultra 256gb",
+    query: "impressora epson ecotank l1250",
     mode: "total",
-    totalBudget: 12000,
+    totalBudget: 1000,
   });
 
   assert.equal(result.dataMode, "real");
-  assert.equal(result.fallbackUsed, true);
-  assert.match(String(result.products[0].displayTitle || result.products[0].title), /Galaxy S26 Ultra/i);
-  assert.doesNotMatch(String(result.products[0].displayTitle || result.products[0].title), /Galaxy J4/i);
-  assert.ok(result.products.some((product) => String(product.source || "").includes("verified_partner_offers")));
+  assert.equal(result.fallbackUsed, false);
+  assert.match(String(result.products[0].displayTitle || result.products[0].title), /Epson Ecotank L1250/i);
+  assert.match(String(result.products[0].sourceLabel || result.products[0].sourceName || result.products[0].source || ""), /Magalu/i);
+  assert.ok(String(result.products[0].permalink || result.products[0].productUrl || "").includes("magazinevoce.com.br/magazineheroisderessaca"));
 });
 
 test("Busca ampla por casa pede refinamento em vez de recomendar produto aleatorio", async () => {
@@ -538,6 +540,48 @@ test("Busca ampla por casa pede refinamento em vez de recomendar produto aleator
   assert.match(String(result.fallbackWarning || ""), /Refine a busca/i);
   assert.ok(Array.isArray(result.refinementSuggestions));
   assert.ok(result.refinementSuggestions.length > 0);
+});
+
+test("Busca especifica de banheiro nao recomenda produto de casa sem relacao", async () => {
+  const orchestrator = new SearchOrchestrator({
+    catalogManager: createCatalogManager([
+      {
+        title: "Telefone sem Fio Motorola Moto 700W Branco",
+        category: "casa",
+        normalizedCategory: "casa",
+        department: "Casa",
+        productType: "principal",
+        isAccessory: false,
+        marketplace: "infostore",
+        dataMode: "real",
+        sourceType: "xml_feed",
+        price: 162.89,
+      },
+      {
+        title: "Prateleira Banheiro Sem Furo Suporte Ajustavel Saboneteira",
+        category: "casa",
+        normalizedCategory: "casa",
+        department: "Casa",
+        productType: "principal",
+        isAccessory: false,
+        marketplace: "magalu",
+        dataMode: "real",
+        sourceType: "telegram_affiliate_export",
+        price: 135.19,
+      },
+    ]),
+  });
+
+  const result = await orchestrator.search({
+    query: "banheiro organizado ate 250",
+    mode: "total",
+    totalBudget: 250,
+  });
+
+  assert.equal(result.dataMode, "real");
+  assert.ok(result.products.length >= 1);
+  assert.match(String(result.products[0].displayTitle || result.products[0].title), /Banheiro|Saboneteira|Prateleira/i);
+  assert.ok(!result.products.some((product) => /telefone sem fio/i.test(String(product.displayTitle || product.title || ""))));
 });
 
 test("Sem token ou proxy configurado, o fallback do Mercado Livre nao eh acionado", async () => {

@@ -20,7 +20,8 @@ test("home data expõe catálogo real e departamentos coerentes", () => {
   assert.ok(Array.isArray(data.decisionHighlights));
   assert.ok(data.decisionHighlights.length >= 2);
   assert.ok(data.decisionHighlights.some((entry) => String(entry.query || "").includes("iphone 17 pro 256gb")));
-  assert.ok(data.decisionHighlights.some((entry) => String(entry.query || "").includes("galaxy s26 ultra 256gb")));
+  assert.ok(data.decisionHighlights.some((entry) => String(entry.query || "").includes("notebook i5 16gb")));
+  assert.ok(data.decisionHighlights.every((entry) => !String(entry.query || "").includes("galaxy s26 ultra 256gb")));
   assert.ok(Array.isArray(data.offerCategories));
   assert.ok(data.offerCategories.length >= 1);
   assert.ok(data.offerCategories.some((entry) => String(entry.label || "").includes("Celulares")));
@@ -42,6 +43,7 @@ test("home data expõe catálogo real e departamentos coerentes", () => {
   assert.ok(data.activeSources.length > 0);
   assert.equal(data.activeSources[0].source, "Info Store - Informática");
   assert.equal(data.activeSources[0].count, 1462);
+  assert.ok(data.activeSources.some((entry) => entry.source === "Magalu" && entry.count === 8));
   assert.ok(Array.isArray(data.topBrands));
   assert.ok(data.topBrands.length > 0);
   assert.ok(categoryKeys.some((category) => ["celulares", "notebooks", "tablets", "tvs"].includes(category)));

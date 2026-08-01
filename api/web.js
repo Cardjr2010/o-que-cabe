@@ -2046,6 +2046,16 @@ function sortPublicSearchProducts(products = [], sort = "recommended") {
   return list;
 }
 
+function groupPublicProductsInDisplayOrder(products = []) {
+  return (Array.isArray(products) ? products : []).reduce((groups, product) => {
+    const status = String(product.status || product.budgetStatus || "").toUpperCase();
+    if (status === "CABE") groups.cabe.push(product);
+    else if (status === "APERTADO") groups.apertado.push(product);
+    else groups.naoCabe.push(product);
+    return groups;
+  }, { cabe: [], apertado: [], naoCabe: [] });
+}
+
 function applyPublicSearchPresentation(response = {}, { sort, limit }) {
   const normalizedSort = normalizePublicSearchSort(sort);
   const safeLimit = Math.max(1, Math.min(Number(limit || 24), 300));
@@ -2060,7 +2070,7 @@ function applyPublicSearchPresentation(response = {}, { sort, limit }) {
       reason: "Produto real ordenado pela classificacao solicitada.",
     },
   }));
-  const groups = BudgetEngine.groupBudgetPriority(visibleProducts);
+  const groups = groupPublicProductsInDisplayOrder(visibleProducts);
   return {
     ...response,
     products: visibleProducts,
@@ -2070,6 +2080,36 @@ function applyPublicSearchPresentation(response = {}, { sort, limit }) {
     requestedLimit: safeLimit,
     totalMatchedProducts: Array.isArray(response.products) ? response.products.length : 0,
   };
+}
+
+function normalizePublicText(value = "") {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function publicProductMatchesSpecificHomeQuery(product = {}, query = "") {
+  const normalizedQuery = normalizePublicText(query);
+  if (!/\b(banheiro|lavabo)\b/.test(normalizedQuery)) return true;
+  const normalizedProduct = normalizePublicText([
+    product.displayTitle,
+    product.originalTitle,
+    product.title,
+    product.description,
+    product.category,
+    product.normalizedCategory,
+    product.department,
+    product.subcategory,
+    product.brand,
+    product.model,
+  ].filter(Boolean).join(" "));
+  if (/\b(gabinete office|micro atx|atx|fonte 200w|fonte 500w|computador|pc gamer)\b/.test(normalizedProduct)) {
+    return false;
+  }
+  return /\b(banheiro|lavabo|saboneteira|porta shampoo|toalheiro|porta toalha)\b/.test(normalizedProduct)
+    || /\b(prateleira|gabinete|armario|organizador|box|espelho|pia|nicho)\b.*\b(banheiro|lavabo)\b/.test(normalizedProduct)
+    || /\b(banheiro|lavabo)\b.*\b(prateleira|gabinete|armario|organizador|box|espelho|pia|nicho)\b/.test(normalizedProduct);
 }
 
 function renderExplorerPage({ title, heading, description, view, badge, endpoint, inputLabel, inputPlaceholder, quickLabel, quickButtons }) {
@@ -2800,7 +2840,9 @@ export default async function handler(req, res) {
         months,
         totalBudget,
       });
-      const selectedProducts = (searchResult.products || []).filter((item) => String(item?.dataMode || item?.mode || "").toLowerCase() !== "demo");
+      const selectedProducts = (searchResult.products || [])
+        .filter((item) => String(item?.dataMode || item?.mode || "").toLowerCase() !== "demo")
+        .filter((item) => publicProductMatchesSpecificHomeQuery(item, q));
       const dataMode = selectedProducts.some((item) => String(item.dataMode || item.mode || "").toLowerCase().startsWith("real") || String(item.dataMode || item.mode || "").toLowerCase() === "seed")
         ? "real"
         : (searchResult.strategyUsed === "refinement-needed" ? (searchResult.dataMode || "real") : "none");
@@ -2815,19 +2857,21 @@ export default async function handler(req, res) {
       }), { sort, limit });
       const advisor = buildAdvisorSnapshot(searchResult, q);
 
+      const displayedProducts = Array.isArray(response.products) ? response.products : [];
       const publicWarning = searchResult.fallbackUsed && Number(searchResult.fallbackCount || 0) > 0
         ? "Também encontramos anúncios diretos em fontes externas."
         : searchResult.fallbackAttempted
           ? "Não encontramos opções adicionais nesta fonte."
-          : selectedProducts.length > 0 && selectedProducts.length < 3
+          : displayedProducts.length > 0 && displayedProducts.length < 3
             ? "Encontramos poucas opções no catálogo atual."
-            : selectedProducts.length
+            : displayedProducts.length
               ? ""
               : "Não encontramos uma oferta confirmada para esta busca.";
 
       sendJson(res, 200, {
         ok: true,
         ...response,
+        dataMode: displayedProducts.length ? response.dataMode : (searchResult.strategyUsed === "refinement-needed" ? (searchResult.dataMode || "real") : "none"),
         advisor,
         strategyUsed: searchResult.strategyUsed,
         fallbackUsed: Boolean(searchResult.fallbackUsed),

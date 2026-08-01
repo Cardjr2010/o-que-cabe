@@ -1112,11 +1112,12 @@ function renderResultsExperience(data = {}, products = []) {
   const complements = renderComplementaryRecommendations(data.complementaryRecommendations || []);
   const grouped = renderGroupedProducts(data.groups || null, products);
   return `
+    ${grouped}
     <section class="results-intro">
       <div class="section-head section-head-tight">
         <div>
-          <p class="panel-label">Comparação do OQC</p>
-          <h3>Melhores opções para esta busca</h3>
+          <p class="panel-label">Análise do OQC</p>
+          <h3>Por que estas opções subiram</h3>
         </div>
         <p class="section-note">${escapeHtml(overview)}</p>
       </div>
@@ -1124,7 +1125,6 @@ function renderResultsExperience(data = {}, products = []) {
     </section>
     ${complements}
     ${comparison}
-    ${grouped}
   `;
 }
 

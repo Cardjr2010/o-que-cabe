@@ -326,8 +326,8 @@ test("/api/catalog/stats resume marcas, categorias e buscas", async () => {
 
     assert.equal(res.statusCode, 200);
     assert.equal(body.ok, true);
-    assert.equal(body.totalProducts, 3143);
-    assert.equal(body.productsPublished, 2208);
+    assert.equal(body.totalProducts, 3151);
+    assert.equal(body.productsPublished, 2216);
     assert.equal(body.productsHidden, 935);
     assert.ok(Array.isArray(body.top20Brands));
     assert.ok(body.top20Brands.length > 0);

@@ -399,6 +399,7 @@ function buildOqcSearchResponse({ products, query, mode, monthly, months, totalB
     products.map((product) => enrichSearchProduct(product, budget, query, dataMode))
   );
   const ranked = RankingEngine.rankProducts(enriched);
+  const orderedProducts = Array.isArray(ranked.products) && ranked.products.length ? ranked.products : enriched;
   return {
     ok: true,
     query,
@@ -408,7 +409,7 @@ function buildOqcSearchResponse({ products, query, mode, monthly, months, totalB
     recommendations: ranked.recommended,
     groups: ranked.groups,
     summary: ranked.summary,
-    products: enriched,
+    products: orderedProducts,
   };
 }
 
@@ -555,6 +556,42 @@ function sortPublicSearchProducts(products = [], sort = "recommended") {
   return list;
 }
 
+function groupPublicProductsInDisplayOrder(products = []) {
+  return (Array.isArray(products) ? products : []).reduce((groups, product) => {
+    const status = String(product.status || product.budgetStatus || "").toUpperCase();
+    if (status === "CABE") groups.cabe.push(product);
+    else if (status === "APERTADO") groups.apertado.push(product);
+    else groups.naoCabe.push(product);
+    return groups;
+  }, { cabe: [], apertado: [], naoCabe: [] });
+}
+
+function publicProductMatchesSpecificHomeQuery(product = {}, query = "") {
+  const normalizedQuery = normalizeBrowseText(query);
+  if (!/\b(banheiro|lavabo)\b/.test(normalizedQuery)) return true;
+  const normalizedProduct = normalizeBrowseText([
+    product.displayTitle,
+    product.originalTitle,
+    product.title,
+    product.description,
+    product.category,
+    product.normalizedCategory,
+    product.department,
+    product.subcategory,
+    product.store,
+    product.source,
+    product.marketplace,
+    product.brand,
+    product.model,
+  ].filter(Boolean).join(" "));
+  if (/\b(gabinete office|micro atx|atx|fonte 200w|fonte 500w|computador|pc gamer)\b/.test(normalizedProduct)) {
+    return false;
+  }
+  return /\b(banheiro|lavabo|saboneteira|porta shampoo|toalheiro|porta toalha)\b/.test(normalizedProduct)
+    || /\b(prateleira|gabinete|armario|organizador|box|espelho|pia|nicho)\b.*\b(banheiro|lavabo)\b/.test(normalizedProduct)
+    || /\b(banheiro|lavabo)\b.*\b(prateleira|gabinete|armario|organizador|box|espelho|pia|nicho)\b/.test(normalizedProduct);
+}
+
 function applyPublicSearchPresentation(response = {}, { sort, limit }) {
   const normalizedSort = normalizePublicSearchSort(sort);
   const safeLimit = Math.max(1, Math.min(Number(limit || 24), 300));
@@ -573,7 +610,7 @@ function applyPublicSearchPresentation(response = {}, { sort, limit }) {
     ...response,
     products: visibleProducts,
     recommendations,
-    groups: BudgetEngine.groupBudgetPriority(visibleProducts),
+    groups: groupPublicProductsInDisplayOrder(visibleProducts),
     sort: normalizedSort,
     requestedLimit: safeLimit,
     totalMatchedProducts: Array.isArray(response.products) ? response.products.length : 0,
@@ -1513,7 +1550,8 @@ export async function requestHandler(req, res) {
         totalBudget,
       });
       const sourceProducts = (Array.isArray(searchResult.products) ? searchResult.products : [])
-        .filter((item) => String(item?.dataMode || item?.mode || "").toLowerCase() !== "demo");
+        .filter((item) => String(item?.dataMode || item?.mode || "").toLowerCase() !== "demo")
+        .filter((item) => publicProductMatchesSpecificHomeQuery(item, query));
       const dataMode = sourceProducts.some((item) => String(item.dataMode || item.mode || "").toLowerCase().startsWith("real") || String(item.dataMode || item.mode || "").toLowerCase() === "seed")
         ? "real"
         : (searchResult.strategyUsed === "refinement-needed" ? (searchResult.dataMode || "real") : "none");
@@ -1544,6 +1582,8 @@ export async function requestHandler(req, res) {
             : sourceProducts.length
               ? ""
               : "Não encontramos uma oferta confirmada para esta busca.";
+
+      response.fallbackWarning = response.warning;
 
       sendJson(res, 200, response);
     } catch (error) {
