@@ -1,8 +1,8 @@
 {
-  "refreshedAt": "2026-08-01T00:03:28.215Z",
+  "refreshedAt": "2026-08-01T02:03:50.019Z",
   "fresh": true,
-  "analyzedCount": 3151,
-  "publishedCount": 2216,
+  "analyzedCount": 3171,
+  "publishedCount": 2236,
   "hiddenCount": 935,
   "activeSourceCounts": [
     {
@@ -22,15 +22,15 @@
     {
       "source": "amazon",
       "label": "Amazon",
-      "analyzedCount": 337,
-      "publishedCount": 337,
+      "analyzedCount": 350,
+      "publishedCount": 350,
       "hiddenCount": 0
     },
     {
       "source": "mercado_livre",
       "label": "Mercado Livre",
-      "analyzedCount": 207,
-      "publishedCount": 207,
+      "analyzedCount": 214,
+      "publishedCount": 214,
       "hiddenCount": 0
     },
     {
@@ -61,16 +61,16 @@
     {
       "source": "amazon",
       "label": "Amazon",
-      "analyzedCount": 337,
-      "publishedCount": 337,
+      "analyzedCount": 350,
+      "publishedCount": 350,
       "hiddenCount": 0,
       "rejectedReasons": []
     },
     {
       "source": "mercado_livre",
       "label": "Mercado Livre",
-      "analyzedCount": 207,
-      "publishedCount": 207,
+      "analyzedCount": 214,
+      "publishedCount": 214,
       "hiddenCount": 0,
       "rejectedReasons": []
     },

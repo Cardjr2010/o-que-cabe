@@ -1,4 +1,4 @@
-const CYRILLIC_RE = /[\u0400-\u04FF]/;
+﻿const CYRILLIC_RE = /[\u0400-\u04FF]/;
 const LATIN_RE = /[A-Za-z]/;
 
 const BRAND_RULES = [
@@ -19,7 +19,7 @@ const BRAND_RULES = [
   { brand: "Realme", terms: ["realme"] },
   { brand: "JBL", terms: ["jbl"] },
   { brand: "Mondial", terms: ["mondial"] },
-  { brand: "Britania", terms: ["britania", "britÂnia"] },
+  { brand: "Britania", terms: ["britania", "britÃ‚nia"] },
   { brand: "Philips", terms: ["philips"] },
   { brand: "WAP", terms: ["wap"] },
   { brand: "Electrolux", terms: ["electrolux"] },
@@ -27,44 +27,44 @@ const BRAND_RULES = [
 ];
 
 const PHRASE_TRANSLATIONS = [
-  [/\bтелевизор\b/gi, "Televisor"],
-  [/\bсмарт[\s-]?часы\b/gi, "Smartwatch"],
-  [/\bумные[\s-]?часы\b/gi, "Smartwatch"],
-  [/\bчасы\b/gi, "Relógio"],
-  [/\bпланшет\b/gi, "Tablet"],
-  [/\bсмартфон\b/gi, "Smartphone"],
-  [/\bтелефон\b/gi, "Celular"],
-  [/\bнаушники\b/gi, "Fone"],
-  [/\bчехол\b/gi, "Capa"],
-  [/\bпленка\b/gi, "Película"],
-  [/\bкабель\b/gi, "Cabo"],
-  [/\bзарядное устройство\b/gi, "Carregador"],
-  [/\bмонитор\b/gi, "Monitor"],
-  [/\bноутбук\b/gi, "Notebook"],
-  [/\bноутбуки\b/gi, "Notebook"],
-  [/\bпауэрбанк\b/gi, "Power bank"],
-  [/\bзащитное стекло\b/gi, "Película"],
-  [/\bремешок\b/gi, "Pulseira"],
-  [/\bбраслет\b/gi, "Pulseira"],
-  [/\bадаптер\b/gi, "Adaptador"],
-  [/\bмышь\b/gi, "Mouse"],
-  [/\bклавиатура\b/gi, "Teclado"],
-  [/\bподставка\b/gi, "Suporte"],
-  [/\bдержатель\b/gi, "Suporte"],
-  [/\bбеспроводные\b/gi, "Sem fio"],
-  [/\bпроводные\b/gi, "Com fio"],
-  [/\bоткрытые\b/gi, "Open"],
-  [/\bчехлы\b/gi, "Capas"],
-  [/\bкамер[аы]\b/gi, "Câmera"],
+  [/\bÑ‚ÐµÐ»ÐµÐ²Ð¸Ð·Ð¾Ñ€\b/gi, "Televisor"],
+  [/\bÑÐ¼Ð°Ñ€Ñ‚[\s-]?Ñ‡Ð°ÑÑ‹\b/gi, "Smartwatch"],
+  [/\bÑƒÐ¼Ð½Ñ‹Ðµ[\s-]?Ñ‡Ð°ÑÑ‹\b/gi, "Smartwatch"],
+  [/\bÑ‡Ð°ÑÑ‹\b/gi, "RelÃ³gio"],
+  [/\bÐ¿Ð»Ð°Ð½ÑˆÐµÑ‚\b/gi, "Tablet"],
+  [/\bÑÐ¼Ð°Ñ€Ñ‚Ñ„Ð¾Ð½\b/gi, "Smartphone"],
+  [/\bÑ‚ÐµÐ»ÐµÑ„Ð¾Ð½\b/gi, "Celular"],
+  [/\bÐ½Ð°ÑƒÑˆÐ½Ð¸ÐºÐ¸\b/gi, "Fone"],
+  [/\bÑ‡ÐµÑ…Ð¾Ð»\b/gi, "Capa"],
+  [/\bÐ¿Ð»ÐµÐ½ÐºÐ°\b/gi, "PelÃ­cula"],
+  [/\bÐºÐ°Ð±ÐµÐ»ÑŒ\b/gi, "Cabo"],
+  [/\bÐ·Ð°Ñ€ÑÐ´Ð½Ð¾Ðµ ÑƒÑÑ‚Ñ€Ð¾Ð¹ÑÑ‚Ð²Ð¾\b/gi, "Carregador"],
+  [/\bÐ¼Ð¾Ð½Ð¸Ñ‚Ð¾Ñ€\b/gi, "Monitor"],
+  [/\bÐ½Ð¾ÑƒÑ‚Ð±ÑƒÐº\b/gi, "Notebook"],
+  [/\bÐ½Ð¾ÑƒÑ‚Ð±ÑƒÐºÐ¸\b/gi, "Notebook"],
+  [/\bÐ¿Ð°ÑƒÑÑ€Ð±Ð°Ð½Ðº\b/gi, "Power bank"],
+  [/\bÐ·Ð°Ñ‰Ð¸Ñ‚Ð½Ð¾Ðµ ÑÑ‚ÐµÐºÐ»Ð¾\b/gi, "PelÃ­cula"],
+  [/\bÑ€ÐµÐ¼ÐµÑˆÐ¾Ðº\b/gi, "Pulseira"],
+  [/\bÐ±Ñ€Ð°ÑÐ»ÐµÑ‚\b/gi, "Pulseira"],
+  [/\bÐ°Ð´Ð°Ð¿Ñ‚ÐµÑ€\b/gi, "Adaptador"],
+  [/\bÐ¼Ñ‹ÑˆÑŒ\b/gi, "Mouse"],
+  [/\bÐºÐ»Ð°Ð²Ð¸Ð°Ñ‚ÑƒÑ€Ð°\b/gi, "Teclado"],
+  [/\bÐ¿Ð¾Ð´ÑÑ‚Ð°Ð²ÐºÐ°\b/gi, "Suporte"],
+  [/\bÐ´ÐµÑ€Ð¶Ð°Ñ‚ÐµÐ»ÑŒ\b/gi, "Suporte"],
+  [/\bÐ±ÐµÑÐ¿Ñ€Ð¾Ð²Ð¾Ð´Ð½Ñ‹Ðµ\b/gi, "Sem fio"],
+  [/\bÐ¿Ñ€Ð¾Ð²Ð¾Ð´Ð½Ñ‹Ðµ\b/gi, "Com fio"],
+  [/\bÐ¾Ñ‚ÐºÑ€Ñ‹Ñ‚Ñ‹Ðµ\b/gi, "Open"],
+  [/\bÑ‡ÐµÑ…Ð»Ñ‹\b/gi, "Capas"],
+  [/\bÐºÐ°Ð¼ÐµÑ€[Ð°Ñ‹]\b/gi, "CÃ¢mera"],
 ];
 
 const CYRILLIC_MAP = new Map([
-  ["А", "A"], ["Б", "B"], ["В", "V"], ["Г", "G"], ["Д", "D"], ["Е", "E"], ["Ё", "E"], ["Ж", "Zh"], ["З", "Z"], ["И", "I"], ["Й", "Y"],
-  ["К", "K"], ["Л", "L"], ["М", "M"], ["Н", "N"], ["О", "O"], ["П", "P"], ["Р", "R"], ["С", "S"], ["Т", "T"], ["У", "U"], ["Ф", "F"],
-  ["Х", "Kh"], ["Ц", "Ts"], ["Ч", "Ch"], ["Ш", "Sh"], ["Щ", "Shch"], ["Ъ", ""], ["Ы", "Y"], ["Ь", ""], ["Э", "E"], ["Ю", "Yu"], ["Я", "Ya"],
-  ["а", "a"], ["б", "b"], ["в", "v"], ["г", "g"], ["д", "d"], ["е", "e"], ["ё", "e"], ["ж", "zh"], ["з", "z"], ["и", "i"], ["й", "y"],
-  ["к", "k"], ["л", "l"], ["м", "m"], ["н", "n"], ["о", "o"], ["п", "p"], ["р", "r"], ["с", "s"], ["т", "t"], ["у", "u"], ["ф", "f"],
-  ["х", "kh"], ["ц", "ts"], ["ч", "ch"], ["ш", "sh"], ["щ", "shch"], ["ъ", ""], ["ы", "y"], ["ь", ""], ["э", "e"], ["ю", "yu"], ["я", "ya"],
+  ["Ð", "A"], ["Ð‘", "B"], ["Ð’", "V"], ["Ð“", "G"], ["Ð”", "D"], ["Ð•", "E"], ["Ð", "E"], ["Ð–", "Zh"], ["Ð—", "Z"], ["Ð˜", "I"], ["Ð™", "Y"],
+  ["Ðš", "K"], ["Ð›", "L"], ["Ðœ", "M"], ["Ð", "N"], ["Ðž", "O"], ["ÐŸ", "P"], ["Ð ", "R"], ["Ð¡", "S"], ["Ð¢", "T"], ["Ð£", "U"], ["Ð¤", "F"],
+  ["Ð¥", "Kh"], ["Ð¦", "Ts"], ["Ð§", "Ch"], ["Ð¨", "Sh"], ["Ð©", "Shch"], ["Ðª", ""], ["Ð«", "Y"], ["Ð¬", ""], ["Ð­", "E"], ["Ð®", "Yu"], ["Ð¯", "Ya"],
+  ["Ð°", "a"], ["Ð±", "b"], ["Ð²", "v"], ["Ð³", "g"], ["Ð´", "d"], ["Ðµ", "e"], ["Ñ‘", "e"], ["Ð¶", "zh"], ["Ð·", "z"], ["Ð¸", "i"], ["Ð¹", "y"],
+  ["Ðº", "k"], ["Ð»", "l"], ["Ð¼", "m"], ["Ð½", "n"], ["Ð¾", "o"], ["Ð¿", "p"], ["Ñ€", "r"], ["Ñ", "s"], ["Ñ‚", "t"], ["Ñƒ", "u"], ["Ñ„", "f"],
+  ["Ñ…", "kh"], ["Ñ†", "ts"], ["Ñ‡", "ch"], ["Ñˆ", "sh"], ["Ñ‰", "shch"], ["ÑŠ", ""], ["Ñ‹", "y"], ["ÑŒ", ""], ["Ñ", "e"], ["ÑŽ", "yu"], ["Ñ", "ya"],
 ]);
 
 const ACCESSORY_KEYWORDS = [
@@ -110,19 +110,19 @@ const ACCESSORY_KEYWORDS = [
   "bag",
   "casing",
   "protecao",
-  "proteção",
+  "proteÃ§Ã£o",
   "pelicula",
   "screen protector",
 ];
 
 const PIECE_KEYWORDS = [
   "peca",
-  "peça",
+  "peÃ§a",
   "replacement",
   "spare",
   "module",
   "modulo",
-  "módulo",
+  "mÃ³dulo",
   "sensor",
   "board",
   "placa",
@@ -132,18 +132,19 @@ const PIECE_KEYWORDS = [
 
 const CATEGORY_RULES = [
   { category: "ferramenta", terms: ["ferramenta", "ferramentas", "broca", "furadeira", "serra", "martelo", "alicate", "parafusadeira", "torque", "chave allen", "chave philips", "chave estrela", "chave fixa", "chave catraca", "trena", "soquete", "bits"] },
-  { category: "ferragem", terms: ["parafuso", "porca", "arruela", "bucha", "prego", "rebite", "dobradi", "cadeado", "fechadura", "gancho", "argola", "corrente", "mola", "abraçadeira", "abracadeira"] },
-  { category: "construcao", terms: ["tinta", "cola", "cimento", "argamassa", "reboco", "massa corrida", "selante", "vedante", "fita veda", "telha", "piso", "revestimento", "construcao", "construção"] },
-  { category: "casa", terms: ["casa", "cozinha", "banheiro", "limpeza", "organizador", "utilidade", "utensilio", "utensílio", "decoracao", "decoração", "jardim", "lar"] },
+  { category: "ferragem", terms: ["parafuso", "porca", "arruela", "bucha", "prego", "rebite", "dobradi", "cadeado", "fechadura", "gancho", "argola", "corrente", "mola", "abraÃ§adeira", "abracadeira"] },
+  { category: "construcao", terms: ["tinta", "cola", "cimento", "argamassa", "reboco", "massa corrida", "selante", "vedante", "fita veda", "telha", "piso", "revestimento", "construcao", "construÃ§Ã£o"] },
+  { category: "roteador", terms: ["roteador", "router", "wifi", "wi-fi", "mesh", "deco", "tp-link", "archer", "starlink"] },
+  { category: "casa", terms: ["casa", "cozinha", "banheiro", "limpeza", "organizador", "utilidade", "utensilio", "utensÃ­lio", "decoracao", "decoraÃ§Ã£o", "jardim", "lar"] },
   { category: "tablet", terms: ["tablet", "ipad", "galaxy tab", "tab ", "redmi pad", "xiaomi pad", "mi pad", "pad se", "pad pro"] },
   { category: "tv", terms: ["smart tv", "smarttv", "televisor", "televis", "tv ", "oled", "qled", "roku"] },
   { category: "notebook", terms: ["notebook", "laptop", "vivobook", "ideapad", "aspire", "inspiron", "thinkpad", "loq"] },
   { category: "monitor", terms: ["monitor"] },
-  { category: "relogio", terms: ["smartwatch", "relogio", "relógio", "watch", "fit", "band"] },
+  { category: "relogio", terms: ["smartwatch", "relogio", "relÃ³gio", "watch", "fit", "band"] },
   { category: "fone", terms: ["fone", "headphone", "earbud", "airpods", "buds", "auricular", "audio"] },
   { category: "carregador", terms: ["carregador", "charger", "fonte", "power adapter"] },
   { category: "cabo", terms: ["cabo", "cable", "usb c", "usb-c", "type c"] },
-  { category: "pelicula", terms: ["pelicula", "película", "screen protector", "protective film", "glass", "folha protetora"] },
+  { category: "pelicula", terms: ["pelicula", "pelÃ­cula", "screen protector", "protective film", "glass", "folha protetora"] },
   { category: "capa", terms: ["capa", "case", "cover", "bumper", "shell"] },
   { category: "celular", terms: ["celular", "smartphone", "phone", "iphone", "galaxy", "moto ", "redmi note", "redmi ", "poco ", "mi note", "mi  "] },
 ];
@@ -163,6 +164,7 @@ const VALID_CATEGORY_VALUES = new Set([
   "ferramenta",
   "ferragem",
   "construcao",
+  "roteador",
   "casa",
   "acessorio",
   "peca",
@@ -204,9 +206,17 @@ function detectLanguage(title = "") {
 }
 
 function transliterateCyrillic(value = "") {
+  const fallbackMap = {
+    "\u0410": "A", "\u0411": "B", "\u0412": "V", "\u0413": "G", "\u0414": "D", "\u0415": "E", "\u0401": "E", "\u0416": "Zh", "\u0417": "Z", "\u0418": "I", "\u0419": "Y",
+    "\u041A": "K", "\u041B": "L", "\u041C": "M", "\u041D": "N", "\u041E": "O", "\u041F": "P", "\u0420": "R", "\u0421": "S", "\u0422": "T", "\u0423": "U", "\u0424": "F",
+    "\u0425": "Kh", "\u0426": "Ts", "\u0427": "Ch", "\u0428": "Sh", "\u0429": "Shch", "\u042A": "", "\u042B": "Y", "\u042C": "", "\u042D": "E", "\u042E": "Yu", "\u042F": "Ya",
+    "\u0430": "a", "\u0431": "b", "\u0432": "v", "\u0433": "g", "\u0434": "d", "\u0435": "e", "\u0451": "e", "\u0436": "zh", "\u0437": "z", "\u0438": "i", "\u0439": "y",
+    "\u043A": "k", "\u043B": "l", "\u043C": "m", "\u043D": "n", "\u043E": "o", "\u043F": "p", "\u0440": "r", "\u0441": "s", "\u0442": "t", "\u0443": "u", "\u0444": "f",
+    "\u0445": "kh", "\u0446": "ts", "\u0447": "ch", "\u0448": "sh", "\u0449": "shch", "\u044A": "", "\u044B": "y", "\u044C": "", "\u044D": "e", "\u044E": "yu", "\u044F": "ya",
+  };
   return String(value || "")
     .split("")
-    .map((char) => CYRILLIC_MAP.get(char) ?? char)
+    .map((char) => CYRILLIC_MAP.get(char) ?? fallbackMap[char] ?? char)
     .join("");
 }
 
@@ -358,8 +368,8 @@ function extractCompatibility(title = "") {
   const display = buildDisplayTitle(title);
   const normalized = normalizeForAnalysis(display);
   const patterns = [
-    /(?:for|para|compat[ií]vel com|compatible with|для)\s+(.+)$/i,
-    /(?:para|for|compat[ií]vel com|compatible with|для)\s+(.+?)\s*(?:[\-–—;,.]|$)/i,
+    /(?:for|para|compat[iÃ­]vel com|compatible with|Ð´Ð»Ñ)\s+(.+)$/i,
+    /(?:para|for|compat[iÃ­]vel com|compatible with|Ð´Ð»Ñ)\s+(.+?)\s*(?:[\-â€“â€”;,.]|$)/i,
     /\bcompat(?:ible)?\s+with\s+(.+)$/i,
   ];
   for (const pattern of patterns) {
@@ -370,6 +380,9 @@ function extractCompatibility(title = "") {
 }
 
 function detectAccessoryType(normalized) {
+  if (/\b(cadeira|poltrona|banco)\b/.test(normalized) && /\b(suporte lombar|apoio para pes|apoio de braco|encosto)\b/.test(normalized)) {
+    return "";
+  }
   if (ACCESSORY_KEYWORDS.some((term) => normalized.includes(term))) {
     if (normalized.includes("pelicula") || normalized.includes("screen protector") || normalized.includes("glass")) return "pelicula";
     if (normalized.includes("capa") || normalized.includes("case") || normalized.includes("cover") || normalized.includes("bumper") || normalized.includes("shell")) return "capa";
@@ -430,7 +443,7 @@ function extractModel(title = "", brand = "") {
 
   model = model
     .replace(/\b(xiaomi|redmi|poco|samsung|apple|motorola|lenovo|asus|acer|lg|tcl|amazfit|huawei|honor|realme|jbl|mondial|britania|philips|wap|electrolux|arno)\b/gi, " ")
-    .replace(/\b(celular|smartphone|tablet|notebook|laptop|tv|televisor|monitor|fone|carregador|cabo|pelicula|capa|smartwatch|relogio|relógio|accessory|acessorio|acessório)\b/gi, " ")
+    .replace(/\b(celular|smartphone|tablet|notebook|laptop|tv|televisor|monitor|fone|carregador|cabo|pelicula|capa|smartwatch|relogio|relÃ³gio|accessory|acessorio|acessÃ³rio)\b/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
 
@@ -527,11 +540,11 @@ function scoreProductMatch(product = {}, query = "") {
   if (/(celular|smartphone)/.test(q) && /(xiaomi|redmi|poco|samsung|motorola)/.test(`${normalizedBrand} ${normalizedTitle} ${normalizedModel}`)) score += 24;
   if (/(celular|smartphone)/.test(q) && /apple/.test(`${normalizedBrand} ${normalizedTitle} ${normalizedModel}`)) score -= 12;
   if (/tablet/.test(q) && normalizedCategory === "tablet") score += 25;
-  if (/relogio|relógio/.test(q) && normalizedCategory === "relogio") score += 25;
+  if (/relogio|relÃ³gio/.test(q) && normalizedCategory === "relogio") score += 25;
   if (/fone/.test(q) && normalizedCategory === "fone") score += 20;
   if (/carregador/.test(q) && normalizedCategory === "carregador") score += 20;
   if (/cabo/.test(q) && normalizedCategory === "cabo") score += 20;
-  if (/pelicula|película/.test(q) && normalizedCategory === "pelicula") score += 20;
+  if (/pelicula|pelÃ­cula/.test(q) && normalizedCategory === "pelicula") score += 20;
   if (/capa/.test(q) && normalizedCategory === "capa") score += 20;
   if (/celular|smartphone|iphone/.test(q) && normalizedCategory === "celular") score += 25;
   if (/tv|televisor/.test(q) && normalizedCategory === "tv") score += 25;
@@ -565,13 +578,13 @@ function buildNormalizedProduct(raw = {}) {
   const model = cleanTitle(raw.model || extractModel(titleForAnalysis, brand));
   const warnings = new Set(Array.isArray(raw.normalizationWarnings) ? raw.normalizationWarnings.filter(Boolean) : []);
 
-  if (!originalTitle) warnings.add("Título ausente");
-  if (language === "cyrillic" || language === "mixed") warnings.add("Título transliterado para português");
+  if (!originalTitle) warnings.add("TÃ­tulo ausente");
+  if (language === "cyrillic" || language === "mixed") warnings.add("TÃ­tulo transliterado para portuguÃªs");
   if (!brand) warnings.add("Marca inferida");
   if (!model) warnings.add("Modelo inferido");
   if (!normalizedCategory || normalizedCategory === "outros") warnings.add("Categoria principal inferida");
-  if (isAccessory) warnings.add("Item classificado como acessório");
-  if (compatibility) warnings.add(`Compatível com ${compatibility}`);
+  if (isAccessory) warnings.add("Item classificado como acessÃ³rio");
+  if (compatibility) warnings.add(`CompatÃ­vel com ${compatibility}`);
 
   return {
     originalTitle,
@@ -647,3 +660,6 @@ export default {
   getHomeCategoryCandidates,
   normalizeForAnalysis,
 };
+
+
+

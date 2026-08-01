@@ -205,6 +205,8 @@ export function normalizeImportedProduct(raw = {}) {
     installmentWarning: installmentInfo.installmentWarning,
     priceHistory: Array.isArray(raw.priceHistory) ? raw.priceHistory : [],
     description: raw.description || raw.summary || "",
+    intelligence: raw.intelligence && typeof raw.intelligence === "object" ? raw.intelligence : undefined,
+    searchKeywords: Array.isArray(raw.searchKeywords) ? raw.searchKeywords : [],
     source: raw.source || sourceValue || "seed",
     store: marketplace,
     url: productUrl,

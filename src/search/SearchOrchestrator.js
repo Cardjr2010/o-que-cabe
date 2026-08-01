@@ -1,4 +1,4 @@
-import BudgetEngine from "../engines/BudgetEngine.js";
+﻿import BudgetEngine from "../engines/BudgetEngine.js";
 import { scoreProductMatch, normalizeText } from "../catalog/ProductNormalizer.js";
 import { buildInstallmentBudgetContext, normalizeInstallmentData } from "../catalog/installments.js";
 import ProductIntelligenceEngine from "../catalog/ProductIntelligenceEngine.js";
@@ -29,12 +29,12 @@ const CATEGORY_RULES = [
   { category: "monitor", terms: ["monitor"] },
   { category: "roteador", terms: ["roteador", "router", "wi-fi", "wifi", "mesh", "deco", "tp-link"] },
   { category: "fone", terms: ["fone", "headphone", "earbud", "buds", "airpods", "jbl"] },
-  { category: "relogio", terms: ["relogio", "relógio", "smartwatch", "watch", "band"] },
+  { category: "relogio", terms: ["relogio", "relÃ³gio", "smartwatch", "watch", "band"] },
   { category: "casa", terms: ["casa", "cozinha", "banheiro", "limpeza", "organizador", "utensilio", "utilidade"] },
-  { category: "presente", terms: ["presente", "kit", "lembranca", "lembrança", "brinde", "achadinho"] },
+  { category: "presente", terms: ["presente", "kit", "lembranca", "lembranÃ§a", "brinde", "achadinho"] },
   { category: "ferramenta", terms: ["ferramenta", "furadeira", "parafusadeira", "serra", "martelo", "alicate", "trena"] },
   { category: "ferragem", terms: ["ferragem", "parafuso", "porca", "arruela", "bucha", "prego", "fechadura"] },
-  { category: "construcao", terms: ["construcao", "construção", "cimento", "argamassa", "tinta", "selante", "vedante"] },
+  { category: "construcao", terms: ["construcao", "construÃ§Ã£o", "cimento", "argamassa", "tinta", "selante", "vedante"] },
 ];
 
 const BRAND_RULES = [
@@ -74,14 +74,14 @@ const HOME_QUERY_MARKERS = [
   "casa",
   "cozinha",
   "decoracao",
-  "decoração",
+  "decoraÃ§Ã£o",
   "organizacao",
-  "organização",
+  "organizaÃ§Ã£o",
   "limpeza",
   "utilidade",
   "utilidades",
   "iluminacao",
-  "iluminação",
+  "iluminaÃ§Ã£o",
   "banheiro",
   "quarto",
 ];
@@ -149,10 +149,10 @@ const HOME_PRODUCT_EXCLUDE_MARKERS = [
   "ferragem",
   "ferramenta",
   "peca",
-  "peça",
+  "peÃ§a",
   "escova de carvao",
-  "escova de carvão",
-  "reposição",
+  "escova de carvÃ£o",
+  "reposiÃ§Ã£o",
   "reposicao",
   "industrial",
   "componente",
@@ -198,11 +198,11 @@ const HOME_SPECIFIC_MATCHERS = [
     ],
   },
   {
-    query: ["organizacao", "organização", "organizado", "organizada", "organizador"],
+    query: ["organizacao", "organizaÃ§Ã£o", "organizado", "organizada", "organizador"],
     product: [
       "organizador",
       "organizacao",
-      "organização",
+      "organizaÃ§Ã£o",
       "prateleira",
       "nicho",
       "suporte",
@@ -214,16 +214,16 @@ const HOME_SPECIFIC_MATCHERS = [
     ],
   },
   {
-    query: ["decoracao", "decoração", "decorar"],
-    product: ["decoracao", "decoração", "quadro", "vaso", "luminaria", "abajur", "tapete", "cortina", "espelho"],
+    query: ["decoracao", "decoraÃ§Ã£o", "decorar"],
+    product: ["decoracao", "decoraÃ§Ã£o", "quadro", "vaso", "luminaria", "abajur", "tapete", "cortina", "espelho"],
   },
   {
     query: ["limpeza"],
     product: ["limpeza", "aspirador", "robo aspirador", "vaporizador", "mop", "vassoura", "rodo", "lavadora"],
   },
   {
-    query: ["iluminacao", "iluminação"],
-    product: ["iluminacao", "iluminação", "lampada", "lâmpada", "luminaria", "led", "abajur", "spot"],
+    query: ["iluminacao", "iluminaÃ§Ã£o"],
+    product: ["iluminacao", "iluminaÃ§Ã£o", "lampada", "lÃ¢mpada", "luminaria", "led", "abajur", "spot"],
   },
 ];
 
@@ -506,7 +506,7 @@ function getProductIntelligenceEngine() {
       maxHomeButtons: 6,
       maxDepartments: 14,
       maxCategories: 6,
-      focusLabel: "Catálogo real",
+      focusLabel: "CatÃ¡logo real",
     });
   }
   return productIntelligenceEngineInstance;
@@ -690,21 +690,21 @@ function isBroadCommercialIntent(intent = {}) {
 
 function stripBudgetLanguage(value = "") {
   return String(value || "")
-    .replace(/\b(?:até|ate)\s*\d+(?:[.,]\d+)?\s*(?:por\s*m[eê]s|mensal|mensais|x|parcelas?)?\b/gi, " ")
-    .replace(/\b\d+(?:[.,]\d+)?\s*(?:por\s*m[eê]s|mensal|mensais)\b/gi, " ")
+    .replace(/\b(?:atÃ©|ate)\s*\d+(?:[.,]\d+)?\s*(?:por\s*m[eÃª]s|mensal|mensais|x|parcelas?)?\b/gi, " ")
+    .replace(/\b\d+(?:[.,]\d+)?\s*(?:por\s*m[eÃª]s|mensal|mensais)\b/gi, " ")
     .replace(/\b\d{1,2}x\b/gi, " ")
-    .replace(/\b(?:por\s*m[eê]s|mensal|mensais|m[eê]s)\b/gi, " ")
+    .replace(/\b(?:por\s*m[eÃª]s|mensal|mensais|m[eÃª]s)\b/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
 
 function parseBudgetNumber(text = "") {
   const normalized = String(text || "").replace(/\s+/g, " ");
-  const monthlyMatch = normalized.match(/\b(?:até|ate)?\s*(\d+(?:[.,]\d+)?)\s*(?:por\s*m[eê]s|mensal|mensais)\b/i);
+  const monthlyMatch = normalized.match(/\b(?:atÃ©|ate)?\s*(\d+(?:[.,]\d+)?)\s*(?:por\s*m[eÃª]s|mensal|mensais)\b/i);
   if (monthlyMatch) {
     return { mode: "monthly", monthly: toNumber(monthlyMatch[1], 0), searchText: stripBudgetLanguage(normalized) };
   }
-  const explicitTotalMatch = normalized.match(/\b(?:até|ate)\s*(\d+(?:[.,]\d+)?)\b/i);
+  const explicitTotalMatch = normalized.match(/\b(?:atÃ©|ate)\s*(\d+(?:[.,]\d+)?)\b/i);
   if (explicitTotalMatch) {
     return { mode: "total", totalBudget: toNumber(explicitTotalMatch[1], 0), searchText: stripBudgetLanguage(normalized) };
   }
@@ -741,7 +741,7 @@ function detectBrand(text = "") {
 }
 
 function detectAccessoryIntent(text = "") {
-  return /\b(capa|case|pelicula|pel[íi]cula|carregador|cabo|fone|headphone|earbud|airpods|mouse|teclado|keyboard|strap|pulseira|acessorio|acess[óo]rio|suporte|power bank|powerbank|protector|protetor|controle remoto|remote control|remote)\b/i.test(String(text || ""));
+  return /\b(capa|case|pelicula|pel[Ã­i]cula|carregador|cabo|fone|headphone|earbud|airpods|mouse|teclado|keyboard|strap|pulseira|acessorio|acess[Ã³o]rio|suporte|power bank|powerbank|protector|protetor|controle remoto|remote control|remote)\b/i.test(String(text || ""));
 }
 
 function isConsumableForMainProductQuery(product = {}, intent = {}) {
@@ -833,12 +833,14 @@ function matchProductType(product = {}, queryCategory = "", accessoryIntent = fa
     product.title,
   ].filter(Boolean).join(" "));
 
-  const isAccessory = Boolean(intelligence.isAccessory ?? product.isAccessory)
+  const furnitureWithSupport = /\b(cadeira|poltrona|banco)\b/.test(titleText)
+    && /\b(suporte lombar|apoio para pes|apoio de braco|encosto)\b/.test(titleText);
+
+  const isAccessory = !furnitureWithSupport && (Boolean(intelligence.isAccessory ?? product.isAccessory)
     || ["accessory", "piece", "compatible"].includes(productType)
     || ["acessorio", "accessorio", "accessory", "piece", "compatible"].includes(productCategory)
-    || ["cabos e carregadores", "acessórios", "peças"].includes(productDepartment)
-    || /\b(capa|case|pelicula|cabo|carregador|strap|pulseira|suporte|protector|protetor|controle remoto|remote control|remote)\b/i.test(titleText);
-
+    || ["cabos e carregadores", "acessÃ³rios", "peÃ§as"].includes(productDepartment)
+    || /\b(capa|case|pelicula|cabo|carregador|strap|pulseira|suporte|protector|protetor|controle remoto|remote control|remote)\b/i.test(titleText));
   if (queryKey === "casa") {
     return isHomeLivingProduct(product, intelligence);
   }
@@ -854,7 +856,7 @@ function matchProductType(product = {}, queryCategory = "", accessoryIntent = fa
     return (!isAccessory || isPrimaryTool) && /\b(ferramenta|furadeira|parafusadeira|serra|esmerilhadeira|lixadeira|alicate|martelete|martelo|solda)\b/.test(toolText);
   }
   if (queryKey === "flores e presentes" || queryKey === "presente") {
-    return /\b(flor|flores|buque|buquê|bouquet|rosa|cesta|presente|presentes|chocolate)\b/.test(`${text} ${productCategory} ${productDepartment} ${productSubcategory}`);
+    return /\b(flor|flores|buque|buquÃª|bouquet|rosa|cesta|presente|presentes|chocolate)\b/.test(`${text} ${productCategory} ${productDepartment} ${productSubcategory}`);
   }
   if (queryCategory) {
     return [
@@ -1001,7 +1003,10 @@ function filterCandidateList(list = [], intent = {}) {
             product.title,
             Array.isArray(product.searchKeywords) ? product.searchKeywords.join(" ") : "",
           ].filter(Boolean).join(" "));
-          if (!(normalizeText(intent.category) === "ferramenta" && matchesAnyMarker(productText, TOOL_QUERY_MARKERS))) return false;
+          const categoryKey = normalizeText(intent.category);
+          const routerMarkers = ["roteador", "router", "mesh", "wifi", "wi-fi", "tp-link", "deco", "archer"];
+          if (!(categoryKey === "ferramenta" && matchesAnyMarker(productText, TOOL_QUERY_MARKERS))
+            && !(categoryKey === "roteador" && matchesAnyMarker(productText, routerMarkers))) return false;
         }
       }
       if (!intent.category && !intent.brand && !hasQueryRelevance(product, intent)) return false;
@@ -1353,7 +1358,7 @@ export default class SearchOrchestrator {
         firstFive: [],
         fallbackUsed: false,
         fallbackAttempted: false,
-        fallbackWarning: "Encontramos poucas opções no catálogo atual. Refine a busca por cozinha, organizacao, decoracao, iluminacao, utilidades ou limpeza.",
+        fallbackWarning: "Encontramos poucas opÃ§Ãµes no catÃ¡logo atual. Refine a busca por cozinha, organizacao, decoracao, iluminacao, utilidades ou limpeza.",
         refinementSuggestions: intent.refinementSuggestions || [],
       };
     }
@@ -1502,4 +1507,5 @@ export default class SearchOrchestrator {
     }
   }
 }
+
 

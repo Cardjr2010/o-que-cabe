@@ -27,7 +27,7 @@ function sourcePriorityForItem(item = {}) {
   if (source.includes("actionpay")) return 2;
   if (source.includes("awin")) return 3;
   if (source.includes("mi_shop") || source.includes("mi shop") || source.includes("mishop")) return 4;
-  if (source.includes("mercadolivre") || source.includes("mercado livre")) return 5;
+  if (source.includes("mercadolivre") || source.includes("mercado livre") || source.includes("mercado_livre")) return 5;
   return 6;
 }
 
@@ -57,6 +57,9 @@ function looksLikeAccessory(item = {}) {
     item.description,
     item.compatibility,
   ].filter(Boolean).join(" "));
+  if (/\b(cadeira|poltrona|banco)\b/.test(text) && /\b(suporte lombar|apoio para pes|apoio de braco|encosto)\b/.test(text)) {
+    return false;
+  }
   return [
     "capa",
     "capinha",
@@ -95,6 +98,17 @@ function looksLikeAccessory(item = {}) {
     "piece",
     "compatible",
   ].some((term) => text.includes(term));
+}
+
+function queryTokenHits(text = "", query = "") {
+  const normalizedText = normalizeText(text);
+  const tokens = normalizeText(query)
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 3)
+    .filter((token) => !["para", "com", "sem", "ate", "por", "de", "do", "da", "dos", "das"].includes(token));
+  if (!tokens.length) return 0;
+  return tokens.reduce((count, token) => count + (normalizedText.includes(token) ? 1 : 0), 0);
 }
 
 function sourceKey(item = {}) {
@@ -241,18 +255,42 @@ export default class CatalogManager {
           item.brand,
           item.model,
           item.compatibility,
+          Array.isArray(item.searchKeywords) ? item.searchKeywords.join(" ") : "",
           item.description,
         ].filter(Boolean).join(" ");
-        return normalizeText(text).includes(normalizedNeedle) || scoreProductMatch(item, needle) > 0;
+        const hits = queryTokenHits(text, needle);
+        return normalizeText(text).includes(normalizedNeedle)
+          || scoreProductMatch(item, needle) > 0
+          || (hits >= Math.min(2, normalizeText(needle).split(/\s+/).filter(Boolean).length));
       }
       return true;
     });
     if (needle) {
       return results.sort((a, b) => {
-        const sourceDiff = sourcePriorityForItem(a) - sourcePriorityForItem(b);
-        if (sourceDiff !== 0) return sourceDiff;
         const scoreDiff = scoreProductMatch(b, needle) - scoreProductMatch(a, needle);
         if (scoreDiff !== 0) return scoreDiff;
+        const tokenDiff = queryTokenHits([
+          b.displayTitle,
+          b.originalTitle,
+          b.title,
+          b.normalizedCategory,
+          b.category,
+          b.brand,
+          b.model,
+          Array.isArray(b.searchKeywords) ? b.searchKeywords.join(" ") : "",
+        ].filter(Boolean).join(" "), needle) - queryTokenHits([
+          a.displayTitle,
+          a.originalTitle,
+          a.title,
+          a.normalizedCategory,
+          a.category,
+          a.brand,
+          a.model,
+          Array.isArray(a.searchKeywords) ? a.searchKeywords.join(" ") : "",
+        ].filter(Boolean).join(" "), needle);
+        if (tokenDiff !== 0) return tokenDiff;
+        const sourceDiff = sourcePriorityForItem(a) - sourcePriorityForItem(b);
+        if (sourceDiff !== 0) return sourceDiff;
         const aAccessory = Boolean(a.isAccessory || ["accessory", "piece", "compatible"].includes(String(a.productType || "").toLowerCase()) || looksLikeAccessory(a));
         const bAccessory = Boolean(b.isAccessory || ["accessory", "piece", "compatible"].includes(String(b.productType || "").toLowerCase()) || looksLikeAccessory(b));
         if (aAccessory !== bAccessory) return aAccessory ? 1 : -1;
