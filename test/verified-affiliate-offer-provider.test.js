@@ -13,11 +13,16 @@ test("campanha capturada por screener respeita a data de validade", () => {
   const activeOnDay = listActiveOfferCampaigns(new Date("2026-07-20T12:00:00-03:00"));
   const expiredAfterDay = listActiveOfferCampaigns(new Date("2026-07-21T09:00:00-03:00"));
   const amazonRadar = listActiveOfferCampaigns(new Date("2026-07-28T12:00:00-03:00"));
+  const mercadoLivreRadar = listActiveOfferCampaigns(new Date("2026-08-01T12:00:00-03:00"));
 
   assert.ok(activeOnDay.some((campaign) => campaign.id === "magalu-pushfullsu-screened"));
   assert.ok(!expiredAfterDay.some((campaign) => campaign.id === "magalu-pushfullsu-screened"));
   assert.ok(amazonRadar.some((campaign) => campaign.id === "amazon-bestsellers-br-2026-07-28"));
   assert.ok(amazonRadar.every((campaign) => !/PUSHFULLSU|VIPMELI|MELIBARATO|CUPOMPRACASA/i.test(campaign.coupon?.code || "")));
+  assert.ok(mercadoLivreRadar.some((campaign) => campaign.id === "meli-descontodoml-20off-2026-08-02"));
+  assert.ok(mercadoLivreRadar.some((campaign) => campaign.id === "meli-bikeminions1p-15off-2026-08-05"));
+  assert.ok(mercadoLivreRadar.every((campaign) => !/PUSHFULLSU|VIPMELI|MELIBARATO|CUPOMPRACASA|USAESSAPROMO/i.test(campaign.coupon?.code || "")));
+  assert.ok(mercadoLivreRadar.every((campaign) => campaign.offerIds.length === 0));
 });
 
 test("oferta verificada com janela expirada nao entra na busca", async () => {

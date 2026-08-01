@@ -488,31 +488,38 @@ const report = {
   rejected,
 };
 
+if (!args.dryRun && uniqueProducts.length === 0) {
+  report.noop = true;
+  report.reason = "Nenhum produto Magalu com preco e link direto foi confirmado; seeds preservadas sem alteracao.";
+}
+
 if (!args.dryRun) {
-  for (const seedPath of seedPaths) {
-    const currentProducts = readSeedProducts(seedPath);
-    const baseProducts = currentProducts.filter((product) => product.catalogOrigin !== "telegram_magalu_export");
-    const existingIds = new Set(baseProducts.map((product, index) => String(product.id || product.externalId || `existing-${index}`)));
-    const nextProducts = [...baseProducts];
-    for (const product of uniqueProducts) {
-      if (existingIds.has(product.id)) continue;
-      existingIds.add(product.id);
-      nextProducts.push(product);
+  if (uniqueProducts.length > 0) {
+    for (const seedPath of seedPaths) {
+      const currentProducts = readSeedProducts(seedPath);
+      const baseProducts = currentProducts.filter((product) => product.catalogOrigin !== "telegram_magalu_export");
+      const existingIds = new Set(baseProducts.map((product, index) => String(product.id || product.externalId || `existing-${index}`)));
+      const nextProducts = [...baseProducts];
+      for (const product of uniqueProducts) {
+        if (existingIds.has(product.id)) continue;
+        existingIds.add(product.id);
+        nextProducts.push(product);
+      }
+      fs.writeFileSync(seedPath, `${JSON.stringify(nextProducts, null, 2)}\n`);
+      report[seedPath.replace(rootDir + path.sep, "").replace(/\\/g, "/")] = {
+        before: currentProducts.length,
+        removedPreviousTelegramMagalu: currentProducts.length - baseProducts.length,
+        added: uniqueProducts.length,
+        after: nextProducts.length,
+      };
     }
-    fs.writeFileSync(seedPath, `${JSON.stringify(nextProducts, null, 2)}\n`);
-    report[seedPath.replace(rootDir + path.sep, "").replace(/\\/g, "/")] = {
-      before: currentProducts.length,
-      removedPreviousTelegramMagalu: currentProducts.length - baseProducts.length,
-      added: uniqueProducts.length,
-      after: nextProducts.length,
+    const metadata = updateMetadata(readSeedProducts(seedPaths[0]));
+    report.metadata = {
+      publishedCount: metadata.publishedCount,
+      analyzedCount: metadata.analyzedCount,
+      sources: metadata.sources.map(({ source, publishedCount }) => ({ source, publishedCount })),
     };
   }
-  const metadata = updateMetadata(readSeedProducts(seedPaths[0]));
-  report.metadata = {
-    publishedCount: metadata.publishedCount,
-    analyzedCount: metadata.analyzedCount,
-    sources: metadata.sources.map(({ source, publishedCount }) => ({ source, publishedCount })),
-  };
 }
 
 const reportPath = path.join(rootDir, "RELATORIO_IMPORT_TELEGRAM_MAGALU.md");
