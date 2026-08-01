@@ -589,8 +589,13 @@ function publicProductMatchesSpecificHomeQuery(product = {}, query = "") {
   if (principalConsoleQuery && accessoryConsoleProduct) return false;
 
   if (!/\b(banheiro|lavabo)\b/.test(normalizedQuery)) return true;
-  if (/\b(gabinete office|micro atx|atx|fonte 200w|fonte 500w|computador|pc gamer)\b/.test(normalizedProduct)) {
+  if (/\b(gabinete office|gabinete gamer|micro atx|atx|fonte 200w|fonte 500w|computador|pc gamer|telefone sem fio|headset|fone|cabo|adaptador|carregador|teclado|mouse|cartucho|toner|ssd|hdmi|usb|camera|roteador|notebook|celular|smartphone|monitor|tv|furadeira|parafusadeira|escova de carvao|peca)\b/.test(normalizedProduct)) {
     return false;
+  }
+  if (/\b(organizado|organizada|organizador|organizacao|organizar|arrumar)\b/.test(normalizedQuery)) {
+    return /\b(banheiro|lavabo|saboneteira|porta shampoo|toalheiro|porta toalha)\b/.test(normalizedProduct)
+      || /\b(prateleira|gabinete|armario|organizador|box|espelho|pia|nicho|suporte)\b.*\b(banheiro|lavabo)\b/.test(normalizedProduct)
+      || /\b(banheiro|lavabo)\b.*\b(prateleira|gabinete|armario|organizador|box|espelho|pia|nicho|suporte)\b/.test(normalizedProduct);
   }
   return /\b(banheiro|lavabo|saboneteira|porta shampoo|toalheiro|porta toalha)\b/.test(normalizedProduct)
     || /\b(prateleira|gabinete|armario|organizador|box|espelho|pia|nicho)\b.*\b(banheiro|lavabo)\b/.test(normalizedProduct)

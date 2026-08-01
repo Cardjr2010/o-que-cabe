@@ -133,11 +133,17 @@ const HOME_PRODUCT_INCLUDE_MARKERS = [
   "luminaria",
   "prateleira",
   "organizador",
+  "roteador",
+  "router",
+  "tomada smart",
+  "lampada smart",
+  "interruptor inteligente",
 ];
 
 const HOME_PRODUCT_EXCLUDE_MARKERS = [
   "furadeira",
   "parafusadeira",
+  "esmerilhadeira",
   "serra",
   "alicate",
   "martelete",
@@ -156,6 +162,17 @@ const HOME_PRODUCT_EXCLUDE_MARKERS = [
   "reposicao",
   "industrial",
   "componente",
+  "telefone sem fio",
+  "headset",
+  "fone",
+  "cabo",
+  "adaptador",
+  "carregador",
+  "teclado",
+  "mouse",
+  "cartucho",
+  "toner",
+  "ssd",
 ];
 
 const HOME_SPECIFIC_MATCHERS = [
@@ -225,6 +242,76 @@ const HOME_SPECIFIC_MATCHERS = [
     query: ["iluminacao", "iluminaÃ§Ã£o"],
     product: ["iluminacao", "iluminaÃ§Ã£o", "lampada", "lÃ¢mpada", "luminaria", "led", "abajur", "spot"],
   },
+  {
+    query: ["conectada", "conectado", "smart", "inteligente"],
+    product: ["roteador", "router", "mesh", "wifi", "wi-fi", "tomada smart", "lampada smart", "interruptor inteligente", "casa inteligente"],
+  },
+];
+
+const BATHROOM_ORGANIZATION_QUERY_MARKERS = [
+  "organizado",
+  "organizada",
+  "organizador",
+  "organizacao",
+  "organizar",
+  "arrumar",
+];
+
+const BATHROOM_ORGANIZATION_PRODUCT_MARKERS = [
+  "banheiro",
+  "lavabo",
+  "saboneteira",
+  "porta shampoo",
+  "toalheiro",
+  "porta toalha",
+  "box banheiro",
+  "espelho banheiro",
+  "nicho banheiro",
+  "armario banheiro",
+  "armario de banheiro",
+  "gabinete banheiro",
+  "gabinete de banheiro",
+  "organizador banheiro",
+  "organizador de banheiro",
+  "prateleira banheiro",
+  "prateleira de banheiro",
+  "suporte banheiro",
+  "suporte de banheiro",
+];
+
+const BATHROOM_ORGANIZATION_FALSE_POSITIVE_MARKERS = [
+  "gabinete gamer",
+  "gabinete office",
+  "gabinete atx",
+  "micro atx",
+  "fonte 200w",
+  "fonte 500w",
+  "computador",
+  "pc gamer",
+  "telefone sem fio",
+  "headset",
+  "fone",
+  "cabo",
+  "adaptador",
+  "carregador",
+  "teclado",
+  "mouse",
+  "cartucho",
+  "toner",
+  "ssd",
+  "hdmi",
+  "usb",
+  "camera",
+  "roteador",
+  "notebook",
+  "celular",
+  "smartphone",
+  "monitor",
+  "tv",
+  "furadeira",
+  "parafusadeira",
+  "escova de carvao",
+  "peca",
 ];
 
 const HOME_REFINEMENT_SUGGESTIONS = [
@@ -802,6 +889,13 @@ function homeIntentMatchesProduct(product = {}, intelligence = {}, intent = {}) 
     intelligence.subcategory,
     Array.isArray(intelligence.searchKeywords) ? intelligence.searchKeywords.join(" ") : "",
   ].filter(Boolean).join(" "));
+
+  const bathroomOrganizationIntent = matchesAnyMarker(query, ["banheiro", "lavabo"])
+    && matchesAnyMarker(query, BATHROOM_ORGANIZATION_QUERY_MARKERS);
+  if (bathroomOrganizationIntent) {
+    return matchesAnyMarker(text, BATHROOM_ORGANIZATION_PRODUCT_MARKERS)
+      && !matchesAnyMarker(text, BATHROOM_ORGANIZATION_FALSE_POSITIVE_MARKERS);
+  }
 
   const applicable = HOME_SPECIFIC_MATCHERS.filter((rule) => matchesAnyMarker(query, rule.query));
   if (!applicable.length) return true;

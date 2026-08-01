@@ -584,6 +584,72 @@ test("Busca especifica de banheiro nao recomenda produto de casa sem relacao", a
   assert.ok(!result.products.some((product) => /telefone sem fio/i.test(String(product.displayTitle || product.title || ""))));
 });
 
+test("Banheiro organizado exige evidencia clara de banheiro e rejeita falso positivo de tecnologia", async () => {
+  const orchestrator = new SearchOrchestrator({
+    catalogManager: createCatalogManager([
+      {
+        title: "Organizador Multiuso com Prateleira e Suporte Ajustavel",
+        category: "casa",
+        normalizedCategory: "casa",
+        department: "Casa",
+        productType: "principal",
+        isAccessory: false,
+        marketplace: "mercado_livre",
+        dataMode: "real",
+        sourceType: "telegram_affiliate_export",
+        price: 89.9,
+      },
+      {
+        title: "Gabinete Gamer Micro ATX com Fonte 500W",
+        category: "casa",
+        normalizedCategory: "casa",
+        department: "Casa",
+        productType: "principal",
+        isAccessory: false,
+        marketplace: "infostore",
+        dataMode: "real",
+        sourceType: "xml_feed",
+        price: 219.9,
+      },
+      {
+        title: "Cabo USB-C Reforcado 2 Metros",
+        category: "casa",
+        normalizedCategory: "casa",
+        department: "Casa",
+        productType: "principal",
+        isAccessory: false,
+        marketplace: "amazon",
+        dataMode: "real",
+        sourceType: "verified_partner_offers",
+        price: 29.9,
+      },
+      {
+        title: "Prateleira Banheiro Sem Furo Suporte Ajustavel Saboneteira",
+        category: "casa",
+        normalizedCategory: "casa",
+        department: "Casa",
+        productType: "principal",
+        isAccessory: false,
+        marketplace: "mercado_livre",
+        dataMode: "real",
+        sourceType: "telegram_affiliate_offer",
+        price: 135.19,
+      },
+    ]),
+  });
+
+  const result = await orchestrator.search({
+    query: "banheiro organizado ate 250",
+    mode: "total",
+    totalBudget: 250,
+  });
+
+  const titles = result.products.map((product) => String(product.displayTitle || product.title || ""));
+  assert.equal(result.dataMode, "real");
+  assert.ok(titles.some((title) => /banheiro|saboneteira|prateleira/i.test(title)));
+  assert.ok(!titles.some((title) => /organizador multiuso|gabinete gamer|micro atx|cabo usb/i.test(title)));
+});
+
 test("Parametro publico q alimenta ranking e prioriza console antes de acessorio compativel", async () => {
   const orchestrator = new SearchOrchestrator({
     catalogManager: createCatalogManager([
