@@ -10568,6 +10568,19 @@ footer {
 }
 
 @media (max-width: 560px) {
+  html,
+  body {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  main {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
   .hero-copy h1 {
     max-width: 11ch !important;
     font-size: 31px !important;
@@ -10592,12 +10605,88 @@ footer {
     text-align: left !important;
   }
 
+  .topbar {
+    display: block !important;
+    padding: 10px !important;
+    overflow: hidden !important;
+  }
+
+  .brand {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .brand strong {
+    min-width: 0 !important;
+    font-size: 24px !important;
+  }
+
+  .topbar-actions {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin-top: 10px !important;
+  }
+
   .main-nav {
+    width: 100% !important;
+    min-width: 0 !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 
   .main-nav .topbar-link:nth-child(3) {
     display: none !important;
+  }
+
+  .topbar-link {
+    width: auto !important;
+    min-width: 0 !important;
+    padding: 0 8px !important;
+  }
+
+  .topbar .trust-pill {
+    display: none !important;
+  }
+
+  .hero,
+  .trust-band.trust-band-single,
+  .intentions-section,
+  .compose-section,
+  .categories,
+  .how,
+  .guide-cards-section,
+  footer,
+  .blog-page,
+  .blog-hero,
+  .blog-list-card {
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+
+  .hero-copy,
+  .hero .search-card,
+  .hero .field,
+  .hero .input-icon,
+  .hero .money-input,
+  .hero input,
+  .hero select {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .section-head,
+  .section-head.section-head-tight {
+    display: block !important;
+    width: 100% !important;
+    text-align: left !important;
+  }
+
+  .section-head > *,
+  .section-head h2,
+  .section-head p {
+    justify-self: start !important;
+    text-align: left !important;
   }
 
   .search-categories-hint {
