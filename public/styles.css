@@ -10693,3 +10693,300 @@ footer {
     display: none !important;
   }
 }
+
+/* Final visual stabilization pass: compact, no-overflow mobile experience */
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.brand,
+.topbar-actions,
+.main-nav,
+.hero,
+.hero-copy,
+.search-card,
+.blog-page,
+.blog-hero,
+.blog-list-card {
+  min-width: 0;
+}
+
+.hero-copy h1,
+.blog-hero h1,
+.blog-list-card h2,
+.section-head h2 {
+  text-wrap: balance;
+}
+
+@media (max-width: 560px) {
+  body {
+    background: #f4f8fb !important;
+  }
+
+  .topbar,
+  .hero,
+  .trust-band.trust-band-single,
+  .intentions-section,
+  .compose-section,
+  .categories,
+  .how,
+  .guide-cards-section,
+  footer,
+  .blog-page {
+    width: calc(100vw - 20px) !important;
+    max-width: calc(100vw - 20px) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  .topbar {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    padding: 10px !important;
+    border-radius: 22px !important;
+  }
+
+  .brand {
+    display: grid !important;
+    grid-template-columns: 52px minmax(0, 1fr) !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  .brand-mark {
+    width: 52px !important;
+    height: 52px !important;
+    border-radius: 15px !important;
+  }
+
+  .brand strong {
+    font-size: 24px !important;
+    line-height: 1.05 !important;
+    white-space: nowrap !important;
+  }
+
+  .topbar-actions {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .main-nav {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    width: 100% !important;
+    padding: 5px !important;
+    border-radius: 18px !important;
+    overflow: hidden !important;
+  }
+
+  .main-nav .topbar-link:nth-child(n + 3) {
+    display: none !important;
+  }
+
+  .topbar-link,
+  .topbar-link.active {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 42px !important;
+    padding: 0 8px !important;
+    border-radius: 14px !important;
+    font-size: 13px !important;
+  }
+
+  .topbar .trust-pill {
+    display: none !important;
+  }
+
+  .hero {
+    display: block !important;
+    min-height: 0 !important;
+    margin-top: 10px !important;
+    padding: 14px !important;
+    border-radius: 24px !important;
+    background: #082a54 !important;
+  }
+
+  .hero-copy {
+    padding: 0 !important;
+    text-align: left !important;
+  }
+
+  .hero-logo-chip {
+    max-width: 100% !important;
+    margin: 0 0 14px !important;
+    padding: 6px 10px 6px 6px !important;
+  }
+
+  .hero-logo-chip img {
+    width: 30px !important;
+    height: 30px !important;
+  }
+
+  .hero-copy h1 {
+    max-width: 100% !important;
+    margin: 0 !important;
+    font-size: 34px !important;
+    line-height: 1.02 !important;
+    letter-spacing: 0 !important;
+  }
+
+  .hero-copy p {
+    max-width: 100% !important;
+    margin-top: 12px !important;
+    font-size: 13px !important;
+    line-height: 1.45 !important;
+  }
+
+  .hero .search-card {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 14px 0 0 !important;
+    padding: 10px !important;
+    gap: 10px !important;
+    border-radius: 20px !important;
+    overflow: hidden !important;
+  }
+
+  .mode-tabs,
+  .hero .mode-tabs {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .mode-tabs button,
+  .hero .mode-tabs button {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 0 8px !important;
+  }
+
+  .hero .field,
+  .hero .field-product,
+  .hero #monthsField,
+  .hero #totalField,
+  .hero .submit-button {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .hero .input-icon,
+  .hero .money-input,
+  .hero input,
+  .hero select {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .trust-band.trust-band-single {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    margin-top: 18px !important;
+  }
+
+  .trust-band.trust-band-single article {
+    min-height: 56px !important;
+    padding: 12px 14px !important;
+    border-radius: 17px !important;
+  }
+
+  .trust-band.trust-band-single article strong {
+    font-size: 22px !important;
+  }
+
+  .section-head,
+  .section-head.section-head-tight {
+    display: block !important;
+    margin-bottom: 12px !important;
+  }
+
+  .section-head h2 {
+    max-width: 100% !important;
+    font-size: 27px !important;
+    line-height: 1.05 !important;
+  }
+
+  .section-note {
+    margin-top: 8px !important;
+    font-size: 13px !important;
+  }
+
+  .intent-grid,
+  .compose-grid,
+  .category-grid,
+  .guide-cards-grid,
+  .blog-list {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    overflow: visible !important;
+  }
+
+  .intent-card,
+  .compose-card,
+  .category-grid a[data-category],
+  .category-grid article,
+  .guide-card,
+  .blog-list-card {
+    min-height: 0 !important;
+    padding: 14px !important;
+    border-radius: 18px !important;
+    overflow: hidden !important;
+  }
+
+  .blog-page {
+    margin-top: 12px !important;
+    padding: 0 0 36px !important;
+  }
+
+  .blog-hero {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 22px 18px !important;
+    border-radius: 24px !important;
+    overflow: hidden !important;
+  }
+
+  .blog-hero h1 {
+    max-width: 100% !important;
+    margin-top: 10px !important;
+    font-size: 33px !important;
+    line-height: 1.02 !important;
+  }
+
+  .blog-hero p {
+    max-width: 100% !important;
+    margin-top: 12px !important;
+    font-size: 13px !important;
+    line-height: 1.45 !important;
+  }
+
+  .blog-list-card h2 {
+    max-width: 100% !important;
+    font-size: 22px !important;
+    line-height: 1.1 !important;
+  }
+
+  .blog-list-card p {
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+  }
+
+  .blog-card-actions {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+}
