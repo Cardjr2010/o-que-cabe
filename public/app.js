@@ -714,6 +714,9 @@ function buildDecisionCards(data = {}) {
         const product = item.product || {};
         const priceValue = Number(product.finalPrice || product.price || 0);
         const installment = buildInstallmentSummary(product);
+        const title = activeBrowseMode === "category"
+          ? resolveCompactProductTitle(product, 44)
+          : resolveProductTitle(product);
         return `
           <article class="decision-summary-card">
             <div class="decision-summary-top">
@@ -721,7 +724,7 @@ function buildDecisionCards(data = {}) {
               <span class="decision-summary-label">${escapeHtml(singleCardMode ? "Melhor compra encontrada" : item.title)}</span>
               <span class="decision-summary-source">${escapeHtml(resolveSourceLabel(product))}</span>
             </div>
-            <h3>${escapeHtml(resolveProductTitle(product))}</h3>
+            <h3 title="${escapeHtml(resolveProductTitle(product))}">${escapeHtml(title)}</h3>
             <strong class="decision-summary-price">${formatPrice(priceValue)}</strong>
             <p class="decision-summary-meta">${escapeHtml(installment.short)}</p>
             <p class="decision-summary-note">${escapeHtml(singleCardMode ? "Única oferta principal confirmada para esta busca no catálogo atual." : item.note)}</p>
@@ -788,7 +791,7 @@ function buildCategoryDecisionHeader(data = {}, products = []) {
       <div>
         <p class="panel-label">Categoria</p>
         <h3>${escapeHtml(label)}</h3>
-        <p>Produtos publicados nesta área, com ordenação por recomendação, menor preço e melhor parcelamento.</p>
+        <p>Escolha por recomendação, preço ou parcela. Detalhes aparecem só quando você pedir.</p>
       </div>
       <div class="category-results-metrics">
         <span><strong>${total}</strong> encontrados</span>
@@ -1965,7 +1968,7 @@ form.addEventListener("submit", async (event) => {
   budgetTotal.textContent = activeBrowseMode ? "Categoria" : currency.format(effectiveCeiling);
     if (activeBrowseMode) {
       budgetLine.textContent = "sem orçamento aplicado";
-      if (marketline) marketline.textContent = "Produtos publicados. Ordene por recomendação, preço ou parcela.";
+      if (marketline) marketline.textContent = "Navegue por recomendação, preço ou parcela. Abra detalhes só quando precisar.";
       if (monthlyLabel) monthlyLabel.textContent = "Máx. mensal";
       if (monthsField) monthsField.hidden = true;
       if (totalField) totalField.hidden = false;

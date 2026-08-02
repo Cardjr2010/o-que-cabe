@@ -1487,11 +1487,12 @@ export default class SearchOrchestrator {
     const enabledProviders = providerEntries.filter(({ provider }) => canUseMarketplaceProvider(provider));
     const potentialSources = providerEntries
       .filter(({ source, provider }) => {
-        if (source === "mercado_livre" && this.marketplaceSearchProvider) return true;
         const diagnostics = typeof provider?.getDiagnostics === "function" ? provider.getDiagnostics() : null;
         if (!diagnostics) return true;
         return Boolean(
-          diagnostics.hasAccessToken
+          diagnostics.configured
+          || diagnostics.hasCatalog
+          || diagnostics.hasAccessToken
           || diagnostics.hasRefreshToken
           || diagnostics.hasSearchEndpoint
           || diagnostics.hasKey,
