@@ -614,10 +614,9 @@ export function importTelegramAffiliateHtml({ html = "", inputPath = "", inputDi
   };
 
   if (!dryRun && uniqueProducts.length > 0) {
-  for (const seedPath of seedPaths) {
-    const currentProducts = readSeedProducts(seedPath);
+    const canonicalProducts = readSeedProducts(seedPaths[0]);
     const incomingIds = new Set(uniqueProducts.map((product) => String(product.id || product.externalId || "").trim()).filter(Boolean));
-    const baseProducts = currentProducts.filter((product) => !incomingIds.has(String(product.id || product.externalId || "").trim()));
+    const baseProducts = canonicalProducts.filter((product) => !incomingIds.has(String(product.id || product.externalId || "").trim()));
     const existingIds = new Set(baseProducts.map((product, index) => String(product.id || product.externalId || `existing-${index}`)));
     const nextProducts = [...baseProducts];
     let added = 0;
@@ -627,23 +626,25 @@ export function importTelegramAffiliateHtml({ html = "", inputPath = "", inputDi
       nextProducts.push(product);
       added += 1;
     }
-    fs.writeFileSync(seedPath, `${JSON.stringify(nextProducts, null, 2)}\n`);
-    report[seedPath.replace(rootDir + path.sep, "").replace(/\\/g, "/")] = {
-      before: currentProducts.length,
-      updatedExistingTelegramAffiliate: currentProducts.length - baseProducts.length,
-      added,
-      after: nextProducts.length,
+    for (const seedPath of seedPaths) {
+      const currentProducts = readSeedProducts(seedPath);
+      fs.writeFileSync(seedPath, `${JSON.stringify(nextProducts, null, 2)}\n`);
+      report[seedPath.replace(rootDir + path.sep, "").replace(/\\/g, "/")] = {
+        before: currentProducts.length,
+        updatedExistingTelegramAffiliate: canonicalProducts.length - baseProducts.length,
+        added,
+        after: nextProducts.length,
+      };
+    }
+    const metadata = updateMetadata(readSeedProducts(seedPaths[0]));
+    report.metadata = {
+      publishedCount: metadata.publishedCount,
+      analyzedCount: metadata.analyzedCount,
+      sources: metadata.sources.map(({ source, publishedCount }) => ({ source, publishedCount })),
     };
-  }
-  const metadata = updateMetadata(readSeedProducts(seedPaths[0]));
-  report.metadata = {
-    publishedCount: metadata.publishedCount,
-    analyzedCount: metadata.analyzedCount,
-    sources: metadata.sources.map(({ source, publishedCount }) => ({ source, publishedCount })),
-  };
   } else if (!dryRun) {
-  report.noop = true;
-  report.reason = "Nenhum produto com preco, link afiliado e titulo foi confirmado; seeds preservadas.";
+    report.noop = true;
+    report.reason = "Nenhum produto com preco, link afiliado e titulo foi confirmado; seeds preservadas.";
   }
 
   const reportPath = path.join(rootDir, "RELATORIO_IMPORT_TELEGRAM_AFILIADOS.md");
