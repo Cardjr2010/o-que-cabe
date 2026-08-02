@@ -12099,3 +12099,639 @@ body.category-active .result-card.result-card-slim .market-box {
     font-size: 9px !important;
   }
 }
+
+/* Android TV reference pass: app-like focus, clean rails, fewer stacked blocks. */
+body {
+  background:
+    radial-gradient(circle at 16% 0%, rgba(33, 113, 179, 0.24), transparent 30%),
+    linear-gradient(180deg, #061423 0%, #eef5f9 42%, #eef5f9 100%) !important;
+}
+
+.topbar,
+.hero,
+.home-secondary-section,
+.results-area,
+footer {
+  box-shadow: 0 22px 60px rgba(5, 18, 32, 0.12) !important;
+}
+
+.topbar {
+  background: rgba(255, 255, 255, 0.94) !important;
+  backdrop-filter: blur(18px);
+}
+
+.hero {
+  background:
+    radial-gradient(circle at 92% 12%, rgba(75, 153, 209, 0.24), transparent 28%),
+    linear-gradient(135deg, #071322 0%, #092b51 58%, #0d3b67 100%) !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+.hero-copy h1,
+.hero-copy p,
+.hero-logo-chip {
+  color: #fff !important;
+}
+
+.hero-copy p {
+  color: rgba(255, 255, 255, 0.82) !important;
+}
+
+.hero .search-card {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border-color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.intentions-section,
+.categories,
+.guide-cards-section,
+.how,
+footer {
+  background: rgba(255, 255, 255, 0.95) !important;
+}
+
+.section-head h2 {
+  max-width: 760px;
+}
+
+.intent-card,
+.category-card,
+.guide-card,
+.decision-card,
+.department-link {
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease !important;
+}
+
+.intent-card:hover,
+.category-card:hover,
+.guide-card:hover,
+.decision-card:hover,
+.department-link:hover,
+.result-card:hover,
+.decision-summary-card:hover {
+  border-color: rgba(32, 113, 160, 0.42) !important;
+  box-shadow: 0 18px 42px rgba(6, 20, 35, 0.16) !important;
+  transform: translateY(-2px);
+}
+
+@media (min-width: 900px) {
+  .hero {
+    min-height: 510px !important;
+    align-items: center !important;
+  }
+
+  .hero-copy h1 {
+    font-size: clamp(54px, 6.2vw, 88px) !important;
+    line-height: 0.94 !important;
+    letter-spacing: 0 !important;
+  }
+
+  .hero .search-card {
+    max-width: 520px !important;
+  }
+}
+
+@media (max-width: 720px) {
+  body {
+    background:
+      linear-gradient(180deg, #061423 0%, #071a2d 170px, #edf4f8 171px, #edf4f8 100%) !important;
+  }
+
+  .topbar {
+    margin-top: 12px !important;
+    background: rgba(255, 255, 255, 0.96) !important;
+  }
+
+  .hero {
+    min-height: 0 !important;
+    padding: 18px 12px 12px !important;
+    border-radius: 26px !important;
+  }
+
+  .hero-copy {
+    gap: 10px !important;
+  }
+
+  .hero-copy h1 {
+    font-size: clamp(30px, 10.4vw, 43px) !important;
+    line-height: 0.98 !important;
+    max-width: 100% !important;
+  }
+
+  .hero-copy p {
+    font-size: 13px !important;
+    max-width: 28rem !important;
+  }
+
+  .hero-logo-chip {
+    min-height: 38px !important;
+    padding: 5px 10px 5px 5px !important;
+    background: rgba(255, 255, 255, 0.09) !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
+  }
+
+  .hero .search-card {
+    margin-top: 6px !important;
+    padding: 10px !important;
+    border-radius: 20px !important;
+    gap: 8px !important;
+  }
+
+  .hero .field label,
+  .hero .form-label {
+    font-size: 9px !important;
+    margin-bottom: 4px !important;
+  }
+
+  .hero .mode-tabs {
+    min-height: 44px !important;
+  }
+
+  .hero .mode-tabs button,
+  .hero input,
+  .hero select,
+  .hero .input-icon,
+  .hero .money-input,
+  .hero .submit-button {
+    min-height: 42px !important;
+    border-radius: 14px !important;
+  }
+
+  .trust-band {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .trust-band article {
+    min-height: 68px !important;
+    padding: 12px !important;
+    border-radius: 18px !important;
+  }
+
+  .home-secondary-section,
+  footer {
+    border-radius: 24px !important;
+    padding: 18px 14px !important;
+  }
+
+  .section-head {
+    gap: 8px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .section-head h2 {
+    font-size: clamp(25px, 8vw, 32px) !important;
+    line-height: 1.02 !important;
+  }
+
+  .section-note {
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+  }
+
+  .intent-grid,
+  .category-grid,
+  .guide-cards-grid {
+    display: flex !important;
+    gap: 10px !important;
+    overflow-x: auto !important;
+    padding: 1px 2px 6px !important;
+    scroll-snap-type: x mandatory !important;
+  }
+
+  .intent-grid::-webkit-scrollbar,
+  .category-grid::-webkit-scrollbar,
+  .guide-cards-grid::-webkit-scrollbar,
+  .decision-strip::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .intent-card,
+  .category-card,
+  .guide-card {
+    flex: 0 0 76% !important;
+    min-height: 120px !important;
+    max-height: 142px !important;
+    padding: 14px !important;
+    border-radius: 20px !important;
+    scroll-snap-align: start !important;
+    overflow: hidden !important;
+  }
+
+  .intent-card-icon {
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 15px !important;
+  }
+
+  .intent-card-copy strong,
+  .category-card strong,
+  .guide-card h3 {
+    font-size: 17px !important;
+    line-height: 1.08 !important;
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+    overflow: hidden !important;
+  }
+
+  .intent-card-copy span,
+  .category-card span,
+  .guide-card p {
+    font-size: 12px !important;
+    line-height: 1.32 !important;
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+    overflow: hidden !important;
+  }
+
+  .how-grid {
+    display: grid !important;
+    gap: 10px !important;
+  }
+
+  .how article {
+    min-height: 0 !important;
+    padding: 14px !important;
+    border-radius: 18px !important;
+  }
+
+  .how article h3 {
+    font-size: 15px !important;
+    line-height: 1.14 !important;
+  }
+
+  .how article p {
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+  }
+}
+
+@media (max-width: 720px) {
+  body.category-active {
+    background:
+      linear-gradient(180deg, #061423 0%, #071a2d 118px, #edf4f8 119px, #edf4f8 100%) !important;
+  }
+
+  body.category-active .results-area {
+    margin-top: 8px !important;
+  }
+
+  body.category-active .results-area > .section-head h2 {
+    font-size: 28px !important;
+  }
+
+  body.category-active .decision-summary-card {
+    background: #ffffff !important;
+    flex-basis: 74% !important;
+  }
+
+  body.category-active .result-card.result-card-slim {
+    background: #ffffff !important;
+  }
+}
+
+/* Mobile correction: keep the TV feel without a giant hero wall. */
+@media (max-width: 720px) {
+  .topbar {
+    padding: 10px !important;
+    gap: 8px !important;
+  }
+
+  .brand-mark {
+    width: 52px !important;
+    height: 52px !important;
+    flex-basis: 52px !important;
+    border-radius: 15px !important;
+  }
+
+  .brand strong {
+    font-size: 30px !important;
+    line-height: 1 !important;
+  }
+
+  .topbar-actions {
+    gap: 8px !important;
+  }
+
+  .main-nav {
+    padding: 4px !important;
+    border-radius: 18px !important;
+  }
+
+  .topbar-link {
+    min-height: 38px !important;
+    height: 38px !important;
+    border-radius: 14px !important;
+    font-size: 13px !important;
+  }
+
+  .topbar .trust-pill {
+    min-height: 36px !important;
+    padding: 7px 10px !important;
+    border-radius: 16px !important;
+    font-size: 12px !important;
+  }
+
+  .hero {
+    padding: 14px 12px !important;
+    gap: 12px !important;
+  }
+
+  .hero-copy h1 {
+    font-size: clamp(28px, 8.8vw, 34px) !important;
+    line-height: 1 !important;
+  }
+
+  .hero-copy p {
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+  }
+
+  .hero .search-card {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 96px !important;
+    gap: 8px !important;
+    padding: 10px !important;
+  }
+
+  .hero .mode-tabs,
+  .hero .field-product,
+  .hero .submit-button,
+  .hero #totalField {
+    grid-column: 1 / -1 !important;
+  }
+
+  .hero #monthsField {
+    grid-column: 2 !important;
+  }
+
+  .hero .field:not(.field-product):not(#monthsField):not(#totalField) {
+    grid-column: 1 !important;
+  }
+
+  .hero .mode-tabs {
+    min-height: 40px !important;
+  }
+
+  .hero .mode-tabs button,
+  .hero input,
+  .hero select,
+  .hero .input-icon,
+  .hero .money-input,
+  .hero .submit-button {
+    min-height: 38px !important;
+  }
+
+  .hero .submit-button {
+    margin-top: 0 !important;
+  }
+}
+
+/* Mobile final compression: first screen must feel like an app, not a poster. */
+@media (max-width: 720px) {
+  .topbar {
+    border-radius: 22px !important;
+  }
+
+  .brand-mark {
+    width: 44px !important;
+    height: 44px !important;
+    flex-basis: 44px !important;
+    border-radius: 13px !important;
+  }
+
+  .brand strong {
+    font-size: 25px !important;
+  }
+
+  .topbar .trust-pill {
+    display: none !important;
+  }
+
+  .hero {
+    padding: 12px 10px !important;
+    border-radius: 22px !important;
+  }
+
+  .hero-logo-chip {
+    min-height: 32px !important;
+    font-size: 10px !important;
+  }
+
+  .hero-logo-chip img {
+    width: 26px !important;
+    height: 26px !important;
+  }
+
+  .hero-copy h1 {
+    font-size: clamp(25px, 7.4vw, 29px) !important;
+  }
+
+  .hero-copy p {
+    font-size: 11px !important;
+    line-height: 1.28 !important;
+  }
+
+  .hero .search-card {
+    grid-template-columns: minmax(0, 1fr) 82px !important;
+    padding: 8px !important;
+    gap: 6px !important;
+    border-radius: 18px !important;
+  }
+
+  .hero .field label,
+  .hero .form-label {
+    font-size: 8px !important;
+  }
+
+  .hero .mode-tabs {
+    min-height: 34px !important;
+  }
+
+  .hero .mode-tabs button,
+  .hero input,
+  .hero select,
+  .hero .input-icon,
+  .hero .money-input,
+  .hero .submit-button {
+    min-height: 34px !important;
+    border-radius: 12px !important;
+    font-size: 12px !important;
+  }
+}
+
+/* Cine Livre reference translation: app shell first, depth only after the action. */
+@media (max-width: 720px) {
+  body {
+    background:
+      linear-gradient(180deg, #061423 0%, #071a2d 122px, #edf4f8 123px, #edf4f8 100%) !important;
+  }
+
+  main {
+    gap: 10px !important;
+    padding-bottom: 14px !important;
+  }
+
+  .topbar {
+    margin: 8px 8px 0 !important;
+    padding: 8px !important;
+    border-radius: 18px !important;
+  }
+
+  .brand {
+    gap: 8px !important;
+  }
+
+  .brand-mark {
+    width: 38px !important;
+    height: 38px !important;
+    flex-basis: 38px !important;
+    border-radius: 12px !important;
+  }
+
+  .brand strong {
+    font-size: 22px !important;
+    line-height: 1 !important;
+  }
+
+  .main-nav {
+    gap: 4px !important;
+    padding: 3px !important;
+    border-radius: 15px !important;
+  }
+
+  .topbar-link {
+    min-height: 32px !important;
+    height: 32px !important;
+    border-radius: 12px !important;
+    font-size: 12px !important;
+  }
+
+  .hero {
+    margin-top: 8px !important;
+    padding: 10px !important;
+    gap: 8px !important;
+    border-radius: 20px !important;
+  }
+
+  .hero-logo-chip,
+  .search-categories-hint {
+    display: none !important;
+  }
+
+  .hero-copy {
+    gap: 4px !important;
+  }
+
+  .hero-copy h1 {
+    max-width: 100% !important;
+    font-size: clamp(19px, 5.8vw, 22px) !important;
+    line-height: 1.03 !important;
+  }
+
+  .hero-copy p {
+    display: none !important;
+  }
+
+  .hero-copy p strong {
+    font-weight: 800 !important;
+  }
+
+  .hero .search-card {
+    margin-top: 7px !important;
+    grid-template-columns: minmax(0, 1fr) 72px !important;
+    padding: 7px !important;
+    gap: 6px !important;
+    border-radius: 16px !important;
+  }
+
+  .hero .mode-tabs {
+    min-height: 30px !important;
+    padding: 3px !important;
+    border-radius: 12px !important;
+  }
+
+  .hero .mode-tabs button,
+  .hero input,
+  .hero select,
+  .hero .input-icon,
+  .hero .money-input,
+  .hero .submit-button {
+    min-height: 30px !important;
+    border-radius: 11px !important;
+    font-size: 11px !important;
+  }
+
+  .hero .field label,
+  .hero .form-label {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden !important;
+    clip: rect(0 0 0 0) !important;
+  }
+
+  .hero .input-icon {
+    gap: 8px !important;
+    padding-inline: 10px !important;
+  }
+
+  .hero .input-icon svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .hero .money-input {
+    padding-inline: 10px !important;
+  }
+
+  .hero .money-input span {
+    font-size: 11px !important;
+  }
+
+  .hero .submit-button {
+    grid-column: 1 / -1 !important;
+    min-height: 34px !important;
+    font-weight: 900 !important;
+  }
+
+  .trust-band {
+    display: flex !important;
+    gap: 8px !important;
+    overflow-x: auto !important;
+    padding: 0 2px 4px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: 0 !important;
+  }
+
+  .trust-band article {
+    flex: 0 0 168px !important;
+    min-height: 56px !important;
+    padding: 10px 12px !important;
+    border-radius: 16px !important;
+    background: #fff !important;
+  }
+
+  .trust-band strong {
+    font-size: 20px !important;
+    line-height: 1 !important;
+  }
+
+  .trust-band span {
+    font-size: 10px !important;
+    line-height: 1.15 !important;
+  }
+
+  .home-secondary-section,
+  footer {
+    padding: 14px 12px !important;
+    border-radius: 20px !important;
+  }
+
+  .section-head h2 {
+    font-size: clamp(21px, 6.6vw, 27px) !important;
+  }
+}
