@@ -5390,6 +5390,452 @@ footer strong {
   text-decoration: none;
 }
 
+/* Iterative polish 01: cleaner landing rails and tighter decision cards. */
+:root {
+  --oqc-page-max: 1152px;
+  --oqc-card-radius: 18px;
+  --oqc-soft-border: #d9e4ec;
+}
+
+body {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(23, 59, 87, 0.16), transparent 30rem),
+    linear-gradient(180deg, #edf4f8 0%, #f7f9fb 42%, #ffffff 100%) !important;
+}
+
+.topbar,
+.hero,
+.home-secondary-section,
+.categories,
+.how,
+.guide-cards-section,
+footer {
+  width: min(var(--oqc-page-max), calc(100% - 32px)) !important;
+  max-width: var(--oqc-page-max) !important;
+}
+
+.hero {
+  min-height: 390px !important;
+  padding: clamp(24px, 4vw, 44px) !important;
+  border-radius: 22px !important;
+  box-shadow: 0 24px 70px rgba(9, 26, 53, 0.22) !important;
+}
+
+.hero-copy {
+  align-self: center !important;
+}
+
+.hero-copy h1 {
+  max-width: 600px !important;
+  letter-spacing: 0 !important;
+}
+
+.hero-copy p {
+  max-width: 560px !important;
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+
+.hero .search-card {
+  border-radius: 18px !important;
+  box-shadow: 0 20px 48px rgba(9, 26, 53, 0.2) !important;
+}
+
+.home-secondary-section,
+.categories,
+.how,
+.guide-cards-section {
+  margin-top: 30px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.section-head,
+.section-head.section-head-tight {
+  margin-bottom: 16px !important;
+}
+
+.section-head h2,
+.intentions-section .section-head h2,
+.categories .section-head h2,
+.how .section-head h2,
+.guide-cards-section .section-head h2 {
+  max-width: 720px !important;
+  font-size: clamp(28px, 3vw, 40px) !important;
+  line-height: 1.05 !important;
+  letter-spacing: 0 !important;
+}
+
+.section-note,
+.section-head p {
+  max-width: 460px !important;
+  color: #607080 !important;
+}
+
+.intent-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+}
+
+.intent-card {
+  min-height: 108px !important;
+  grid-template-columns: 46px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 14px !important;
+  padding: 16px !important;
+  border: 1px solid var(--oqc-soft-border) !important;
+  border-radius: var(--oqc-card-radius) !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  box-shadow: 0 14px 32px rgba(23, 59, 87, 0.08) !important;
+}
+
+.intent-card::after,
+.intent-card .card-arrow,
+.home-card-arrow {
+  display: none !important;
+  content: none !important;
+}
+
+.intent-card-icon {
+  width: 46px !important;
+  height: 46px !important;
+  border-radius: 14px !important;
+}
+
+.intent-card-copy strong {
+  font-size: clamp(15px, 1.2vw, 18px) !important;
+  line-height: 1.08 !important;
+}
+
+.intent-card-copy span {
+  margin-top: 6px !important;
+  font-size: 13px !important;
+}
+
+.how-grid,
+.category-grid,
+.guide-cards-grid {
+  gap: 12px !important;
+}
+
+.how-grid article,
+.category-grid a[data-category],
+.category-grid article,
+.guide-card,
+.blog-card {
+  border: 1px solid var(--oqc-soft-border) !important;
+  border-radius: var(--oqc-card-radius) !important;
+  box-shadow: 0 14px 34px rgba(23, 59, 87, 0.08) !important;
+}
+
+.how-grid article {
+  min-height: 132px !important;
+  padding: 18px !important;
+}
+
+.how-grid article p {
+  max-width: 34ch !important;
+  margin-bottom: 0 !important;
+}
+
+.category-grid a[data-category],
+.category-grid article {
+  min-height: 112px !important;
+  padding: 18px !important;
+}
+
+.guide-cards-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.guide-card {
+  min-height: 190px !important;
+  padding: 20px !important;
+  overflow: hidden !important;
+}
+
+.guide-card h3,
+.blog-card h3 {
+  display: -webkit-box !important;
+  -webkit-line-clamp: 3 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
+
+body.search-active .results-area,
+body.category-active .results-area {
+  border-radius: 22px !important;
+  padding: clamp(16px, 3vw, 26px) !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  border: 1px solid var(--oqc-soft-border) !important;
+  box-shadow: 0 18px 48px rgba(23, 59, 87, 0.1) !important;
+}
+
+.results-sort {
+  gap: 8px !important;
+}
+
+.results-sort button {
+  min-height: 38px !important;
+  border-radius: 999px !important;
+}
+
+.result-card.result-card-slim {
+  border-radius: 18px !important;
+  border: 1px solid var(--oqc-soft-border) !important;
+  box-shadow: 0 12px 30px rgba(23, 59, 87, 0.08) !important;
+}
+
+.result-card.result-card-slim .result-card-top h2 {
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
+
+@media (max-width: 960px) {
+  .intent-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .topbar,
+  .hero,
+  .home-secondary-section,
+  .categories,
+  .how,
+  .guide-cards-section,
+  footer {
+    width: calc(100% - 16px) !important;
+  }
+
+  .topbar {
+    margin-top: 8px !important;
+    padding: 9px !important;
+    border-radius: 16px !important;
+  }
+
+  .brand-mark {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .brand strong {
+    font-size: 16px !important;
+  }
+
+  .hero {
+    min-height: auto !important;
+    gap: 10px !important;
+    padding: 12px !important;
+    border-radius: 18px !important;
+  }
+
+  .hero-copy h1 {
+    max-width: 22rem !important;
+    font-size: clamp(22px, 7.2vw, 30px) !important;
+    line-height: 0.98 !important;
+  }
+
+  .hero-copy p,
+  .hero-logo-chip,
+  .search-categories-hint {
+    display: none !important;
+  }
+
+  .hero .search-card {
+    padding: 8px !important;
+    border-radius: 16px !important;
+  }
+
+  .hero .mode-tabs {
+    height: 34px !important;
+  }
+
+  .hero input,
+  .hero select,
+  .hero .input-icon,
+  .hero .money-input {
+    height: 36px !important;
+    min-height: 36px !important;
+  }
+
+  .hero .submit-button {
+    height: 40px !important;
+    min-height: 40px !important;
+  }
+
+  .home-secondary-section,
+  .categories,
+  .how,
+  .guide-cards-section {
+    margin-top: 12px !important;
+    padding: 14px !important;
+    border-radius: 18px !important;
+    background: rgba(255, 255, 255, 0.94) !important;
+    border: 1px solid var(--oqc-soft-border) !important;
+  }
+
+  .section-head h2,
+  .intentions-section .section-head h2,
+  .categories .section-head h2,
+  .how .section-head h2,
+  .guide-cards-section .section-head h2,
+  body.search-active .results-area > .section-head h2,
+  #summaryTitle {
+    font-size: clamp(22px, 7vw, 28px) !important;
+    line-height: 1 !important;
+  }
+
+  .section-note,
+  .section-head p {
+    font-size: 13px !important;
+    line-height: 1.35 !important;
+  }
+
+  .intent-grid,
+  .category-grid,
+  .how-grid,
+  .guide-cards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .intent-card,
+  .category-grid a[data-category],
+  .category-grid article {
+    min-height: 72px !important;
+    padding: 10px !important;
+    gap: 8px !important;
+    border-radius: 14px !important;
+  }
+
+  .intent-card-icon {
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 11px !important;
+  }
+
+  .intent-card-copy strong {
+    font-size: 12px !important;
+    line-height: 1.08 !important;
+  }
+
+  .intent-card-copy span {
+    font-size: 10px !important;
+    margin-top: 4px !important;
+  }
+
+  .how-grid article {
+    min-height: 104px !important;
+    padding: 12px !important;
+  }
+
+  .how-grid article p {
+    display: none !important;
+  }
+
+  body.search-active .results-area,
+  body.category-active .results-area {
+    width: calc(100% - 16px) !important;
+    margin-top: 10px !important;
+    padding: 12px !important;
+    border-radius: 18px !important;
+  }
+
+  .results-toolbar {
+    padding: 10px !important;
+    border-radius: 16px !important;
+  }
+
+  .results-sort {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+
+  .results-sort button {
+    min-height: 34px !important;
+    font-size: 11px !important;
+  }
+
+  .category-results-hero {
+    padding: 0 !important;
+    margin-bottom: 10px !important;
+  }
+
+  .category-results-hero h3 {
+    font-size: 24px !important;
+  }
+
+  .category-results-hero p {
+    font-size: 13px !important;
+  }
+
+  .result-card.result-card-slim {
+    display: grid !important;
+    grid-template-columns: 64px minmax(0, 1fr) !important;
+    gap: 10px !important;
+    padding: 10px !important;
+    min-height: 0 !important;
+  }
+
+  .result-card.result-card-slim .result-card-media {
+    align-self: start !important;
+  }
+
+  .result-card.result-card-slim .result-card-media .image-box {
+    width: 64px !important;
+    height: 64px !important;
+    border-radius: 12px !important;
+  }
+
+  .result-card.result-card-slim .result-card-body {
+    gap: 6px !important;
+  }
+
+  .result-card.result-card-slim .store {
+    font-size: 10px !important;
+  }
+
+  .result-card.result-card-slim .result-card-top h2 {
+    font-size: 12px !important;
+    line-height: 1.15 !important;
+    -webkit-line-clamp: 2 !important;
+  }
+
+  .result-slim-facts {
+    gap: 4px !important;
+  }
+
+  .result-slim-facts span {
+    font-size: 10px !important;
+    padding: 3px 7px !important;
+  }
+
+  .result-card.result-card-slim .result-price {
+    font-size: 20px !important;
+  }
+
+  .result-card.result-card-slim .result-installment {
+    font-size: 10px !important;
+  }
+
+  .result-card.result-card-slim .result-card-actions {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 6px !important;
+  }
+
+  .result-card.result-card-slim .result-offer-button,
+  .result-card.result-card-slim .offer-unavailable,
+  .result-card.result-card-slim .result-why summary {
+    min-height: 34px !important;
+    font-size: 11px !important;
+    border-radius: 11px !important;
+  }
+}
+
 /* Final desktop QA override after all legacy layers. */
 @media (min-width: 721px) {
   #catalogTrustBand,
@@ -15054,5 +15500,425 @@ footer {
   .home-card-arrow {
     font-size: 16px !important;
     opacity: 0.65 !important;
+  }
+}
+
+/* Final polish pass 02: this must stay after legacy visual overrides. */
+:root {
+  --oqc-page-max: 1152px;
+  --oqc-card-radius: 18px;
+  --oqc-soft-border: #d9e4ec;
+}
+
+.topbar,
+.hero,
+.home-secondary-section,
+.categories,
+.how,
+.guide-cards-section,
+footer {
+  width: min(var(--oqc-page-max), calc(100% - 32px)) !important;
+  max-width: var(--oqc-page-max) !important;
+}
+
+.hero {
+  min-height: 390px !important;
+  padding: clamp(24px, 4vw, 44px) !important;
+  border-radius: 22px !important;
+}
+
+.hero-copy h1 {
+  max-width: 600px !important;
+  letter-spacing: 0 !important;
+}
+
+.hero-copy p {
+  max-width: 560px !important;
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+
+.home-secondary-section,
+.categories,
+.how,
+.guide-cards-section {
+  margin-top: 30px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.section-head,
+.section-head.section-head-tight {
+  margin-bottom: 16px !important;
+}
+
+.section-head h2,
+.intentions-section .section-head h2,
+.categories .section-head h2,
+.how .section-head h2,
+.guide-cards-section .section-head h2 {
+  max-width: 720px !important;
+  font-size: clamp(28px, 3vw, 40px) !important;
+  line-height: 1.05 !important;
+  letter-spacing: 0 !important;
+  text-align: left !important;
+}
+
+.section-note,
+.section-head p {
+  max-width: 460px !important;
+  color: #607080 !important;
+  text-align: left !important;
+}
+
+.intent-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+}
+
+.intent-card {
+  min-height: 108px !important;
+  grid-template-columns: 46px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 14px !important;
+  padding: 16px !important;
+  border: 1px solid var(--oqc-soft-border) !important;
+  border-radius: var(--oqc-card-radius) !important;
+}
+
+.intent-card::after,
+.intent-card .card-arrow,
+.home-card-arrow {
+  display: none !important;
+  content: none !important;
+}
+
+.intent-card-icon {
+  width: 46px !important;
+  height: 46px !important;
+  border-radius: 14px !important;
+}
+
+.intent-card-copy strong {
+  font-size: clamp(15px, 1.2vw, 18px) !important;
+  line-height: 1.08 !important;
+}
+
+.intent-card-copy span {
+  margin-top: 6px !important;
+  font-size: 13px !important;
+}
+
+.how-grid,
+.category-grid,
+.guide-cards-grid {
+  gap: 12px !important;
+}
+
+.how-grid article,
+.category-grid a[data-category],
+.category-grid article,
+.guide-card,
+.blog-card,
+.blog-list-card {
+  border: 1px solid var(--oqc-soft-border) !important;
+  border-radius: var(--oqc-card-radius) !important;
+}
+
+.how-grid article {
+  min-height: 132px !important;
+  padding: 18px !important;
+}
+
+.category-grid a[data-category],
+.category-grid article {
+  min-height: 112px !important;
+  padding: 18px !important;
+}
+
+.guide-cards-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.guide-card h3,
+.blog-card h3,
+.blog-list-card h2 {
+  display: -webkit-box !important;
+  -webkit-line-clamp: 3 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
+
+body.search-active .results-area,
+body.category-active .results-area {
+  border-radius: 22px !important;
+  padding: clamp(16px, 3vw, 26px) !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  border: 1px solid var(--oqc-soft-border) !important;
+  box-shadow: 0 18px 48px rgba(23, 59, 87, 0.1) !important;
+}
+
+.results-sort {
+  gap: 8px !important;
+}
+
+.results-sort button {
+  min-height: 38px !important;
+  border-radius: 999px !important;
+}
+
+.result-card.result-card-slim {
+  border-radius: 18px !important;
+  border: 1px solid var(--oqc-soft-border) !important;
+}
+
+.result-card.result-card-slim .result-card-top h2 {
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
+
+@media (max-width: 960px) {
+  .intent-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .topbar,
+  .hero,
+  .home-secondary-section,
+  .categories,
+  .how,
+  .guide-cards-section,
+  footer,
+  body.search-active .results-area,
+  body.category-active .results-area {
+    width: calc(100% - 16px) !important;
+  }
+
+  .topbar {
+    margin-top: 8px !important;
+    padding: 9px !important;
+    border-radius: 16px !important;
+  }
+
+  .brand-mark {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .brand strong {
+    font-size: 16px !important;
+  }
+
+  .hero {
+    min-height: auto !important;
+    gap: 10px !important;
+    padding: 12px !important;
+    border-radius: 18px !important;
+  }
+
+  .hero-copy h1 {
+    max-width: 22rem !important;
+    font-size: clamp(22px, 7.2vw, 30px) !important;
+    line-height: 0.98 !important;
+  }
+
+  .hero-copy p,
+  .hero-logo-chip,
+  .search-categories-hint {
+    display: none !important;
+  }
+
+  .hero .search-card {
+    padding: 8px !important;
+    border-radius: 16px !important;
+  }
+
+  .hero .mode-tabs {
+    height: 34px !important;
+  }
+
+  .hero input,
+  .hero select,
+  .hero .input-icon,
+  .hero .money-input {
+    height: 36px !important;
+    min-height: 36px !important;
+  }
+
+  .hero .submit-button {
+    height: 40px !important;
+    min-height: 40px !important;
+  }
+
+  .home-secondary-section,
+  .categories,
+  .how,
+  .guide-cards-section {
+    margin-top: 12px !important;
+    padding: 14px !important;
+    border-radius: 18px !important;
+    background: rgba(255, 255, 255, 0.94) !important;
+    border: 1px solid var(--oqc-soft-border) !important;
+  }
+
+  .section-head h2,
+  .intentions-section .section-head h2,
+  .categories .section-head h2,
+  .how .section-head h2,
+  .guide-cards-section .section-head h2,
+  body.search-active .results-area > .section-head h2,
+  #summaryTitle {
+    font-size: clamp(22px, 7vw, 28px) !important;
+    line-height: 1 !important;
+  }
+
+  .section-note,
+  .section-head p {
+    font-size: 13px !important;
+    line-height: 1.35 !important;
+  }
+
+  .intent-grid,
+  .category-grid,
+  .how-grid,
+  .guide-cards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .intent-card,
+  .category-grid a[data-category],
+  .category-grid article {
+    min-height: 72px !important;
+    padding: 10px !important;
+    gap: 8px !important;
+    border-radius: 14px !important;
+  }
+
+  .intent-card-icon {
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 11px !important;
+  }
+
+  .intent-card-copy strong {
+    font-size: 12px !important;
+    line-height: 1.08 !important;
+  }
+
+  .intent-card-copy span {
+    font-size: 10px !important;
+    margin-top: 4px !important;
+  }
+
+  .how-grid article {
+    min-height: 104px !important;
+    padding: 12px !important;
+  }
+
+  .how-grid article p {
+    display: none !important;
+  }
+
+  body.search-active .results-area,
+  body.category-active .results-area {
+    margin-top: 10px !important;
+    padding: 12px !important;
+    border-radius: 18px !important;
+  }
+
+  .results-toolbar {
+    padding: 10px !important;
+    border-radius: 16px !important;
+  }
+
+  .results-sort {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+
+  .results-sort button {
+    min-height: 34px !important;
+    font-size: 11px !important;
+  }
+
+  .category-results-hero {
+    padding: 0 !important;
+    margin-bottom: 10px !important;
+  }
+
+  .category-results-hero h3 {
+    font-size: 24px !important;
+  }
+
+  .category-results-hero p {
+    font-size: 13px !important;
+  }
+
+  .result-card.result-card-slim {
+    display: grid !important;
+    grid-template-columns: 64px minmax(0, 1fr) !important;
+    gap: 10px !important;
+    padding: 10px !important;
+    min-height: 0 !important;
+  }
+
+  .result-card.result-card-slim .result-card-media {
+    align-self: start !important;
+  }
+
+  .result-card.result-card-slim .result-card-media .image-box {
+    width: 64px !important;
+    height: 64px !important;
+    border-radius: 12px !important;
+  }
+
+  .result-card.result-card-slim .result-card-body {
+    gap: 6px !important;
+  }
+
+  .result-card.result-card-slim .store {
+    font-size: 10px !important;
+  }
+
+  .result-card.result-card-slim .result-card-top h2 {
+    font-size: 12px !important;
+    line-height: 1.15 !important;
+    -webkit-line-clamp: 2 !important;
+  }
+
+  .result-slim-facts {
+    gap: 4px !important;
+  }
+
+  .result-slim-facts span {
+    font-size: 10px !important;
+    padding: 3px 7px !important;
+  }
+
+  .result-card.result-card-slim .result-price {
+    font-size: 20px !important;
+  }
+
+  .result-card.result-card-slim .result-installment {
+    font-size: 10px !important;
+  }
+
+  .result-card.result-card-slim .result-card-actions {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 6px !important;
+  }
+
+  .result-card.result-card-slim .result-offer-button,
+  .result-card.result-card-slim .offer-unavailable,
+  .result-card.result-card-slim .result-why summary {
+    min-height: 34px !important;
+    font-size: 11px !important;
+    border-radius: 11px !important;
   }
 }

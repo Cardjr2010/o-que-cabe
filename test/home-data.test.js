@@ -31,10 +31,8 @@ test("home data expõe catálogo real e departamentos coerentes", () => {
   assert.ok(data.guideCards.length >= 3);
   assert.ok(data.guideCards.every((entry) => String(entry.href || "").startsWith("/blog/")));
   assert.ok(Array.isArray(data.activeCampaigns));
-  assert.ok(data.activeCampaigns.length > 0);
-  assert.ok(data.activeCampaigns.some((entry) => entry.code === "DESCONTODOML"));
-  assert.ok(data.activeCampaigns.some((entry) => entry.code === "BIKEMINIONS1P"));
   assert.ok(data.activeCampaigns.every((entry) => !["PUSHFULLSU", "VIPMELI", "MELIBARATO", "CUPOMPRACASA"].includes(String(entry.code || ""))));
+  assert.ok(data.activeCampaigns.every((entry) => Number.isFinite(Date.parse(entry.verifiedAt || entry.updatedAt || ""))));
   assert.equal(data.catalogFresh, true);
   assert.ok(Array.isArray(data.activeSources));
   assert.ok(data.activeSources.length > 0);

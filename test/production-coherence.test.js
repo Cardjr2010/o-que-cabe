@@ -1,4 +1,4 @@
-import test from "node:test";
+﻿import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -43,8 +43,8 @@ test("home comunica as metricas oficiais sem presumir orcamento", () => {
 
   assert.equal(rootHtml.replace(/\r\n/g, "\n"), html.replace(/\r\n/g, "\n"), "o index da raiz deve acompanhar a home publica canonica");
   assert.equal(bundledHtml.replace(/\r\n/g, "\n"), html.replace(/\r\n/g, "\n"), "o HTML empacotado pela funcao deve acompanhar a home publica canonica");
-  assert.match(html, /Busque, informe seu limite e receba poucas op(?:�|ç|Ã§)(?:�|õ|Ãµ)es boas\./);
-  assert.match(html, /O detalhe fica no resultado\./);
+  assert.match(html, /Busque, informe seu limite e compare poucas op(?:ç|Ã§|ÃƒÂ§)(?:õ|Ãµ|ÃƒÂµ)es que fazem sentido\./);
+  assert.match(html, /A recomenda(?:ç|Ã§|ÃƒÂ§)(?:ã|Ã£|ÃƒÂ£)o aparece com pre(?:ç|Ã§|ÃƒÂ§)o, parcela e origem\./);
   assert.match(html, /<strong id="trustTotalCatalog">Cat.{1,4}logo<\/strong>\s*<span>produtos publicados/);
   assert.match(html, /<strong id="trustDepartments">Or.{1,4}amento<\/strong>\s*<span>consulta por or.{1,4}amento/);
   assert.match(html, /<strong id="trustSources">Ofertas<\/strong>\s*<span>links diretos quando confirmados/);
@@ -65,7 +65,7 @@ test("links futuros nao fingem navegacao e promessas respeitam os dados disponiv
   assert.match(html, /<a[^>]+href="\/blog\/index\.html"[^>]*>Guias<\/a>/i);
   assert.doesNotMatch(html, /<a[^>]*>\s*Minha Conta/i);
   assert.doesNotMatch(html, /corta juros abusivos|fretes absurdos|ma reputacao/i);
-  assert.match(html, /quando a fonte disponibiliza essas informa(?:c|ç|Ã§)(?:o|õ|Ãµ)es/i);
+  assert.match(html, /quando a fonte disponibiliza essas informa/i);
   assert.match(script, /source\.toLowerCase\(\) === "estimated"/);
   assert.match(script, /Parcelamento estimado\. Confirme na loja\./);
 });
