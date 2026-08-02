@@ -1610,7 +1610,7 @@ function renderGuideCards(items = []) {
       <h3>${escapeHtml(item.title || "Guia de compra")}</h3>
       <p>${escapeHtml(item.description || "Conteúdo para decidir melhor antes da compra.")}</p>
       <div class="guide-card-actions">
-        <a href="${escapeHtml(item.href || "/blog/")}">Ler guia</a>
+        <a href="${escapeHtml(item.href || "/blog/index.html")}">Ler guia</a>
         <button type="button" data-query="${escapeHtml(item.query || item.category || "")}">Buscar</button>
       </div>
     </article>

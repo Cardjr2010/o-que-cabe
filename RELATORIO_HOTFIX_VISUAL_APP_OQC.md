@@ -15,6 +15,8 @@ O foco foi remover a sensacao de pagina baguncada/relatorio e aproximar a navega
 - Os cards de intencao apareciam como trilho cortado em mobile.
 - A pagina de categoria usava header grande por regra especifica de `category-active`.
 - A tela sem resultado estava correta na logica, mas pesada visualmente.
+- A pagina de Guias/Blog ainda tinha cards altos demais no mobile.
+- O link publico de Guias apontava para `/blog/`, que podia cair em `Arquivo nao encontrado` em ambiente sem fallback.
 - Havia divergencia entre arquivos espelhados de estilo: `styles.css`, `public/styles.css` e `api/static/styles.css`.
 
 ## Correcoes feitas
@@ -24,9 +26,11 @@ O foco foi remover a sensacao de pagina baguncada/relatorio e aproximar a navega
 - Removida a faixa de metricas do catalogo da primeira dobra mobile.
 - Transformados atalhos de compra em grid 2 colunas sem corte lateral.
 - Corrigido seletor real dos atalhos: `intent-grid`.
-- Corrigidas regras especificas de categoria/busca que forçavam logo e titulo grandes.
+- Corrigidas regras especificas de categoria/busca que forcavam logo e titulo grandes.
 - Compactados filtros, resumo de categoria e cards de produto.
 - Mantida a decisao honesta para buscas sem cobertura: nao inventar produto e sugerir refinamento.
+- Compactada a pagina de Guias/Blog no mobile, com hero menor, cards em coluna e botoes claros.
+- Corrigido o link publico de Guias para `/blog/index.html`.
 - Sincronizados os tres arquivos CSS usados pelo runtime/deploy.
 
 ## Estado do catalogo
@@ -54,6 +58,11 @@ Principais arquivos:
 - `home-local-fix9.png` - home mobile apos ajuste.
 - `categoria-celulares-local-fix8.png` - categoria mobile apos ajuste.
 - `busca-banheiro-local-fix9.png` - busca sem oferta apos ajuste.
+- `blog-local-fix-final2.png` - guias/blog mobile apos ajuste.
+- `home-producao-521ca68-mobile.png` - home em producao no commit `521ca68`.
+- `categoria-celulares-producao-521ca68-mobile.png` - categoria em producao no commit `521ca68`.
+- `busca-banheiro-producao-521ca68-mobile.png` - busca em producao no commit `521ca68`.
+- `blog-producao-521ca68-mobile.png` - blog em producao antes do refinamento final.
 
 ## Validacoes
 
@@ -66,5 +75,4 @@ Principais arquivos:
 
 ## Observacoes
 
-Este hotfix nao altera seed, motores financeiros, importadores, ranking ou logica de fontes. A mudanca e visual e de espelhamento de arquivos estaticos.
-
+Este hotfix nao altera seed, motores financeiros, importadores, ranking ou logica de fontes. A mudanca e visual, de link de blog e de espelhamento de arquivos estaticos.
