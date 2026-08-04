@@ -40,3 +40,12 @@ test("previewTelegramAffiliateHtml accepts concrete products and rejects coupon-
   assert.equal(result.products[0].link, "https://meli.la/1XT472J");
   assert.match(result.rejectedItems[0].reasons.join(" "), /título genérico/);
 });
+
+test("previewTelegramAffiliateHtml accepts ISO date filters", () => {
+  const result = previewTelegramAffiliateHtml({ html: telegramHtml, date: "2026-07-31", max: 10 });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.date, "31.07.2026");
+  assert.equal(result.accepted, 1);
+  assert.equal(result.bySource.mercado_livre, 1);
+});

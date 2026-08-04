@@ -92,6 +92,20 @@ function dateKeyFromTitle(value = "") {
   return match ? match[0] : "";
 }
 
+function normalizeTelegramDateKey(value = "") {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^\d{2}\.\d{2}\.\d{4}$/.test(raw)) return raw;
+
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return `${iso[3]}.${iso[2]}.${iso[1]}`;
+
+  const slash = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (slash) return `${slash[1]}.${slash[2]}.${slash[3]}`;
+
+  return raw;
+}
+
 function todayTelegramDateKey(now = new Date()) {
   const formatter = new Intl.DateTimeFormat("pt-BR", {
     timeZone: "America/Sao_Paulo",
@@ -541,7 +555,7 @@ function uniqueAcceptedCandidates(candidates = [], max = 80) {
 }
 
 export function previewTelegramAffiliateHtml({ html = "", date = "", max = 80 } = {}) {
-  const importDateKey = date || latestTelegramDateKey(html);
+  const importDateKey = normalizeTelegramDateKey(date) || latestTelegramDateKey(html);
   const analyzed = extractMessages(html).map((rawMessage) => analyzeCandidate(rawMessage, importDateKey));
   const acceptedCandidates = uniqueAcceptedCandidates(analyzed, max);
   const products = acceptedCandidates.map((candidate) => {
@@ -594,7 +608,7 @@ export function previewTelegramAffiliateHtml({ html = "", date = "", max = 80 } 
 }
 
 export function importTelegramAffiliateHtml({ html = "", inputPath = "", inputDir = "", date = "", max = 80, dryRun = false } = {}) {
-  const importDateKey = date || latestTelegramDateKey(html);
+  const importDateKey = normalizeTelegramDateKey(date) || latestTelegramDateKey(html);
   const analyzed = extractMessages(html).map((rawMessage) => analyzeCandidate(rawMessage, importDateKey));
   const candidates = uniqueAcceptedCandidates(analyzed, max);
   const uniqueProducts = candidates.map((candidate) => normalizeProduct(candidate, inputDir || (inputPath ? path.dirname(inputPath) : rootDir)));
