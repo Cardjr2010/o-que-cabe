@@ -215,11 +215,12 @@ test("intake da pagina de mais vendidos da Amazon entra com ASIN e tag de afilia
   assert.ok(AMAZON_BESTSELLERS_OFFERS.every((offer) => offer.asin && offer.permalink.includes(`/dp/${offer.asin}`)));
   assert.ok(AMAZON_BESTSELLERS_OFFERS.every((offer) => offer.affiliateUrl.includes("tag=candombledesm-20")));
   assert.ok(AMAZON_BESTSELLERS_OFFERS.every((offer) => offer.price > 0));
+  assert.ok(AMAZON_BESTSELLERS_OFFERS.some((offer) => /air fryer|aspirador/i.test(String(offer.title || ""))));
 
   const provider = new VerifiedAffiliateOfferProvider({
-    referenceDate: new Date("2026-07-29T12:00:00.000Z"),
+    referenceDate: new Date("2026-08-05T18:00:00.000Z"),
   });
-  const result = await provider.searchProducts("garrafa termica matterhorn", { limit: 5 });
+  const result = await provider.searchProducts("air fryer philco", { limit: 5 });
 
-  assert.ok(result.products.some((product) => product.asin === "B07K8XJF9D"));
+  assert.ok(result.products.some((product) => product.asin === "B0DY3G3MJW"));
 });

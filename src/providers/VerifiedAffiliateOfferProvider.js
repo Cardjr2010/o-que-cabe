@@ -63,6 +63,19 @@ function getSpecificModelTokens(query = "") {
   return [...new Set(tokens)];
 }
 
+function getRequiredProductGroups(query = "") {
+  const normalizedQuery = normalizeText(query);
+  const groups = [
+    ["air fryer", "fritadeira"],
+    ["aspirador", "aspirador robo", "robo aspirador"],
+    ["mop"],
+    ["liquidificador"],
+    ["cafeteira"],
+    ["lavadora"],
+  ];
+  return groups.filter((group) => group.some((term) => normalizedQuery.includes(normalizeText(term))));
+}
+
 function isRelevantOfferForQuery(offer = {}, query = "") {
   const normalizedQuery = normalizeText(query);
   const strictTitleHaystack = [
@@ -80,6 +93,11 @@ function isRelevantOfferForQuery(offer = {}, query = "") {
   ].filter(Boolean).join(" ");
 
   if (isPrincipalDeviceQuery(normalizedQuery) && isAccessoryTitle(haystack) && !isAccessoryTitle(normalizedQuery)) {
+    return false;
+  }
+
+  const requiredProductGroups = getRequiredProductGroups(normalizedQuery);
+  if (requiredProductGroups.length && !requiredProductGroups.every((group) => hasAnyToken(haystack, group))) {
     return false;
   }
 

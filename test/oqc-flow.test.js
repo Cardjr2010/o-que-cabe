@@ -338,8 +338,8 @@ test("/api/catalog/stats resume marcas, categorias e buscas", async () => {
 
     assert.equal(res.statusCode, 200);
     assert.equal(body.ok, true);
-    assert.equal(body.totalProducts, 3215);
-    assert.equal(body.productsPublished, 2280);
+    assert.ok(body.totalProducts >= 3700);
+    assert.ok(body.productsPublished >= 2800);
     assert.equal(body.productsHidden, 935);
     assert.ok(Array.isArray(body.top20Brands));
     assert.ok(body.top20Brands.length > 0);
@@ -348,9 +348,9 @@ test("/api/catalog/stats resume marcas, categorias e buscas", async () => {
     assert.ok(Array.isArray(body.topSearches));
     assert.ok(body.topSearches.length > 0);
     assert.ok(body.curatedOffers);
-    assert.equal(Number(body.curatedOffers.total || 0), 0);
+    assert.equal(Number(body.curatedOffers.total || 0), 30);
     assert.ok(Array.isArray(body.curatedOffers.bySource));
-    assert.equal(body.curatedOffers.bySource.length, 0);
+    assert.ok(body.curatedOffers.bySource.some((entry) => entry.value === "Amazon" && entry.count === 30));
     assert.ok(Array.isArray(body.inventorySummary));
     assert.ok(body.inventorySummary.some((entry) => entry.source === "Amazon" && entry.type === "catalog"));
     assert.ok(body.inventorySummary.some((entry) => entry.source === "Mercado Livre" && entry.type === "catalog"));

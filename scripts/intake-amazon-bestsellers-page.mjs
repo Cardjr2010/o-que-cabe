@@ -5,6 +5,7 @@ import { resolveProjectPath } from "../src/runtime/project-root.js";
 const AMAZON_TAG = process.env.AMAZON_ASSOCIATE_TAG || "candombledesm-20";
 const DEFAULT_SOURCE_URL = "https://www.amazon.com.br/gp/bestsellers?&linkCode=ll2&tag=candombledesm-20&linkId=23c060689b1aed809c2085551d458441&ref_=as_li_ss_tl";
 const DEFAULT_HTML_PATH = resolveProjectPath(".tmp-amazon-intake", "bestsellers.html");
+const SOURCE_URL = process.argv.find((arg) => arg.startsWith("--url="))?.split("=")[1] || DEFAULT_SOURCE_URL;
 
 function cleanText(value = "") {
   return String(value || "")
@@ -75,19 +76,55 @@ function detectBrand(title = "") {
 
 function inferCategory(title = "") {
   const text = normalizeText(title);
+  if (/\b(livro|box|romance|trilogia|edicao|quadrinhos|manga|vade mecum|shakespeare|orwell|duna|hobbit|camus|metamorfose|neuroanatomia|fisiologia)\b/.test(text)) return { category: "livro", department: "Livros" };
   if (/\b(iphone|smartphone|celular|galaxy|redmi|moto g|xiaomi)\b/.test(text)) return { category: "celular", department: "Celulares" };
   if (/\b(notebook|laptop|macbook|chromebook)\b/.test(text)) return { category: "notebook", department: "Notebooks" };
   if (/\b(monitor|144hz|240hz|ultrawide)\b/.test(text)) return { category: "monitor", department: "Monitores" };
   if (/\b(tv|smart tv|televisao|oled|qled)\b/.test(text)) return { category: "tv", department: "TVs" };
-  if (/\b(fone|headset|earbud|caixa de som|soundbar)\b/.test(text)) return { category: "audio", department: "Audio" };
+  if (/\b(fone|headset|headphone|earbud|earbuds|cancelamento de ruido|caixa de som|soundbar)\b/.test(text)) return { category: "audio", department: "Audio" };
   if (/\b(tablet|ipad|kindle)\b/.test(text)) return { category: "tablet", department: "Tablets" };
   if (/\b(roteador|wifi|wi-fi|switch|mesh)\b/.test(text)) return { category: "rede", department: "Rede" };
   if (/\b(furadeira|parafusadeira|serra|lixadeira|martelete|ferramenta)\b/.test(text)) return { category: "ferramenta", department: "Ferramentas" };
-  if (/\b(cadeira|banqueta|cama|mesa portatil|tomada|extensao|fita dupla face|lanterna|air fryer|aspirador|panela|liquidificador|cafeteira|cozinha|copo|garrafa)\b/.test(text)) return { category: "casa", department: "Casa" };
+  if (/\b(cadeira|banqueta|cama|mesa portatil|tomada|extensao|fita dupla face|lanterna|air fryer|fritadeira|aspirador|mop|panela|liquidificador|cafeteira|cozinha|copo|garrafa|lavadora|desobstruidora)\b/.test(text)) return { category: "casa", department: "Casa" };
   if (/\b(camisa|camiseta|camisetas|body|meia|meias|chinelo|tenis|sapato|calca|bermuda|vestido|mochila|moda)\b/.test(text)) return { category: "moda", department: "Moda" };
   if (/\b(bike|bicicleta|bola|faixa elastica|pilates|yoga|academia|fitness|capacete)\b/.test(text)) return { category: "esporte", department: "Esporte" };
   if (/\b(uno|jogo|brinquedo|massa para modelar|bicicleta de equilibrio|lapis de cor|chocalho|mordedor)\b/.test(text)) return { category: "presente", department: "Presentes" };
   return { category: "achadinho", department: "Achadinhos" };
+}
+
+function detectCampaignHook(title = "") {
+  const text = normalizeText(title);
+  if (/\b(air fryer|fritadeira)\b/.test(text)) {
+    return { segment: "air_fryer", storyHook: "3 coisas que me fizeram usar menos oleo." };
+  }
+  if (/\b(aspirador|robo aspirador|aspirador robo)\b/.test(text)) {
+    return { segment: "aspirador", storyHook: "Como parei de varrer a casa todos os dias." };
+  }
+  if (/\b(mop|mop spray|spray mop)\b/.test(text)) {
+    return { segment: "mop", storyHook: "O item que me fez limpar a casa em menos de 15 minutos." };
+  }
+  if (/\b(fone|headphone|headset|earbud|earbuds|cancelamento de ruido|anc)\b/.test(text)) {
+    return { segment: "fone", storyHook: "O acessorio que mudou meu jeito de trabalhar em casa." };
+  }
+  return null;
+}
+
+function offerPriority(offer) {
+  const text = normalizeText(`${offer.title} ${offer.category} ${offer.department}`);
+  let score = 0;
+  if (/\b(air fryer|fritadeira)\b/.test(text)) score += 120;
+  if (/\b(aspirador|robo aspirador|aspirador robo)\b/.test(text)) score += 115;
+  if (/\b(mop|mop spray|spray mop)\b/.test(text)) score += 110;
+  if (/\b(fone|headphone|headset|earbud|earbuds|cancelamento de ruido|anc)\b/.test(text)) score += 105;
+  if (/\b(iphone|smartphone|celular|galaxy|redmi|moto g|xiaomi)\b/.test(text)) score += 95;
+  if (/\b(notebook|laptop|macbook|monitor|144hz|240hz|tv|smart tv|oled|qled)\b/.test(text)) score += 85;
+  if (/\b(roteador|wifi|wi-fi|mesh|switch)\b/.test(text)) score += 80;
+  if (/\b(cozinha|casa|panela|cafeteira|liquidificador|lavadora|organizador)\b/.test(text)) score += 70;
+  if (offer.category === "livro") score -= 80;
+  if (offer.category === "moda") score -= 30;
+  if (offer.category === "achadinho") score -= 20;
+  if (offer.price >= 80 && offer.price <= 5000) score += 10;
+  return score;
 }
 
 function isAccessoryOrPart(title = "") {
@@ -97,8 +134,20 @@ function isAccessoryOrPart(title = "") {
 }
 
 function extractChunks(html = "") {
-  return [...html.matchAll(/<div data-asin="([A-Z0-9]{10})">([\s\S]*?)(?=<\/li>|<li aria-roledescription="slide"|<div data-asin="[A-Z0-9]{10}")/g)]
+  const bestsellerChunks = [...html.matchAll(/<div data-asin="([A-Z0-9]{10})">([\s\S]*?)(?=<\/li>|<li aria-roledescription="slide"|<div data-asin="[A-Z0-9]{10}")/g)]
     .map((match) => ({ asin: match[1], html: match[0] }));
+  if (bestsellerChunks.length) return bestsellerChunks;
+
+  return [...html.matchAll(/<li[^>]*class="[^"]*dcl-carousel-element[^"]*"[\s\S]*?(?=<li[^>]*class="[^"]*dcl-carousel-element|<\/ol>)/g)]
+    .map((match) => {
+      const chunkHtml = match[0];
+      const asin =
+        chunkHtml.match(/data-csa-c-item-id="amzn1\.asin\.([A-Z0-9]{10})/i)?.[1]
+        || chunkHtml.match(/\/(?:[^/\s"]+\/)?dp\/([A-Z0-9]{10})/i)?.[1]
+        || "";
+      return asin ? { asin, html: chunkHtml } : null;
+    })
+    .filter(Boolean);
 }
 
 function normalizeUrl(href = "", asin = "") {
@@ -114,6 +163,7 @@ function extractOffer(chunk, checkedAt) {
   const href = chunk.html.match(/href="([^"]*\/dp\/[A-Z0-9]{10}[^"]*)"/i)?.[1] || `/dp/${asin}`;
   const title = cleanText(
     chunk.html.match(/p13n-sc-line-clamp-4"[^>]*>([\s\S]*?)<\/div>/)?.[1]
+    || chunk.html.match(/dcl-product-label[^>]*>[\s\S]*?<span>([\s\S]*?)<\/span>/)?.[1]
     || chunk.html.match(/aria-label="([^"]+)"/)?.[1]
     || "",
   );
@@ -128,6 +178,7 @@ function extractOffer(chunk, checkedAt) {
   const rank = cleanText(chunk.html.match(/<span class="zg-bdg-text">([^<]+)<\/span>/)?.[1] || "");
   const { category, department } = inferCategory(title);
   const brand = detectBrand(title);
+  const campaignHook = detectCampaignHook(title);
 
   return {
     id: `amazon-bestseller-${asin}`,
@@ -167,10 +218,16 @@ function extractOffer(chunk, checkedAt) {
       asin,
       "amazon",
       "mais vendidos",
+      "amazon 8.8",
+      campaignHook?.segment || "",
+      campaignHook?.storyHook || "",
       rank ? `ranking amazon ${rank.replace("#", "")}` : "",
     ].filter(Boolean),
     sourceContext: {
-      sourcePage: DEFAULT_SOURCE_URL,
+      sourcePage: SOURCE_URL,
+      campaign: "Amazon 8.8",
+      segment: campaignHook?.segment || "",
+      storyHook: campaignHook?.storyHook || "",
       rank,
       rating,
     },
@@ -181,7 +238,7 @@ function extractOffer(chunk, checkedAt) {
       checkedAt,
       finalUrl: normalizeUrl(href, asin),
       method: "amazon_bestsellers_page",
-      evidenceUrl: DEFAULT_SOURCE_URL,
+      evidenceUrl: SOURCE_URL,
     },
   };
 }
@@ -204,7 +261,7 @@ function writeReport(offers, diagnostics, rejected) {
     "# Relatorio intake Amazon mais vendidos",
     "",
     `Gerado em: ${new Date().toISOString()}`,
-    `Pagina: ${DEFAULT_SOURCE_URL}`,
+    `Pagina: ${SOURCE_URL}`,
     "",
     "## Resumo",
     "",
@@ -246,10 +303,12 @@ for (const chunk of chunks) {
   else byAsin.set(offer.asin, offer);
 }
 
-const offers = [...byAsin.values()].slice(0, 30);
+const offers = [...byAsin.values()]
+  .sort((a, b) => offerPriority(b) - offerPriority(a) || a.price - b.price)
+  .slice(0, 30);
 const diagnostics = {
   source: "amazon",
-  sourcePage: DEFAULT_SOURCE_URL,
+  sourcePage: SOURCE_URL,
   received: chunks.length,
   accepted: offers.length,
   rejected: rejected.length,

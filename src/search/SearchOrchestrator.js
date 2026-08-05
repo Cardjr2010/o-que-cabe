@@ -99,6 +99,8 @@ const FLOWER_QUERY_MARKERS = [
 ];
 
 const PHONE_QUERY_MARKERS = [
+  "celular",
+  "smartphone",
   "iphone",
   "apple iphone",
   "samsung",
@@ -176,6 +178,30 @@ const HOME_PRODUCT_EXCLUDE_MARKERS = [
 ];
 
 const HOME_SPECIFIC_MATCHERS = [
+  {
+    query: ["air fryer", "fritadeira"],
+    product: ["air fryer", "fritadeira"],
+  },
+  {
+    query: ["aspirador"],
+    product: ["aspirador", "robo aspirador", "aspirador robo"],
+  },
+  {
+    query: ["mop"],
+    product: ["mop"],
+  },
+  {
+    query: ["liquidificador"],
+    product: ["liquidificador"],
+  },
+  {
+    query: ["cafeteira"],
+    product: ["cafeteira"],
+  },
+  {
+    query: ["lavadora"],
+    product: ["lavadora"],
+  },
   {
     query: ["banheiro", "lavabo"],
     product: [
@@ -686,6 +712,19 @@ function countTokenHitsInText(text = "", tokens = []) {
   }).length;
 }
 
+function getRequiredHomeProductGroups(query = "") {
+  const normalizedQuery = normalizeRadarText(query);
+  const groups = [
+    ["air fryer", "fritadeira"],
+    ["aspirador", "aspirador robo", "robo aspirador"],
+    ["mop"],
+    ["liquidificador"],
+    ["cafeteira"],
+    ["lavadora"],
+  ];
+  return groups.filter((group) => group.some((term) => normalizedQuery.includes(normalizeRadarText(term))));
+}
+
 function hasRequiredVariantTerms(query = "", text = "") {
   const normalizedQuery = normalizeRadarText(query);
   const normalizedText = normalizeRadarText(text);
@@ -725,6 +764,7 @@ function isStrictCommercialIntent(intent = {}) {
   const tokens = query.split(/\s+/).filter(Boolean);
   if (intent.brand && tokens.length >= 2) return true;
   if (intent.model && tokens.length >= 2) return true;
+  if (getRequiredHomeProductGroups(query).length) return true;
   if (tokens.length >= 3) return true;
   if (isPhoneFamilyQuery(query) && tokens.length >= 3) return true;
   if (matchesAnyMarker(query, ["roteador", "router", "monitor", "notebook", "tv"]) && tokens.length >= 3) return true;
@@ -748,6 +788,10 @@ function hasStrongCommercialCoverage(product = {}, intent = {}) {
   ].filter(Boolean).join(" ");
   const queryTokens = getMeaningfulQueryTokens(intent.searchText || intent.query || "");
   if (!queryTokens.length) return true;
+  const requiredHomeGroups = getRequiredHomeProductGroups(intent.searchText || intent.query || "");
+  if (requiredHomeGroups.length && !requiredHomeGroups.every((group) => matchesAnyMarker(productText, group))) {
+    return false;
+  }
   const hits = countTokenHitsInText(productText, queryTokens);
   if (queryTokens.length >= 4) return hits >= 2;
   if (queryTokens.length === 3) return hits >= 2;
@@ -1049,6 +1093,19 @@ function rankPreparedProduct(product = {}, intent = {}) {
   }) ? 6 : 0;
   const verifiedOfferBonus = sourceText.includes("verified_partner_offers") ? 5 : 0;
   const strictIntentPenalty = isStrictCommercialIntent(intent) && !hasStrongCommercialCoverage(product, intent) ? -40 : 0;
+  const phoneSpecBonus = phoneFamilyQuery && cellularProduct
+    ? (
+        (/\b5g\b/.test(brandText) ? 5 : 0)
+        + (/\b(?:128|256|512)\s*gb\b/.test(brandText) ? 4 : 0)
+        + (/\b(?:6|8|12|16|24)\s*gb\s*(?:ram)?\b/.test(brandText) ? 2 : 0)
+      )
+    : 0;
+  const obsoletePhonePenalty = phoneFamilyQuery && cellularProduct && (
+    /\b(?:2g|3g)\b/.test(brandText)
+    || /\b(?:8|16)\s*gb\b/.test(brandText)
+    || /\bandroid\s*(?:5|6|7|8)(?:\.| |$)/.test(brandText)
+    || /\bmoto\s*g[1-5]\b/.test(brandText)
+  ) ? -18 : 0;
   return (
     (searchMatch * 8)
     + (titleMatches * 2.5)
@@ -1068,13 +1125,41 @@ function rankPreparedProduct(product = {}, intent = {}) {
     + trackedQueryBonus
     + trackedFamilyBonus
     + verifiedOfferBonus
+    + phoneSpecBonus
     + accessoryPenalty
     + nonPhonePenalty
     + accessoryQueryPenalty
     + consoleProductBonus
     + consoleAccessoryPenalty
     + strictIntentPenalty
+    + obsoletePhonePenalty
   );
+}
+
+function getEffectiveProductPrice(product = {}) {
+  const value = Number(product.finalPrice || product.cashPrice || product.price || Number.POSITIVE_INFINITY);
+  return Number.isFinite(value) && value > 0 ? value : Number.POSITIVE_INFINITY;
+}
+
+function getBudgetFitRank(product = {}, intent = {}) {
+  const totalBudget = Number(intent.totalBudget || 0);
+  const monthlyBudget = Number(intent.monthly || 0);
+  const price = getEffectiveProductPrice(product);
+  const installmentAmount = Number(product.installmentValue || product.monthlyPrice || product.budgetContext?.monthlyPrice || 0);
+
+  if (String(intent.mode || "").toLowerCase() === "total" && totalBudget > 0) {
+    if (price <= totalBudget) return 0;
+    if (price <= totalBudget * 1.2) return 1;
+    return 2;
+  }
+
+  if (monthlyBudget > 0 && installmentAmount > 0) {
+    if (installmentAmount <= monthlyBudget) return 0;
+    if (installmentAmount <= monthlyBudget * 1.2) return 1;
+    return 2;
+  }
+
+  return 0;
 }
 
 function filterCandidateList(list = [], intent = {}) {
@@ -1413,10 +1498,12 @@ export default class SearchOrchestrator {
     }
 
     prepared.sort((left, right) => {
+      const budgetDelta = getBudgetFitRank(left, intent) - getBudgetFitRank(right, intent);
+      if (budgetDelta !== 0) return budgetDelta;
       const scoreDelta = rankPreparedProduct(right, intent) - rankPreparedProduct(left, intent);
       if (Math.abs(scoreDelta) > 1e-9) return scoreDelta;
-      const leftEffectivePrice = Number(left.finalPrice || left.cashPrice || left.price || Number.POSITIVE_INFINITY);
-      const rightEffectivePrice = Number(right.finalPrice || right.cashPrice || right.price || Number.POSITIVE_INFINITY);
+      const leftEffectivePrice = getEffectiveProductPrice(left);
+      const rightEffectivePrice = getEffectiveProductPrice(right);
       if (Number.isFinite(leftEffectivePrice) && Number.isFinite(rightEffectivePrice) && Math.abs(leftEffectivePrice - rightEffectivePrice) > 1e-9) {
         return leftEffectivePrice - rightEffectivePrice;
       }

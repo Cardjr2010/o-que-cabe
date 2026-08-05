@@ -21,7 +21,7 @@ test("home data expõe catálogo real e departamentos coerentes", () => {
   assert.equal(data.decisionHighlights.length, 0);
   assert.ok(data.decisionHighlights.every((entry) => !String(entry.query || "").includes("galaxy s26 ultra 256gb")));
   assert.ok(Array.isArray(data.offerCategories));
-  assert.equal(data.offerCategories.length, 0);
+  assert.ok(data.offerCategories.length > 0);
   assert.ok(data.offerCategories.every((entry) => Number(entry.count || 0) > 0));
   assert.ok(data.offerCategories.every((entry) => {
     const titles = Array.isArray(entry.sampleTitles) ? entry.sampleTitles.join(" ").toLowerCase() : "";
@@ -38,7 +38,7 @@ test("home data expõe catálogo real e departamentos coerentes", () => {
   assert.ok(data.activeSources.length > 0);
   assert.equal(data.activeSources[0].source, "Info Store - Informática");
   assert.equal(data.activeSources[0].count, 1462);
-  assert.ok(data.activeSources.some((entry) => entry.source === "Magalu" && entry.count === 8));
+  assert.ok(data.activeSources.every((entry) => entry.source !== "Magalu"));
   assert.ok(Array.isArray(data.topBrands));
   assert.ok(data.topBrands.length > 0);
   assert.ok(categoryKeys.some((category) => ["celulares", "notebooks", "tablets", "tvs"].includes(category)));

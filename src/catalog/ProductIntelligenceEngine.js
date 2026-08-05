@@ -55,6 +55,15 @@ const SOURCE_RELIABILITY = [
 
 const DEPARTMENT_RULES = [
   {
+    department: "Casa e ConstruÃ§Ã£o",
+    category: "Casa",
+    keywords: ["air fryer", "fritadeira", "aspirador", "mop", "lavadora", "liquidificador", "cafeteira"],
+    subcategories: [
+      { label: "Cozinha", keywords: ["air fryer", "fritadeira", "liquidificador", "cafeteira"] },
+      { label: "Limpeza", keywords: ["aspirador", "mop", "lavadora"] },
+    ],
+  },
+  {
     department: "Casa e Construção",
     category: "Ferramentas",
     keywords: [
@@ -553,7 +562,20 @@ function detectSubcategory(normalizedText = "", department = "Outros", category 
   return subcategory?.label || departmentRule.category || category || department || "Outros";
 }
 
+function isHomePrincipalProduct(normalizedText = "") {
+  return includesAny(normalizedText, [
+    "air fryer",
+    "fritadeira",
+    "aspirador",
+    "mop",
+    "lavadora",
+    "liquidificador",
+    "cafeteira",
+  ]);
+}
+
 function detectAccessory(normalizedText = "", category = "", subcategory = "") {
+  if (isHomePrincipalProduct(normalizedText)) return false;
   if (category === "Peças") return true;
   if (category === "Acessórios") return true;
   if (category === "Cabos e Carregadores") return true;
@@ -564,6 +586,7 @@ function detectAccessory(normalizedText = "", category = "", subcategory = "") {
 }
 
 function detectAccessoryFamily(normalizedText = "") {
+  if (isHomePrincipalProduct(normalizedText)) return null;
   if (includesAny(normalizedText, PIECE_KEYWORDS)) {
     return {
       department: "Peças",

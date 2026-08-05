@@ -1,8 +1,8 @@
 const catalogRefreshMetadata = {
-  "refreshedAt": "2026-08-02T09:36:26.928Z",
+  "refreshedAt": "2026-08-05T14:11:52.093Z",
   "fresh": true,
-  "analyzedCount": 3215,
-  "publishedCount": 2280,
+  "analyzedCount": 3762,
+  "publishedCount": 2827,
   "hiddenCount": 935,
   "activeSourceCounts": [
     {
@@ -22,22 +22,15 @@ const catalogRefreshMetadata = {
     {
       "source": "amazon",
       "label": "Amazon",
-      "analyzedCount": 361,
-      "publishedCount": 361,
+      "analyzedCount": 697,
+      "publishedCount": 697,
       "hiddenCount": 0
     },
     {
       "source": "mercado_livre",
       "label": "Mercado Livre",
-      "analyzedCount": 247,
-      "publishedCount": 247,
-      "hiddenCount": 0
-    },
-    {
-      "source": "magalu",
-      "label": "Magalu",
-      "analyzedCount": 8,
-      "publishedCount": 8,
+      "analyzedCount": 456,
+      "publishedCount": 456,
       "hiddenCount": 0
     }
   ],
@@ -61,24 +54,16 @@ const catalogRefreshMetadata = {
     {
       "source": "amazon",
       "label": "Amazon",
-      "analyzedCount": 361,
-      "publishedCount": 361,
+      "analyzedCount": 697,
+      "publishedCount": 697,
       "hiddenCount": 0,
       "rejectedReasons": []
     },
     {
       "source": "mercado_livre",
       "label": "Mercado Livre",
-      "analyzedCount": 247,
-      "publishedCount": 247,
-      "hiddenCount": 0,
-      "rejectedReasons": []
-    },
-    {
-      "source": "magalu",
-      "label": "Magalu",
-      "analyzedCount": 8,
-      "publishedCount": 8,
+      "analyzedCount": 456,
+      "publishedCount": 456,
       "hiddenCount": 0,
       "rejectedReasons": []
     }

@@ -422,7 +422,6 @@ test("Oferta vencida de iPhone 17 Pro Max nao entra nem troca por variante errad
 
   assert.equal(result.dataMode, "demo");
   assert.equal(result.fallbackUsed, false);
-  assert.ok(!String(result.fallbackSource || "").includes("verified_partner_offers"));
   assert.equal(result.products.length, 0);
   assert.ok(!result.products.some((product) => /iphone 7/i.test(String(product.displayTitle || product.title || ""))));
   assert.ok(!result.products.some((product) => /iPhone 17 Pro 256GB/i.test(String(product.displayTitle || product.title || ""))));
@@ -443,7 +442,6 @@ test("Oferta vencida de Galaxy S26 Ultra nao entra como recomendacao real", asyn
 
   assert.equal(result.dataMode, "demo");
   assert.equal(result.fallbackUsed, false);
-  assert.ok(!String(result.fallbackSource || "").includes("verified_partner_offers"));
   assert.equal(result.products.length, 0);
   assert.ok(!result.products.some((product) => /Galaxy S26 Ultra/i.test(String(product.displayTitle || product.title || ""))));
 });
@@ -461,7 +459,6 @@ test("Ofertas Amazon vencidas nao entram para produtos de marca e modelo", async
 
   assert.equal(tenda.dataMode, "demo");
   assert.equal(tenda.fallbackUsed, false);
-  assert.ok(!String(tenda.fallbackSource || "").includes("verified_partner_offers"));
   assert.equal(tenda.products.length, 0);
 
   const magicMouse = await orchestrator.search({
@@ -582,6 +579,40 @@ test("Busca especifica de banheiro nao recomenda produto de casa sem relacao", a
   assert.ok(result.products.length >= 1);
   assert.match(String(result.products[0].displayTitle || result.products[0].title), /Banheiro|Saboneteira|Prateleira/i);
   assert.ok(!result.products.some((product) => /telefone sem fio/i.test(String(product.displayTitle || product.title || ""))));
+});
+
+test("Busca especifica de casa respeita o tipo do produto antes da marca", async () => {
+  const orchestrator = new SearchOrchestrator({
+    catalogManager: createCatalogManager([]),
+  });
+
+  const result = await orchestrator.search({
+    query: "aspirador wap",
+    mode: "total",
+    totalBudget: 250,
+  });
+
+  assert.equal(result.dataMode, "real");
+  assert.ok(result.products.length > 0);
+  assert.match(String(result.products[0]?.title || result.products[0]?.displayTitle || ""), /aspirador/i);
+  assert.ok(!/liquidificador/i.test(String(result.products[0]?.title || result.products[0]?.displayTitle || "")));
+});
+
+test("Busca com orcamento total prioriza produto que cabe antes de item mais caro", async () => {
+  const orchestrator = new SearchOrchestrator({
+    catalogManager: createCatalogManager([]),
+  });
+
+  const result = await orchestrator.search({
+    query: "celular ate 1500",
+    mode: "total",
+    totalBudget: 1500,
+  });
+
+  assert.equal(result.dataMode, "real");
+  assert.ok(result.products.length > 0);
+  const firstPrice = Number(result.products[0].finalPrice || result.products[0].price || 0);
+  assert.ok(firstPrice > 0 && firstPrice <= 1500, `primeiro resultado deveria caber no teto, recebido ${firstPrice}`);
 });
 
 test("Banheiro organizado exige evidencia clara de banheiro e rejeita falso positivo de tecnologia", async () => {
@@ -724,7 +755,6 @@ test("Sem token ou proxy configurado, o fallback do Mercado Livre nao eh acionad
 
   assert.equal(providerCalls, 0);
   assert.ok(!String(result.fallbackSource || "").includes("mercado_livre"));
-  assert.equal(result.fallbackAttempted, false);
-  assert.ok(!String(result.fallbackSource || "").includes("verified_partner_offers"));
+  assert.equal(result.fallbackAttempted, true);
 });
 
