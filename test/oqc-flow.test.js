@@ -118,6 +118,18 @@ test("Compra composta funciona por familia de produto e nao inventa kit em busca
     await handler({ url: "/api/search?q=casa&mode=total&totalBudget=50" }, broadRes);
     const broadBody = parseBody(broadRes);
     assert.deepEqual(broadBody.complementaryRecommendations || [], []);
+
+    const bathroomRes = createResponse();
+    await handler({ url: "/api/search?q=banheiro%20organizado%20ate%20250&mode=total&totalBudget=250" }, bathroomRes);
+    const bathroomBody = parseBody(bathroomRes);
+    const composition = bathroomBody.compositionRecommendation || {};
+    const compositionTitles = (composition.items || []).map((item) => String(item.product?.title || item.product?.displayTitle || "")).join(" ");
+
+    assert.equal(bathroomRes.statusCode, 200);
+    assert.equal(bathroomBody.dataMode, "real");
+    assert.ok((composition.items || []).length >= 2);
+    assert.ok(Number(composition.totalPrice || 0) <= 250);
+    assert.match(compositionTitles, /(banheiro|lavabo|tapete|torneira|prateleira|organizador|espelho)/i);
   } finally {
     global.fetch = originalFetch;
   }

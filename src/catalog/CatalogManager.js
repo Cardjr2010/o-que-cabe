@@ -32,6 +32,9 @@ function sourcePriorityForItem(item = {}) {
 }
 
 function isExcludedSource(item = {}) {
+  if (String(item.sourceType || "").toLowerCase() === "telegram_affiliate_offer") {
+    return false;
+  }
   const source = normalizeText([
     item.marketplace,
     item.source,

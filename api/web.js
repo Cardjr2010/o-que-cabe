@@ -124,7 +124,7 @@ function createFeedProvider(providerName = "mi_shop", options = {}) {
           options.feedPath || process.env.INFOSTORE_FEED_PATH || resolveProjectPath("data", "infostore-feed-3029.xml"),
           options.feedPathSecondary || process.env.INFOSTORE_FEED_PATH_SECONDARY || resolveProjectPath("data", "infostore-feed-3030.xml"),
         ].filter(Boolean),
-        sourceName: options.sourceName || "Info Store - InformÃ¡tica",
+        sourceName: options.sourceName || "Info Store - Informática",
       });
     }
     return infoStoreFeedProvider;
@@ -134,7 +134,7 @@ function createFeedProvider(providerName = "mi_shop", options = {}) {
       ...baseOptions,
       networkName: "saldao_informatica",
       feedPath: options.feedPath || process.env.SALDAO_FEED_PATH || resolveProjectPath("data", "saldao-feed.xml"),
-      sourceName: options.sourceName || "SaldÃ£o da InformÃ¡tica",
+      sourceName: options.sourceName || "Saldão da Informática",
     });
   }
   return null;
@@ -192,7 +192,7 @@ function createActionpayImporter() {
       catalogManager: getCatalogManager(),
       catalogSeedPath: process.env.ACTIONPAY_CATALOG_SEED_PATH || resolveCatalogSeedPath(resolveProjectPath("data", "products.seed.json")),
       sourceOfferId: process.env.ACTIONPAY_SALDAO_OFFER_ID || "13241",
-      sourceOfferName: "SaldÃ£o da InformÃ¡tica - Notebooks, iPhones e TVs.",
+      sourceOfferName: "Saldão da Informática - Notebooks, iPhones e TVs.",
     });
   }
   return actionpayYmlImporter;
@@ -308,7 +308,7 @@ function getFeedProviderInstance(providerName = "mi_shop", options = {}) {
           options.feedPath || process.env.INFOSTORE_FEED_PATH || resolveProjectPath("data", "infostore-feed-3029.xml"),
           options.feedPathSecondary || process.env.INFOSTORE_FEED_PATH_SECONDARY || resolveProjectPath("data", "infostore-feed-3030.xml"),
         ].filter(Boolean),
-        sourceName: options.sourceName || "Info Store - InformÃ¡tica",
+        sourceName: options.sourceName || "Info Store - Informática",
       });
     }
     return infoStoreFeedProvider;
@@ -318,7 +318,7 @@ function getFeedProviderInstance(providerName = "mi_shop", options = {}) {
       ...baseOptions,
       networkName: "saldao_informatica",
       feedPath: options.feedPath || process.env.SALDAO_FEED_PATH || resolveProjectPath("data", "saldao-feed.xml"),
-      sourceName: options.sourceName || "SaldÃ£o da InformÃ¡tica",
+      sourceName: options.sourceName || "Saldão da Informática",
     });
   }
   return null;
@@ -497,7 +497,7 @@ function getFeedProviderStatus(providerName = "") {
       lastSync: null,
       productCount: 0,
       updated: 0,
-      errors: ["Provider nÃ£o suportado."],
+      errors: ["Provider não suportado."],
     };
   }
   const diagnostics = typeof provider.getDiagnostics === "function"
@@ -1285,7 +1285,7 @@ function normalizeDemoProducts(products, monthlyBudget, months, query, source) {
         image: product.image || "",
         rating: product.rating ?? null,
         description: product.riskNote || product.description || "",
-        note: product.riskNote || "Dados de teste â€” preÃ§os simulados.",
+        note: product.riskNote || "Dados de teste - preços simulados.",
         url: "",
         permalink: "",
         installments: product.installments || months,
@@ -1810,6 +1810,126 @@ function buildSmartPurchaseComplements({ query, products = [], budget = {} }) {
     .slice(0, 4);
 }
 
+const COMPOSITION_CONTEXTS = [
+  {
+    key: "bathroom",
+    triggers: ["banheiro", "lavabo", "banheiro organizado", "saboneteira", "porta shampoo", "prateleira banheiro"],
+    title: "Composição para banheiro organizado",
+    summary: "Selecionamos itens que funcionam juntos dentro do orçamento informado. Confirme preço e estoque na loja antes de fechar.",
+    slots: [
+      {
+        key: "organização",
+        label: "Organização",
+        terms: ["cesto", "organizador", "prateleira", "porta shampoo", "saboneteira"],
+        excludeTerms: ["fone", "celular", "smartphone", "notebook", "monitor"],
+        maxShare: 0.45,
+      },
+      {
+        key: "base",
+        label: "Base",
+        terms: ["torneira", "lavatorio", "lavabo"],
+        excludeTerms: ["furadeira", "escova de carvao", "carvao"],
+        maxShare: 0.45,
+      },
+      {
+        key: "conforto",
+        label: "Conforto",
+        terms: ["tapete", "saco de lixo", "lixeira"],
+        maxShare: 0.35,
+      },
+      {
+        key: "visual",
+        label: "Visual",
+        terms: ["espelho", "led"],
+        maxShare: 0.5,
+      },
+    ],
+  },
+];
+
+function resolveCompositionContext(query = "") {
+  const normalized = normalizeComplementText(query);
+  if (!normalized) return null;
+  return COMPOSITION_CONTEXTS.find((context) => hasAnyComplementTerm(normalized, context.triggers)) || null;
+}
+
+function productIdentity(product = {}) {
+  return String(product.id || product.externalId || product.sourceProductId || product.permalink || product.productUrl || product.url || product.title || "").trim();
+}
+
+function productPrice(product = {}) {
+  return Number(product.finalPrice || product.price || 0);
+}
+
+function buildSmartPurchaseComposition({ query, budget = {} }) {
+  const context = resolveCompositionContext(query);
+  if (!context) return null;
+  const maxBudget = Number(budget.totalBudget || budget.maxTotalBudget || budget.total || budget.monthlyBudget * budget.months || 0);
+  if (!Number.isFinite(maxBudget) || maxBudget <= 0) return null;
+
+  const candidates = getCatalogManager().list()
+    .filter((product) => {
+      const price = productPrice(product);
+      const text = productTextForComplements(product);
+      return productIdentity(product)
+        && price > 0
+        && price <= maxBudget
+        && hasUsableOfferLink(product)
+        && hasAnyComplementTerm(text, context.triggers);
+    });
+
+  const used = new Set();
+  let runningTotal = 0;
+  const items = context.slots.map((slot) => {
+    const slotLimit = Math.max(1, maxBudget * Number(slot.maxShare || 1));
+    const ranked = candidates
+      .map((product) => {
+        const titleText = productTitleForComplements(product);
+        const text = productTextForComplements(product);
+        const price = productPrice(product);
+        if (!hasAnyComplementTerm(text, slot.terms) || price > slotLimit) return null;
+        if (hasAnyComplementTerm(titleText, slot.excludeTerms || [])) return null;
+        const identity = productIdentity(product);
+        if (!identity || used.has(identity) || runningTotal + price > maxBudget) return null;
+        const imageScore = String(product.image || product.thumbnail || "").trim() ? 8 : 0;
+        const sourceScore = String(product.source || product.marketplace || "").toLowerCase().includes("mercado") ? 5 : 0;
+        const priceScore = Math.max(0, Math.round((slotLimit - price) / slotLimit * 20));
+        return { product, score: 50 + imageScore + sourceScore + priceScore };
+      })
+      .filter(Boolean)
+      .sort((left, right) => right.score - left.score || productPrice(left.product) - productPrice(right.product));
+    const chosen = ranked[0]?.product || null;
+    if (!chosen) return null;
+    used.add(productIdentity(chosen));
+    runningTotal += productPrice(chosen);
+    const enriched = attachMarketInsights(attachFinancialInsights(
+      enrichWithOqc(chosen, budget, slot.label),
+      budget,
+      slot.label,
+      0,
+      [chosen],
+    ));
+    return {
+      key: slot.key,
+      label: slot.label,
+      product: enriched,
+      reason: `Entra como ${slot.label.toLowerCase()} da composição sem estourar o orçamento.`,
+    };
+  }).filter(Boolean);
+
+  if (!items.length) return null;
+  return {
+    key: context.key,
+    title: context.title,
+    summary: context.summary,
+    totalPrice: Number(runningTotal.toFixed(2)),
+    budget: maxBudget,
+    remainingBudget: Number(Math.max(0, maxBudget - runningTotal).toFixed(2)),
+    items,
+    warning: "Composição baseada em produtos publicados com link direto. Preço e disponibilidade podem mudar na loja.",
+  };
+}
+
 function buildOqcResponse({ products, query, mode, monthly, months, totalBudget, dataMode }) {
   const budget = buildOqcBudgetContext({ mode, monthly, months, totalBudget });
   const enriched = products.map((product) => enrichWithOqc(product, budget, query));
@@ -1836,6 +1956,7 @@ function buildOqcResponse({ products, query, mode, monthly, months, totalBudget,
     groups,
     summary: ranked.summary,
     complementaryRecommendations: buildSmartPurchaseComplements({ query, products: productsWithInsights, budget }),
+    compositionRecommendation: buildSmartPurchaseComposition({ query, budget }),
     products: productsWithInsights,
   };
 }
@@ -1919,6 +2040,7 @@ function buildFallbackRealResponse({ products, query, mode, monthly, months, tot
     groups,
     summary: "Os resultados priorizam produtos reais do catalogo quando a pontuacao completa precisa de fallback.",
     complementaryRecommendations: buildSmartPurchaseComplements({ query, products: productsWithInsights, budget }),
+    compositionRecommendation: buildSmartPurchaseComposition({ query, budget }),
     products: productsWithInsights,
   };
 }
@@ -2159,7 +2281,7 @@ function renderExplorerPage({ title, heading, description, view, badge, endpoint
     <body data-view="${escapeHtml(view)}" data-endpoint="${escapeHtml(endpoint)}">
       <header class="topbar">
         <a class="brand" href="/"><img class="brand-mark" src="/logo-oqc.png" alt="OQC" /><strong>O Que Cabe</strong></a>
-        <div class="trust-pill">Curadoria de ConfianÃ§a</div>
+        <div class="trust-pill">Curadoria de Confiança</div>
       </header>
       <main>
         <section class="hero">
@@ -2168,9 +2290,9 @@ function renderExplorerPage({ title, heading, description, view, badge, endpoint
             <p>${escapeHtml(description)}</p>
           </div>
           <form id="searchForm" class="search-card">
-            <div class="mode-tabs" aria-label="Tipo de orÃ§amento">
-              <button class="active" type="button">OrÃ§amento Mensal</button>
-              <button type="button">OrÃ§amento Total</button>
+            <div class="mode-tabs" aria-label="Tipo de orçamento">
+              <button class="active" type="button">Orçamento Mensal</button>
+              <button type="button">Orçamento Total</button>
             </div>
             <div class="field field-product">
               <label for="productInput">${escapeHtml(inputLabel)}</label>
@@ -2180,7 +2302,7 @@ function renderExplorerPage({ title, heading, description, view, badge, endpoint
               </div>
             </div>
             <div class="field">
-              <label for="monthlyInput">MÃ¡x. mensal</label>
+              <label for="monthlyInput">Máx. mensal</label>
               <div class="money-input">
                 <span>R$</span>
                 <input id="monthlyInput" name="monthly" type="number" min="1" step="1" value="100" required />
@@ -2206,16 +2328,16 @@ function renderExplorerPage({ title, heading, description, view, badge, endpoint
         <section class="results-area">
           <div class="section-head">
             <div>
-              <p class="panel-label">Seu teto estimado: <strong id="budgetTotal">R$ 1.200,00</strong> <span id="budgetLine">R$ 100,00 por mÃªs em atÃ© 12x</span></p>
-              <h2 id="summaryTitle">FaÃ§a uma busca para comeÃ§ar</h2>
+              <p class="panel-label">Seu teto estimado: <strong id="budgetTotal">R$ 1.200,00</strong> <span id="budgetLine">R$ 100,00 por mês em até 12x</span></p>
+              <h2 id="summaryTitle">Faça uma busca para começar</h2>
             </div>
             <span class="source-badge" id="sourceBadge">${escapeHtml(badge)}</span>
           </div>
           <div class="notice" id="notice" hidden></div>
           <div class="grid" id="results">
             <article class="empty-state">
-              <strong>Teste uma busca rÃ¡pida</strong>
-              <span>O resultado aparece aqui com parcela, total e botÃ£o de oferta.</span>
+              <strong>Teste uma busca rápida</strong>
+              <span>O resultado aparece aqui com parcela, total e botão de oferta.</span>
             </article>
           </div>
         </section>
@@ -2240,7 +2362,7 @@ function renderHome() {
       <body>
         <main style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;padding:32px;max-width:720px;margin:0 auto;">
           <h1>O Que Cabe</h1>
-          <p>O site estÃ¡ iniciando em modo seguro. A interface completa serÃ¡ carregada assim que o arquivo principal estiver disponÃ­vel.</p>
+          <p>O site está iniciando em modo seguro. A interface completa será carregada assim que o arquivo principal estiver disponível.</p>
         </main>
       </body>
     </html>`;
@@ -2326,7 +2448,7 @@ function renderTravelPage() {
   return renderExplorerPage({
     title: "Teste Viagens | O Que Cabe",
     heading: "Teste viagens com cards mockados.",
-    description: "SimulaÃ§Ã£o de destinos para preparar a futura vertical de viagens.",
+    description: "Simulação de destinos para preparar a futura vertical de viagens.",
     view: "travel",
     badge: "Viagem mock",
     endpoint: "/api/teste-viagens",
@@ -2335,7 +2457,7 @@ function renderTravelPage() {
     quickLabel: "Destinos:",
     quickButtons: [
       { label: "Rio", query: "Rio", monthly: 150, months: 12 },
-      { label: "SÃ£o Paulo", query: "SÃ£o Paulo", monthly: 120, months: 12 },
+      { label: "São Paulo", query: "São Paulo", monthly: 120, months: 12 },
       { label: "Salvador", query: "Salvador", monthly: 180, months: 12 },
     ],
   });
@@ -2361,7 +2483,7 @@ function renderMercadoLivrePage() {
   }).replace(
     '<div class="notice" id="notice" hidden></div>',
     connected
-      ? '<div class="notice" id="notice">Digite ou cole uma URL do Mercado Livre. TambÃ©m Ã© possÃ­vel testar por categoria. A busca roda com debounce.</div>'
+      ? '<div class="notice" id="notice">Digite ou cole uma URL do Mercado Livre. Também é possível testar por categoria. A busca roda com debounce.</div>'
       : '<div class="notice" id="notice">Conecte sua conta Mercado Livre para consultar produtos reais.</div>',
   );
 }
@@ -2460,15 +2582,15 @@ function renderCatalogPage(query = {}) {
     <head>
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <title>CatÃ¡logo OQC</title>
+      <title>Catálogo OQC</title>
       <link rel="stylesheet" href="/styles.css" />
     </head>
     <body>
       <header class="topbar">
-        <a class="brand" href="/"><img class="brand-mark" src="/logo-oqc.png" alt="OQC" /><strong>CatÃ¡logo OQC</strong></a>
+        <a class="brand" href="/"><img class="brand-mark" src="/logo-oqc.png" alt="OQC" /><strong>Catálogo OQC</strong></a>
       </header>
       <main style="padding:24px;max-width:1200px;margin:0 auto;">
-        <h1 style="margin:0 0 12px;">CatÃ¡logo interno</h1>
+        <h1 style="margin:0 0 12px;">Catálogo interno</h1>
         <p style="margin:0 0 16px;">Produtos gerenciados pelo OQC. Importar, exportar, editar, desativar e excluir podem ser ligados depois sem mudar o motor.</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
           <a class="submit-button" href="/api/catalog?action=export&format=json">Export JSON</a>
@@ -2925,10 +3047,14 @@ export default async function handler(req, res) {
       const advisor = buildAdvisorSnapshot(searchResult, q);
 
       const displayedProducts = Array.isArray(response.products) ? response.products : [];
+      const hasComposition = Array.isArray(response.compositionRecommendation?.items)
+        && response.compositionRecommendation.items.length > 0;
       const publicWarning = searchResult.fallbackUsed && Number(searchResult.fallbackCount || 0) > 0
         ? "Também encontramos anúncios diretos em fontes externas."
         : searchResult.fallbackAttempted
           ? "Não encontramos opções adicionais nesta fonte."
+          : hasComposition && !displayedProducts.length
+            ? "Montamos uma composição com itens relacionados do catálogo atual."
           : displayedProducts.length > 0 && displayedProducts.length < 3
             ? "Encontramos poucas opções no catálogo atual."
             : displayedProducts.length
@@ -2938,7 +3064,7 @@ export default async function handler(req, res) {
       sendJson(res, 200, {
         ok: true,
         ...response,
-        dataMode: displayedProducts.length ? response.dataMode : (searchResult.strategyUsed === "refinement-needed" ? (searchResult.dataMode || "real") : "none"),
+        dataMode: displayedProducts.length || hasComposition ? "real" : (searchResult.strategyUsed === "refinement-needed" ? (searchResult.dataMode || "real") : "none"),
         advisor,
         strategyUsed: searchResult.strategyUsed,
         fallbackUsed: Boolean(searchResult.fallbackUsed),
@@ -3180,7 +3306,7 @@ export default async function handler(req, res) {
       mode,
       products,
       totalBudget,
-      warning: products.length ? "" : "Nenhum produto encontrado dentro desse orÃ§amento. Tente aumentar o valor mensal ou o orÃ§amento total.",
+      warning: products.length ? "" : "Nenhum produto encontrado dentro desse orçamento. Tente aumentar o valor mensal ou o orçamento total.",
     });
     return;
   }
@@ -3317,7 +3443,7 @@ export default async function handler(req, res) {
     if (!getGoogleMerchantAdapter().configured()) {
       sendJson(res, 400, {
         ok: false,
-        message: "Google Merchant nÃ£o configurado.",
+        message: "Google Merchant não configurado.",
         configured: false,
         hasAccountId: getGoogleMerchantAdapter().getDiagnostics().hasAccountId,
         hasAccessToken: getGoogleMerchantAdapter().getDiagnostics().hasAccessToken,
@@ -3356,7 +3482,7 @@ export default async function handler(req, res) {
     if (!getAwinFeedProvider().configured()) {
       sendJson(res, 400, {
         ok: false,
-        message: "Awin nÃ£o configurada.",
+        message: "Awin não configurada.",
         configured: false,
       });
       return;
@@ -3393,7 +3519,7 @@ export default async function handler(req, res) {
       sendJson(res, 400, {
         ok: false,
         configured: false,
-        message: "Actionpay nÃ£o configurada.",
+        message: "Actionpay não configurada.",
       });
       return;
     }
@@ -3428,7 +3554,7 @@ export default async function handler(req, res) {
       sendJson(res, 400, {
         ok: false,
         configured: false,
-        message: "Actionpay nÃ£o configurada.",
+        message: "Actionpay não configurada.",
         hasApiKey: actionpayProvider.getDiagnostics().hasApiKey,
         hasSourceId: actionpayProvider.getDiagnostics().hasSourceId,
       });
@@ -3478,7 +3604,7 @@ export default async function handler(req, res) {
     const fallback = readMercadoLivreDemoProducts().find((item) => item.id && String(item.id).toLowerCase().includes(String(itemId).toLowerCase()));
     const candidate = fallback || match || null;
     if (!candidate) {
-      sendJson(res, 200, { ok: false, title: "", price: null, image: "", permalink: "", message: "Item nÃ£o localizado na base de teste." });
+      sendJson(res, 200, { ok: false, title: "", price: null, image: "", permalink: "", message: "Item não localizado na base de teste." });
       return;
     }
     sendJson(res, 200, {
@@ -3530,15 +3656,15 @@ export default async function handler(req, res) {
       mode,
       products,
       totalBudget,
-      warning: products.length ? "" : "Nenhum produto encontrado dentro desse orÃ§amento. Tente aumentar o valor mensal ou o orÃ§amento total.",
+      warning: products.length ? "" : "Nenhum produto encontrado dentro desse orçamento. Tente aumentar o valor mensal ou o orçamento total.",
     });
     return;
   }
 
   if (pathname === "/teste-produtos") {
     send(res, 200, renderProductPage().replace(
-      '<div class="mode-tabs" aria-label="Tipo de orÃ§amento">',
-      '<div class="mode-tabs" aria-label="Tipo de orÃ§amento">',
+      '<div class="mode-tabs" aria-label="Tipo de orçamento">',
+      '<div class="mode-tabs" aria-label="Tipo de orçamento">',
     ), { "Content-Type": "text/html; charset=utf-8" });
     return;
   }

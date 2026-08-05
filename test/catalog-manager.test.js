@@ -188,7 +188,7 @@ test("CatalogManager busca por filtros", () => {
   assert.equal(result[0].title, "Notebook X");
 });
 
-test("Catalog page e API retornam catÃ¡logo", async () => {
+test("Catalog page e API retornam catálogo", async () => {
   const originalFetch = global.fetch;
   global.fetch = async () => {
     throw new Error("offline");
@@ -204,7 +204,7 @@ test("Catalog page e API retornam catÃ¡logo", async () => {
     const pageRes = createResponse();
     await handler({ url: "/catalog" }, pageRes);
     assert.equal(pageRes.statusCode, 200);
-    assert.match(pageRes.body, /Cat..logo interno/i);
+    assert.match(pageRes.body, /Catálogo interno/i);
   } finally {
     global.fetch = originalFetch;
   }

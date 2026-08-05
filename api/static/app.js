@@ -781,6 +781,54 @@ function renderComplementaryRecommendations(items = []) {
   `;
 }
 
+function renderCompositionRecommendation(plan = null) {
+  const items = Array.isArray(plan?.items) ? plan.items : [];
+  if (!plan || !items.length) return "";
+  const total = Number(plan.totalPrice || 0);
+  const remaining = Number(plan.remainingBudget || 0);
+  const cards = items.map((item) => {
+    const product = item.product || {};
+    const link = resolveProductLink(product);
+    const hasLink = hasValidProductLink(product) && !isDemoProduct(product);
+    const priceValue = Number(product.finalPrice || product.price || 0);
+    return `
+      <article class="oqc-composition-item">
+        <div class="oqc-composition-media">${productImage(product)}</div>
+        <div class="oqc-composition-copy">
+          <span>${escapeHtml(item.label || "Item")}</span>
+          <h4>${escapeHtml(resolveCompactProductTitle(product, 64))}</h4>
+          <p>${escapeHtml(resolveSourceLabel(product))}</p>
+        </div>
+        <div class="oqc-composition-buy">
+          <strong>${formatPrice(priceValue)}</strong>
+          ${hasLink
+            ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">Ver oferta</a>`
+            : `<span class="offer-unavailable" aria-disabled="true">Indisponível</span>`}
+        </div>
+      </article>
+    `;
+  }).join("");
+
+  return `
+    <section class="oqc-composition">
+      <div class="section-head section-head-tight">
+        <div>
+          <p class="panel-label">Compra composta</p>
+          <h3>${escapeHtml(plan.title || "Composição inteligente")}</h3>
+        </div>
+        <p class="section-note">${escapeHtml(plan.summary || "Itens complementares selecionados dentro do orçamento.")}</p>
+      </div>
+      <div class="oqc-composition-metrics">
+        <span><strong>${formatPrice(total)}</strong> estimado</span>
+        <span><strong>${items.length}</strong> itens</span>
+        <span><strong>${formatPrice(remaining)}</strong> livre</span>
+      </div>
+      <div class="oqc-composition-list">${cards}</div>
+      ${plan.warning ? `<p class="oqc-composition-warning">${escapeHtml(plan.warning)}</p>` : ""}
+    </section>
+  `;
+}
+
 function buildCategoryDecisionHeader(data = {}, products = []) {
   const total = Number(data.totalMatchedProducts || products.length || 0);
   const displayed = Number(data.displayedCount || products.length || 0);
@@ -1139,14 +1187,16 @@ function renderResultsExperience(data = {}, products = []) {
   if (activeBrowseMode === "category") {
     return renderCategoryResultsExperience(data, products);
   }
+  const compositionOnly = renderCompositionRecommendation(data.compositionRecommendation || null);
   if (!Array.isArray(products) || products.length === 0) {
-    return "";
+    return compositionOnly;
   }
   const advisor = data.advisor || {};
   const overview = safeText(advisor.overview || data.summary, "Comparamos ofertas com preço, origem e link confirmado para esta busca.");
   const comparison = buildComparisonBlock(data);
   const decisions = buildDecisionCards(data);
   const complements = renderComplementaryRecommendations(data.complementaryRecommendations || []);
+  const composition = renderCompositionRecommendation(data.compositionRecommendation || null);
   const grouped = renderGroupedProducts(data.groups || null, products);
   return `
     ${grouped}
@@ -1160,6 +1210,7 @@ function renderResultsExperience(data = {}, products = []) {
       </div>
       ${decisions}
     </section>
+    ${composition}
     ${complements}
     ${comparison}
   `;
@@ -2027,15 +2078,21 @@ form.addEventListener("submit", async (event) => {
     }
 
     const totalMatched = Number(data.totalMatchedProducts || confirmedProducts.length || 0);
+    const hasComposition = Array.isArray(data.compositionRecommendation?.items)
+      && data.compositionRecommendation.items.length > 0;
     if (resultsToolbar) resultsToolbar.hidden = !confirmedProducts.length;
     if (resultsCount) {
       const displayed = Number(data.displayedCount || confirmedProducts.length || 0);
       resultsCount.textContent = activeBrowseMode
         ? `${displayed} de ${totalMatched} produtos`
-        : `${displayed} opções encontradas`;
+        : hasComposition && !confirmedProducts.length
+          ? `${data.compositionRecommendation.items.length} itens combinados`
+          : `${displayed} opções encontradas`;
     }
     summaryTitle.textContent = confirmedProducts.length
       ? (activeBrowseMode ? `${normalizeHomeCategoryLabel(activeBrowseCategory || product)}` : `Opções para ${product}`)
+      : hasComposition
+        ? `Composição para ${product}`
       : "Sem oferta confirmada agora";
 
     if (data.fallbackUsed && Number(data.fallbackCount || 0) > 0) {
@@ -2044,6 +2101,9 @@ form.addEventListener("submit", async (event) => {
     } else if (data.fallbackAttempted) {
       notice.hidden = false;
       notice.textContent = "Não encontramos opções adicionais nesta fonte.";
+    } else if (hasComposition && !confirmedProducts.length) {
+      notice.hidden = false;
+      notice.textContent = "Montamos uma composição com itens relacionados do catálogo atual.";
     } else if (!confirmedProducts.length) {
       notice.hidden = true;
     } else if (confirmedProducts.length > 0 && confirmedProducts.length < 3) {
