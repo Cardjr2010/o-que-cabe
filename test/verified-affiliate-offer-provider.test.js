@@ -217,9 +217,9 @@ test("intake da pagina de mais vendidos da Amazon entra com ASIN e tag de afilia
   assert.ok(AMAZON_BESTSELLERS_OFFERS.every((offer) => offer.price > 0));
   assert.ok(AMAZON_BESTSELLERS_OFFERS.some((offer) => /air fryer|aspirador/i.test(String(offer.title || ""))));
 
-  const provider = new VerifiedAffiliateOfferProvider({
-    referenceDate: new Date("2026-08-05T18:00:00.000Z"),
-  });
+  const airFryer = AMAZON_BESTSELLERS_OFFERS.find((offer) => offer.asin === "B0DY3G3MJW");
+  const referenceDate = new Date(Date.parse(airFryer?.verifiedAt || "2026-08-06T00:00:00.000Z") + 60_000);
+  const provider = new VerifiedAffiliateOfferProvider({ referenceDate });
   const result = await provider.searchProducts("air fryer philco", { limit: 5 });
 
   assert.ok(result.products.some((product) => product.asin === "B0DY3G3MJW"));

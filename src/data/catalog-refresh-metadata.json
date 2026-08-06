@@ -1,8 +1,8 @@
 {
-  "refreshedAt": "2026-08-05T14:11:52.093Z",
+  "refreshedAt": "2026-08-06T18:11:38.883Z",
   "fresh": true,
-  "analyzedCount": 3762,
-  "publishedCount": 2827,
+  "analyzedCount": 3812,
+  "publishedCount": 2877,
   "hiddenCount": 935,
   "activeSourceCounts": [
     {
@@ -22,8 +22,8 @@
     {
       "source": "amazon",
       "label": "Amazon",
-      "analyzedCount": 697,
-      "publishedCount": 697,
+      "analyzedCount": 747,
+      "publishedCount": 747,
       "hiddenCount": 0
     },
     {
@@ -54,8 +54,8 @@
     {
       "source": "amazon",
       "label": "Amazon",
-      "analyzedCount": 697,
-      "publishedCount": 697,
+      "analyzedCount": 747,
+      "publishedCount": 747,
       "hiddenCount": 0,
       "rejectedReasons": []
     },

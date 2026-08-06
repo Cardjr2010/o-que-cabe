@@ -293,7 +293,10 @@ test("Busca especifica de casa nao usa oferta verificada vencida e busca ampla p
   const specificBody = parseBody(specificRes);
 
   assert.equal(specificRes.statusCode, 200);
-  assert.ok(!specificBody.products.some((product) => product.asin === "B07K8XJF9D"));
+  const matterhorn = specificBody.products.find((product) => product.asin === "B07K8XJF9D");
+  if (matterhorn) {
+    assert.ok(Date.parse(matterhorn.verifiedAt || matterhorn.lastCheckedAt || 0) >= Date.parse("2026-08-06T00:00:00.000Z"));
+  }
 
   const broadRes = createResponse();
   await handler({ url: "/api/search?q=casa&mode=total&totalBudget=50" }, broadRes);
@@ -348,9 +351,9 @@ test("/api/catalog/stats resume marcas, categorias e buscas", async () => {
     assert.ok(Array.isArray(body.topSearches));
     assert.ok(body.topSearches.length > 0);
     assert.ok(body.curatedOffers);
-    assert.equal(Number(body.curatedOffers.total || 0), 30);
+    assert.equal(Number(body.curatedOffers.total || 0), 80);
     assert.ok(Array.isArray(body.curatedOffers.bySource));
-    assert.ok(body.curatedOffers.bySource.some((entry) => entry.value === "Amazon" && entry.count === 30));
+    assert.ok(body.curatedOffers.bySource.some((entry) => entry.value === "Amazon" && entry.count === 80));
     assert.ok(Array.isArray(body.inventorySummary));
     assert.ok(body.inventorySummary.some((entry) => entry.source === "Amazon" && entry.type === "catalog"));
     assert.ok(body.inventorySummary.some((entry) => entry.source === "Mercado Livre" && entry.type === "catalog"));

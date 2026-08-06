@@ -5,7 +5,15 @@ import { resolveProjectPath } from "../src/runtime/project-root.js";
 const AMAZON_TAG = process.env.AMAZON_ASSOCIATE_TAG || "candombledesm-20";
 const DEFAULT_SOURCE_URL = "https://www.amazon.com.br/gp/bestsellers?&linkCode=ll2&tag=candombledesm-20&linkId=23c060689b1aed809c2085551d458441&ref_=as_li_ss_tl";
 const DEFAULT_HTML_PATH = resolveProjectPath(".tmp-amazon-intake", "bestsellers.html");
-const SOURCE_URL = process.argv.find((arg) => arg.startsWith("--url="))?.split("=")[1] || DEFAULT_SOURCE_URL;
+
+function getCliValue(name) {
+  const prefix = `--${name}=`;
+  const arg = process.argv.find((item) => item.startsWith(prefix));
+  return arg ? arg.slice(prefix.length) : undefined;
+}
+
+const SOURCE_URL = getCliValue("url") || DEFAULT_SOURCE_URL;
+const LIMIT = Math.max(1, Number(getCliValue("limit") || 80));
 
 function cleanText(value = "") {
   return String(value || "")
@@ -130,7 +138,9 @@ function offerPriority(offer) {
 function isAccessoryOrPart(title = "") {
   const text = normalizeText(title);
   if (/\b(capa|case|pelicula|vidro|carregador|cabo|adaptador|refil|peca|peça|bateria cr|cr2032|tela reposicao|controle remoto)\b/.test(text)) return true;
-  return /\bsuporte para (notebook|macbook|celular|smartphone|monitor)\b/.test(text);
+  if (/\b(mochila|bolsa|suporte|base|cooler)\b/.test(text) && /\b(notebook|macbook|celular|smartphone|monitor)\b/.test(text)) return true;
+  return /\bsuporte para (notebook|macbook|celular|smartphone|monitor)\b/.test(text)
+    || /\bmesa portatil para notebook\b/.test(text);
 }
 
 function extractChunks(html = "") {
@@ -285,10 +295,13 @@ function writeReport(offers, diagnostics, rejected) {
   fs.writeFileSync(resolveProjectPath("RELATORIO_INTAKE_AMAZON_MAIS_VENDIDOS.md"), lines.join("\n"), "utf8");
 }
 
-const htmlPath = process.argv.find((arg) => arg.startsWith("--html="))?.split("=")[1] || DEFAULT_HTML_PATH;
+const htmlPaths = process.argv
+  .filter((arg) => arg.startsWith("--html="))
+  .map((arg) => arg.slice("--html=".length))
+  .filter(Boolean);
+if (!htmlPaths.length) htmlPaths.push(DEFAULT_HTML_PATH);
 const checkedAt = new Date().toISOString();
-const html = fs.readFileSync(path.resolve(htmlPath), "utf8");
-const chunks = extractChunks(html);
+const chunks = htmlPaths.flatMap((htmlPath) => extractChunks(fs.readFileSync(path.resolve(htmlPath), "utf8")));
 const byAsin = new Map();
 const rejected = [];
 
@@ -305,10 +318,11 @@ for (const chunk of chunks) {
 
 const offers = [...byAsin.values()]
   .sort((a, b) => offerPriority(b) - offerPriority(a) || a.price - b.price)
-  .slice(0, 30);
+  .slice(0, LIMIT);
 const diagnostics = {
   source: "amazon",
   sourcePage: SOURCE_URL,
+  htmlFiles: htmlPaths,
   received: chunks.length,
   accepted: offers.length,
   rejected: rejected.length,
